@@ -33,6 +33,6 @@ public interface PersistedOutputFormatter extends QueryOutputFormatter {
    * @param persistedPath the persisted path
    * @throws IOException Signals that an I/O exception has occurred.
    */
-  public void addRowsFromPersistedPath(Path persistedPath) throws IOException;
+  void addRowsFromPersistedPath(Path persistedPath) throws IOException;
 
 }

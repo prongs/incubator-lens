@@ -27,7 +27,6 @@ import java.util.concurrent.*;
  * event processing can block, or is computationally intensive.
  *
  * @param <T> the generic type
- * @see AsyncEventEvent
  */
 public abstract class AsyncEventListener<T extends LensEvent> implements LensEventListener<T> {
 
@@ -63,7 +62,8 @@ public abstract class AsyncEventListener<T extends LensEvent> implements LensEve
    * @param poolSize       size of the event processing pool
    * @param maxQueueSize   max size of the event queue, if this is non positive, then the queue is unbounded
    * @param timeOutSeconds time out in seconds when an idle thread is destroyed
-   * @param isDaemon       if the threads used to process should be daemon threads, if false, then implementation should call stop()
+   * @param isDaemon       if the threads used to process should be daemon threads,
+   *                       if false, then implementation should call stop()
    *                       to stop the thread pool
    */
   public AsyncEventListener(int poolSize, int maxQueueSize, long timeOutSeconds, final boolean isDaemon) {

@@ -33,6 +33,6 @@ public interface InMemoryOutputFormatter extends QueryOutputFormatter {
    * @param row {@link ResultRow} object
    * @throws IOException Signals that an I/O exception has occurred.
    */
-  public void writeRow(ResultRow row) throws IOException;
+  void writeRow(ResultRow row) throws IOException;
 
 }

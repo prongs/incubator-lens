@@ -32,5 +32,5 @@ public interface ServiceProvider {
    * @param sName the s name
    * @return the service
    */
-  public <T extends Service> T getService(String sName);
+  <T extends Service> T getService(String sName);
 }

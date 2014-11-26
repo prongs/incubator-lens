@@ -36,6 +36,6 @@ public interface QueryAcceptor {
    * @return null if query should be accepted, rejection cause otherwise
    * @throws LensException the lens exception
    */
-  public String accept(String query, Configuration conf, SubmitOp submitOp) throws LensException;
+  String accept(String query, Configuration conf, SubmitOp submitOp) throws LensException;
 
 }

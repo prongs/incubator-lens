@@ -33,5 +33,5 @@ public interface DriverSelector {
    * @param conf the conf
    * @return the lens driver
    */
-  public LensDriver select(AbstractQueryContext ctx, Configuration conf);
+  LensDriver select(AbstractQueryContext ctx, Configuration conf);
 }

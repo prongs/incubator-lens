@@ -42,14 +42,14 @@ public abstract class DriverSelectorQueryContext {
    */
   @Getter
   @Setter
-  transient protected Configuration conf;
+  protected transient Configuration conf;
 
   /**
    * The selected driver.
    */
   @Getter
   @Setter
-  transient protected LensDriver selectedDriver;
+  protected transient LensDriver selectedDriver;
 
   /**
    * The driver query.

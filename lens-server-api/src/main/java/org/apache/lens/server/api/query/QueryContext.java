@@ -58,7 +58,7 @@ public class QueryContext extends AbstractQueryContext implements Comparable<Que
    * The submitted user.
    */
   @Getter
-  final private String submittedUser; // Logged in user.
+  private final String submittedUser; // Logged in user.
 
   /**
    * The priority.
@@ -70,13 +70,13 @@ public class QueryContext extends AbstractQueryContext implements Comparable<Que
    * The is persistent.
    */
   @Getter
-  final private boolean isPersistent;
+  private final boolean isPersistent;
 
   /**
    * The is driver persistent.
    */
   @Getter
-  final private boolean isDriverPersistent;
+  private final boolean isDriverPersistent;
 
   /**
    * The status.
@@ -102,7 +102,7 @@ public class QueryContext extends AbstractQueryContext implements Comparable<Que
    * The submission time.
    */
   @Getter
-  final private long submissionTime;
+  private final long submissionTime;
 
   /**
    * The launch time.
@@ -148,10 +148,10 @@ public class QueryContext extends AbstractQueryContext implements Comparable<Que
   /**
    * The query output formatter.
    */
-  transient
+
   @Getter
   @Setter
-  private QueryOutputFormatter queryOutputFormatter;
+  private transient QueryOutputFormatter queryOutputFormatter;
 
   /**
    * The finished query persisted.

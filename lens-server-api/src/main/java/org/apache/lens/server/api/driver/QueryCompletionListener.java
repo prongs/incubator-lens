@@ -26,8 +26,6 @@ import org.apache.lens.api.query.QueryHandle;
  * component using the component's <code>addQueryCompletionListener<code> method. When
  * the queryCompletion event occurs, that object's appropriate
  * method is invoked.
- *
- * @see QueryCompletionEvent
  */
 public interface QueryCompletionListener {
 
@@ -36,7 +34,7 @@ public interface QueryCompletionListener {
    *
    * @param handle the handle
    */
-  public void onCompletion(QueryHandle handle);
+  void onCompletion(QueryHandle handle);
 
   /**
    * On error.
@@ -44,6 +42,6 @@ public interface QueryCompletionListener {
    * @param handle the handle
    * @param error  the error
    */
-  public void onError(QueryHandle handle, String error);
+  void onError(QueryHandle handle, String error);
 
 }

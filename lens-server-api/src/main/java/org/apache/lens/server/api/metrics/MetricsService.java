@@ -26,7 +26,7 @@ public interface MetricsService {
   /**
    * The Constant NAME.
    */
-  public static final String NAME = "metrics";
+  String NAME = "metrics";
 
   /**
    * Increment a counter with the given name Actual name of the counter will be
@@ -37,7 +37,7 @@ public interface MetricsService {
    *
    * @param counter the counter
    */
-  public void incrCounter(String counter);
+  void incrCounter(String counter);
 
   /**
    * Increment a counter with the name constructed using given class and counter name Actual name of the counter will be
@@ -49,7 +49,7 @@ public interface MetricsService {
    * @param cls     Class of the counter for namespacing the counter
    * @param counter the counter
    */
-  public void incrCounter(Class<?> cls, String counter);
+  void incrCounter(Class<?> cls, String counter);
 
   /**
    * Decrement a counter with the name costructed using given class and counter name Actual name of the counter will be
@@ -61,7 +61,7 @@ public interface MetricsService {
    * @param cls     Class of the counter for namespacing of counters
    * @param counter the counter
    */
-  public void decrCounter(Class<?> cls, String counter);
+  void decrCounter(Class<?> cls, String counter);
 
   /**
    * Decrement a counter with the given name Actual name of the counter will be
@@ -72,7 +72,7 @@ public interface MetricsService {
    *
    * @param counter the counter
    */
-  public void decrCounter(String counter);
+  void decrCounter(String counter);
 
   /**
    * Get current value of the counter.
@@ -80,7 +80,7 @@ public interface MetricsService {
    * @param counter the counter
    * @return the counter
    */
-  public long getCounter(String counter);
+  long getCounter(String counter);
 
   /**
    * Get current value of the counter.
@@ -89,56 +89,56 @@ public interface MetricsService {
    * @param counter the counter
    * @return the counter
    */
-  public long getCounter(Class<?> cls, String counter);
+  long getCounter(Class<?> cls, String counter);
 
   /**
    * Query engine counter names.
    */
-  public static final String CANCELLED_QUERIES = "cancelled-queries";
+  String CANCELLED_QUERIES = "cancelled-queries";
 
   /**
    * The Constant FAILED_QUERIES.
    */
-  public static final String FAILED_QUERIES = "failed-queries";
+  String FAILED_QUERIES = "failed-queries";
 
   /**
    * The Constant ACCEPTED_QUERIES.
    */
-  public static final String ACCEPTED_QUERIES = "accepted-queries";
+  String ACCEPTED_QUERIES = "accepted-queries";
 
   /**
    * Query engine gauge names.
    */
-  public static final String QUEUED_QUERIES = "queued-queries";
+  String QUEUED_QUERIES = "queued-queries";
 
   /**
    * The Constant RUNNING_QUERIES.
    */
-  public static final String RUNNING_QUERIES = "running-queries";
+  String RUNNING_QUERIES = "running-queries";
 
   /**
    * The Constant FINISHED_QUERIES.
    */
-  public static final String FINISHED_QUERIES = "finished-queries";
+  String FINISHED_QUERIES = "finished-queries";
 
-  public long getQueuedQueries();
+  long getQueuedQueries();
 
-  public long getRunningQueries();
+  long getRunningQueries();
 
-  public long getFinishedQueries();
+  long getFinishedQueries();
 
-  public long getTotalAcceptedQueries();
+  long getTotalAcceptedQueries();
 
-  public long getTotalSuccessfulQueries();
+  long getTotalSuccessfulQueries();
 
-  public long getTotalFinishedQueries();
+  long getTotalFinishedQueries();
 
-  public long getTotalCancelledQueries();
+  long getTotalCancelledQueries();
 
-  public long getTotalFailedQueries();
+  long getTotalFailedQueries();
 
   /**
    * Publish report.
    */
-  public void publishReport();
+  void publishReport();
 }

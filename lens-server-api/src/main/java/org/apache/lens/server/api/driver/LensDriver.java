@@ -36,7 +36,7 @@ public interface LensDriver extends Externalizable {
   /**
    * Get driver configuration
    */
-  public Configuration getConf();
+  Configuration getConf();
 
   /**
    * Configure driver with {@link Configuration} passed.
@@ -44,7 +44,7 @@ public interface LensDriver extends Externalizable {
    * @param conf The configuration object
    * @throws LensException the lens exception
    */
-  public void configure(Configuration conf) throws LensException;
+  void configure(Configuration conf) throws LensException;
 
   /**
    * Explain the given query.
@@ -54,7 +54,7 @@ public interface LensDriver extends Externalizable {
    * @return The query plan object;
    * @throws LensException the lens exception
    */
-  public DriverQueryPlan explain(String query, Configuration conf) throws LensException;
+  DriverQueryPlan explain(String query, Configuration conf) throws LensException;
 
   /**
    * Prepare the given query.
@@ -62,7 +62,7 @@ public interface LensDriver extends Externalizable {
    * @param pContext the context
    * @throws LensException the lens exception
    */
-  public void prepare(PreparedQueryContext pContext) throws LensException;
+  void prepare(PreparedQueryContext pContext) throws LensException;
 
   /**
    * Explain and prepare the given query.
@@ -71,7 +71,7 @@ public interface LensDriver extends Externalizable {
    * @return The query plan object;
    * @throws LensException the lens exception
    */
-  public DriverQueryPlan explainAndPrepare(PreparedQueryContext pContext) throws LensException;
+  DriverQueryPlan explainAndPrepare(PreparedQueryContext pContext) throws LensException;
 
   /**
    * Close the prepare query specified by the prepared handle, releases all the resources held by the prepared query.
@@ -79,7 +79,7 @@ public interface LensDriver extends Externalizable {
    * @param handle The query handle
    * @throws LensException the lens exception
    */
-  public void closePreparedQuery(QueryPrepareHandle handle) throws LensException;
+  void closePreparedQuery(QueryPrepareHandle handle) throws LensException;
 
   /**
    * Blocking execute of the query
@@ -90,7 +90,7 @@ public interface LensDriver extends Externalizable {
    * @return returns the result set, null if there is no result available
    * @throws LensException the lens exception
    */
-  public LensResultSet execute(QueryContext context) throws LensException;
+  LensResultSet execute(QueryContext context) throws LensException;
 
   /**
    * Asynchronously execute the query.
@@ -98,7 +98,7 @@ public interface LensDriver extends Externalizable {
    * @param context The query context
    * @throws LensException the lens exception
    */
-  public void executeAsync(QueryContext context) throws LensException;
+  void executeAsync(QueryContext context) throws LensException;
 
   /**
    * Register for query completion notification.
@@ -108,7 +108,7 @@ public interface LensDriver extends Externalizable {
    * @param listener      the listener
    * @throws LensException the lens exception
    */
-  public void registerForCompletionNotification(QueryHandle handle, long timeoutMillis, QueryCompletionListener listener)
+  void registerForCompletionNotification(QueryHandle handle, long timeoutMillis, QueryCompletionListener listener)
     throws LensException;
 
   /**
@@ -117,7 +117,7 @@ public interface LensDriver extends Externalizable {
    * @param context The query context
    * @throws LensException the lens exception
    */
-  public void updateStatus(QueryContext context) throws LensException;
+  void updateStatus(QueryContext context) throws LensException;
 
   /**
    * Fetch the results of the query, specified by the handle.
@@ -126,7 +126,7 @@ public interface LensDriver extends Externalizable {
    * @return returns the result set
    * @throws LensException the lens exception
    */
-  public LensResultSet fetchResultSet(QueryContext context) throws LensException;
+  LensResultSet fetchResultSet(QueryContext context) throws LensException;
 
   /**
    * Close the resultset for the query.
@@ -134,7 +134,7 @@ public interface LensDriver extends Externalizable {
    * @param handle The query handle
    * @throws LensException the lens exception
    */
-  public void closeResultSet(QueryHandle handle) throws LensException;
+  void closeResultSet(QueryHandle handle) throws LensException;
 
   /**
    * Cancel the execution of the query, specified by the handle.
@@ -143,7 +143,7 @@ public interface LensDriver extends Externalizable {
    * @return true if cancel was successful, false otherwise
    * @throws LensException the lens exception
    */
-  public boolean cancelQuery(QueryHandle handle) throws LensException;
+  boolean cancelQuery(QueryHandle handle) throws LensException;
 
   /**
    * Close the query specified by the handle, releases all the resources held by the query.
@@ -151,19 +151,19 @@ public interface LensDriver extends Externalizable {
    * @param handle The query handle
    * @throws LensException the lens exception
    */
-  public void closeQuery(QueryHandle handle) throws LensException;
+  void closeQuery(QueryHandle handle) throws LensException;
 
   /**
    * Close the driver, releasing all resouces used up by the driver.
    *
    * @throws LensException the lens exception
    */
-  public void close() throws LensException;
+  void close() throws LensException;
 
   /**
    * Add a listener for driver events.
    *
    * @param driverEventListener the driver event listener
    */
-  public void registerDriverEventListener(LensEventListener<DriverEvent> driverEventListener);
+  void registerDriverEventListener(LensEventListener<DriverEvent> driverEventListener);
 }

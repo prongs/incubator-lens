@@ -122,7 +122,8 @@ public class MockDriver implements LensDriver {
   /*
    * (non-Javadoc)
    * 
-   * @see org.apache.lens.server.api.driver.LensDriver#explain(java.lang.String, org.apache.hadoop.conf.Configuration)
+   * @see org.apache.lens.server.api.driver.LensDriver#explain(java.lang.String,
+   * org.apache.hadoop.conf.Configuration)
    */
   @Override
   public DriverQueryPlan explain(String query, Configuration conf) throws LensException {
@@ -194,8 +195,8 @@ public class MockDriver implements LensDriver {
    * (non-Javadoc)
    * 
    * @see
-   * org.apache.lens.server.api.driver.LensDriver#explainAndPrepare(org.apache.lens.server.api.query.PreparedQueryContext
-   * )
+   * org.apache.lens.server.api.driver.LensDriver
+   * #explainAndPrepare(org.apache.lens.server.api.query.PreparedQueryContext)
    */
   @Override
   public DriverQueryPlan explainAndPrepare(PreparedQueryContext pContext) throws LensException {
@@ -323,11 +324,12 @@ public class MockDriver implements LensDriver {
    * (non-Javadoc)
    * 
    * @see
-   * org.apache.lens.server.api.driver.LensDriver#registerForCompletionNotification(org.apache.lens.api.query.QueryHandle
-   * , long, org.apache.lens.server.api.driver.QueryCompletionListener)
+   * org.apache.lens.server.api.driver.LensDriver#registerForCompletionNotification
+   * (org.apache.lens.api.query.QueryHandle, long, org.apache.lens.server.api.driver.QueryCompletionListener)
    */
   @Override
-  public void registerForCompletionNotification(QueryHandle handle, long timeoutMillis, QueryCompletionListener listener)
+  public void registerForCompletionNotification(QueryHandle handle,
+    long timeoutMillis, QueryCompletionListener listener)
     throws LensException {
     // TODO Auto-generated method stub
 

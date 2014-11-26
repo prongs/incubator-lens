@@ -27,14 +27,14 @@ import org.apache.lens.api.LensException;
  * </p>
  *
  * @param <T> the generic type
- * @see LensEventEvent
+ * @see LensEvent
  */
 public interface LensEventListener<T extends LensEvent> {
   // If the event handler method is renamed, the following constant must be changed as well
   /**
    * The Constant HANDLER_METHOD_NAME.
    */
-  public static final String HANDLER_METHOD_NAME = "onEvent";
+  String HANDLER_METHOD_NAME = "onEvent";
 
   /**
    * On event.
@@ -42,5 +42,5 @@ public interface LensEventListener<T extends LensEvent> {
    * @param event the event
    * @throws LensException the lens exception
    */
-  public void onEvent(T event) throws LensException;
+  void onEvent(T event) throws LensException;
 }

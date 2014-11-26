@@ -34,7 +34,7 @@ public interface QueryExecutionService {
   /**
    * The Constant NAME.
    */
-  public static final String NAME = "query";
+  String NAME = "query";
 
   /**
    * Explain the given query.
@@ -45,7 +45,7 @@ public interface QueryExecutionService {
    * @return The query plan;
    * @throws LensException the lens exception
    */
-  public QueryPlan explain(LensSessionHandle sessionHandle, String query, LensConf conf) throws LensException;
+  QueryPlan explain(LensSessionHandle sessionHandle, String query, LensConf conf) throws LensException;
 
   /**
    * Prepare the query.
@@ -57,7 +57,7 @@ public interface QueryExecutionService {
    * @return Prepare handle
    * @throws LensException the lens exception
    */
-  public QueryPrepareHandle prepare(LensSessionHandle sessionHandle, String query, LensConf conf, String queryName)
+  QueryPrepareHandle prepare(LensSessionHandle sessionHandle, String query, LensConf conf, String queryName)
     throws LensException;
 
   /**
@@ -70,7 +70,7 @@ public interface QueryExecutionService {
    * @return The query plan; Query plan also consists of prepare handle, if it should be used to executePrepare
    * @throws LensException the lens exception
    */
-  public QueryPlan explainAndPrepare(LensSessionHandle sessionHandle, String query, LensConf conf, String queryName)
+  QueryPlan explainAndPrepare(LensSessionHandle sessionHandle, String query, LensConf conf, String queryName)
     throws LensException;
 
   /**
@@ -83,7 +83,7 @@ public interface QueryExecutionService {
    * @return Returns the query handle
    * @throws LensException the lens exception
    */
-  public QueryHandle executePrepareAsync(LensSessionHandle sessionHandle, QueryPrepareHandle prepareHandle,
+  QueryHandle executePrepareAsync(LensSessionHandle sessionHandle, QueryPrepareHandle prepareHandle,
     LensConf conf, String queryName) throws LensException;
 
   /**
@@ -97,7 +97,7 @@ public interface QueryExecutionService {
    * @return the query handle with result set
    * @throws LensException the lens exception
    */
-  public QueryHandleWithResultSet executePrepare(LensSessionHandle sessionHandle, QueryPrepareHandle prepareHandle,
+  QueryHandleWithResultSet executePrepare(LensSessionHandle sessionHandle, QueryPrepareHandle prepareHandle,
     long timeoutmillis, LensConf conf, String queryName) throws LensException;
 
   /**
@@ -110,7 +110,7 @@ public interface QueryExecutionService {
    * @return a query handle, which can used to know the status.
    * @throws LensException the lens exception
    */
-  public QueryHandle executeAsync(LensSessionHandle sessionHandle, String query, LensConf conf, String queryName)
+  QueryHandle executeAsync(LensSessionHandle sessionHandle, String query, LensConf conf, String queryName)
     throws LensException;
 
   /**
@@ -122,7 +122,7 @@ public interface QueryExecutionService {
    * @return true if update is successful
    * @throws LensException the lens exception
    */
-  public boolean updateQueryConf(LensSessionHandle sessionHandle, QueryHandle queryHandle, LensConf newconf)
+  boolean updateQueryConf(LensSessionHandle sessionHandle, QueryHandle queryHandle, LensConf newconf)
     throws LensException;
 
   /**
@@ -136,7 +136,7 @@ public interface QueryExecutionService {
    * @return a query handle, if query did not finish within the timeout specified else result will also be returned.
    * @throws LensException the lens exception
    */
-  public QueryHandleWithResultSet execute(LensSessionHandle sessionHandle, String query, long timeoutmillis,
+  QueryHandleWithResultSet execute(LensSessionHandle sessionHandle, String query, long timeoutmillis,
     LensConf conf, String queryName) throws LensException;
 
   /**
@@ -147,7 +147,7 @@ public interface QueryExecutionService {
    * @return query status
    * @throws LensException the lens exception
    */
-  public LensQuery getQuery(LensSessionHandle sessionHandle, QueryHandle queryHandle) throws LensException;
+  LensQuery getQuery(LensSessionHandle sessionHandle, QueryHandle queryHandle) throws LensException;
 
   /**
    * Get the result set metadata - list of columns(names and types) and result size.
@@ -157,7 +157,7 @@ public interface QueryExecutionService {
    * @return The result set metadata
    * @throws LensException the lens exception
    */
-  public QueryResultSetMetadata getResultSetMetadata(LensSessionHandle sessionHandle, QueryHandle queryHandle)
+  QueryResultSetMetadata getResultSetMetadata(LensSessionHandle sessionHandle, QueryHandle queryHandle)
     throws LensException;
 
   /**
@@ -170,7 +170,7 @@ public interface QueryExecutionService {
    * @return returns the result set
    * @throws LensException the lens exception
    */
-  public QueryResult fetchResultSet(LensSessionHandle sessionHandle, QueryHandle queryHandle, long startIndex,
+  QueryResult fetchResultSet(LensSessionHandle sessionHandle, QueryHandle queryHandle, long startIndex,
     int fetchSize) throws LensException;
 
   /**
@@ -181,7 +181,7 @@ public interface QueryExecutionService {
    * @return returns javax.ws.rs.core.Response object
    * @throws LensException the lens exception
    */
-  public Response getHttpResultSet(LensSessionHandle sessionHandle, QueryHandle queryHandle) throws LensException;
+  Response getHttpResultSet(LensSessionHandle sessionHandle, QueryHandle queryHandle) throws LensException;
 
   /**
    * Closes result set by releasing any resources used in serving the resultset.
@@ -190,7 +190,7 @@ public interface QueryExecutionService {
    * @param queryHandle   the query handle
    * @throws LensException the lens exception
    */
-  public void closeResultSet(LensSessionHandle sessionHandle, QueryHandle queryHandle) throws LensException;
+  void closeResultSet(LensSessionHandle sessionHandle, QueryHandle queryHandle) throws LensException;
 
   /**
    * Cancel the execution of the query, specified by the handle.
@@ -200,21 +200,22 @@ public interface QueryExecutionService {
    * @return true if cancel was successful, false otherwise
    * @throws LensException the lens exception
    */
-  public boolean cancelQuery(LensSessionHandle sessionHandle, QueryHandle queryHandle) throws LensException;
+  boolean cancelQuery(LensSessionHandle sessionHandle, QueryHandle queryHandle) throws LensException;
 
   /**
    * Returns all the queries in the specified state, for the given user and matching query name.
    *
    * @param sessionHandle the session handle
    * @param state         return queries in this state. if null, all queries will be returned
-   * @param user          Get queries submitted by a specific user. If this set to "all", queries of all users are returned
+   * @param user          Get queries submitted by a specific user.
+   *                      If this set to "all", queries of all users are returned
    * @param queryName     return queries containing the query name. If null, all queries will be returned
    * @param fromDate      start date of time range interval
    * @param toDate        end date of the time range interval
    * @return List of query handles
    * @throws LensException the lens exception
    */
-  public List<QueryHandle> getAllQueries(LensSessionHandle sessionHandle, String state, String user, String queryName,
+  List<QueryHandle> getAllQueries(LensSessionHandle sessionHandle, String state, String user, String queryName,
     long fromDate, long toDate) throws LensException;
 
   /**
@@ -222,7 +223,8 @@ public interface QueryExecutionService {
    * returned.
    *
    * @param sessionHandle the session handle
-   * @param user          returns queries of the user. If set to "all", returns queries of all users. By default returns the queries
+   * @param user          returns queries of the user. If set to "all", returns queries of all users.
+   *                      By default returns the queries
    *                      of the current user.
    * @param queryName     returns queries matching the query name
    * @param fromDate      start time for filtering prepared queries by preparation time
@@ -230,7 +232,7 @@ public interface QueryExecutionService {
    * @return List of query prepare handles
    * @throws LensException the lens exception
    */
-  public List<QueryPrepareHandle> getAllPreparedQueries(LensSessionHandle sessionHandle, String user, String queryName,
+  List<QueryPrepareHandle> getAllPreparedQueries(LensSessionHandle sessionHandle, String user, String queryName,
     long fromDate, long toDate) throws LensException;
 
   /**
@@ -241,7 +243,7 @@ public interface QueryExecutionService {
    * @return return true if successful, false otherwise
    * @throws LensException the lens exception
    */
-  public boolean destroyPrepared(LensSessionHandle sessionHandle, QueryPrepareHandle prepared) throws LensException;
+  boolean destroyPrepared(LensSessionHandle sessionHandle, QueryPrepareHandle prepared) throws LensException;
 
   /**
    * Get prepared query.
@@ -251,7 +253,7 @@ public interface QueryExecutionService {
    * @return PreparedQueryContext object
    * @throws LensException the lens exception
    */
-  public LensPreparedQuery getPreparedQuery(LensSessionHandle sessionHandle, QueryPrepareHandle prepareHandle)
+  LensPreparedQuery getPreparedQuery(LensSessionHandle sessionHandle, QueryPrepareHandle prepareHandle)
     throws LensException;
 
   /**
@@ -263,7 +265,7 @@ public interface QueryExecutionService {
    * @return true if update is successful, false otherwise
    * @throws LensException the lens exception
    */
-  public boolean updateQueryConf(LensSessionHandle sessionHandle, QueryPrepareHandle prepareHandle, LensConf newconf)
+  boolean updateQueryConf(LensSessionHandle sessionHandle, QueryPrepareHandle prepareHandle, LensConf newconf)
     throws LensException;
 
   /**
@@ -271,19 +273,19 @@ public interface QueryExecutionService {
    *
    * @return queued queries count
    */
-  public long getQueuedQueriesCount();
+  long getQueuedQueriesCount();
 
   /**
    * Get running queries count
    *
    * @return running queries count
    */
-  public long getRunningQueriesCount();
+  long getRunningQueriesCount();
 
   /**
    * Get finished queries count
    *
    * @return finished queries count
    */
-  public long getFinishedQueriesCount();
+  long getFinishedQueriesCount();
 }

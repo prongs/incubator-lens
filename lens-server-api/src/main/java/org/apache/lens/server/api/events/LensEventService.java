@@ -30,7 +30,7 @@ public interface LensEventService {
   /**
    * The Constant NAME.
    */
-  public static final String NAME = "event";
+  String NAME = "event";
 
   /**
    * Add a listener for the given event type. Use this method to register if the same class is expected to receive
@@ -39,7 +39,7 @@ public interface LensEventService {
    * @param listener  the listener
    * @param eventType the event type
    */
-  public void addListenerForType(LensEventListener listener, Class<? extends LensEvent> eventType);
+  void addListenerForType(LensEventListener listener, Class<? extends LensEvent> eventType);
 
   /**
    * Remove listener for a given event type.
@@ -47,14 +47,14 @@ public interface LensEventService {
    * @param listener  the listener
    * @param eventType the event type
    */
-  public void removeListenerForType(LensEventListener listener, Class<? extends LensEvent> eventType);
+  void removeListenerForType(LensEventListener listener, Class<? extends LensEvent> eventType);
 
   /**
    * Remove this listener instance from all subscribed event types.
    *
    * @param listener the listener
    */
-  public void removeListener(LensEventListener listener);
+  void removeListener(LensEventListener listener);
 
   /**
    * Process an event, and notify all listeners interested in this event.
@@ -62,7 +62,7 @@ public interface LensEventService {
    * @param event object
    * @throws LensException the lens exception
    */
-  public void notifyEvent(LensEvent event) throws LensException;
+  void notifyEvent(LensEvent event) throws LensException;
 
   /**
    * Get all listeners of a particular type.
@@ -70,5 +70,5 @@ public interface LensEventService {
    * @param changeType the change type
    * @return all the listeners
    */
-  public Collection<LensEventListener> getListeners(Class<? extends LensEvent> changeType);
+  Collection<LensEventListener> getListeners(Class<? extends LensEvent> changeType);
 }

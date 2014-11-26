@@ -18,10 +18,16 @@
  */
 package org.apache.lens.server.api;
 
+import org.apache.lens.api.LensException;
+
 /**
  * The Class LensConfConstants.
  */
-public class LensConfConstants {
+public final class LensConfConstants {
+
+  private LensConfConstants() throws LensException {
+    throw new LensException("Can't instantiate LensConfConstants");
+  }
 
   // config prefixes
   // All the config variables will use one of these prefixes
@@ -341,7 +347,6 @@ public class LensConfConstants {
    */
   public static final String USER_RESOLVER_LDAP_INTERMEDIATE_DB_DELETE_SQL = SERVER_PFX
     + "user.resolver.ldap.intermediate.db.delete.sql";
-  ;
 
   /**
    * The Constant USER_RESOLVER_LDAP_BIND_DN.
@@ -442,17 +447,17 @@ public class LensConfConstants {
   /**
    * The Constant GANGLIA_SERVERNAME.
    */
-  public final static String GANGLIA_SERVERNAME = SERVER_PFX + "metrics.ganglia.host";
+  public static final String GANGLIA_SERVERNAME = SERVER_PFX + "metrics.ganglia.host";
 
   /**
    * The Constant GANGLIA_PORT.
    */
-  public final static String GANGLIA_PORT = SERVER_PFX + "metrics.ganglia.port";
+  public static final String GANGLIA_PORT = SERVER_PFX + "metrics.ganglia.port";
 
   /**
    * The Constant REPORTING_PERIOD.
    */
-  public final static String REPORTING_PERIOD = SERVER_PFX + "metrics.reporting.period";
+  public static final String REPORTING_PERIOD = SERVER_PFX + "metrics.reporting.period";
 
   /**
    * The Constant SERVER_MODE.
@@ -462,7 +467,7 @@ public class LensConfConstants {
   /**
    * The Constant DEFAULT_SERVER_MODE.
    */
-  public final static String DEFAULT_SERVER_MODE = "OPEN";
+  public static final String DEFAULT_SERVER_MODE = "OPEN";
 
   /**
    * The Constant SERVER_DOMAIN.
