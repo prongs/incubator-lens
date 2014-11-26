@@ -18,10 +18,10 @@
  */
 package org.apache.lens.server.api.driver;
 
-import java.util.Map;
-
 import org.apache.lens.api.LensException;
 import org.apache.lens.server.api.query.AbstractQueryContext;
+
+import java.util.Map;
 
 public class MockQueryContext extends AbstractQueryContext {
   public MockQueryContext(Map<LensDriver, String> driverQueries) throws LensException {

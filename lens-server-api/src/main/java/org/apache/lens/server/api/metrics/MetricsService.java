@@ -23,14 +23,16 @@ package org.apache.lens.server.api.metrics;
  */
 public interface MetricsService {
 
-  /** The Constant NAME. */
+  /**
+   * The Constant NAME.
+   */
   public static final String NAME = "metrics";
 
   /**
    * Increment a counter with the given name Actual name of the counter will be
-   *
+   * <p/>
    * <pre>MetricRegistry.name(MetricsService.class, counter)
-   *
+   * <p/>
    * <pre>
    *
    * @param counter the counter
@@ -39,33 +41,33 @@ public interface MetricsService {
 
   /**
    * Increment a counter with the name constructed using given class and counter name Actual name of the counter will be
-   *
+   * <p/>
    * <pre>MetricRegistry.name(cls, counter)
-   *
+   * <p/>
    * <pre>
    *
-   * @param cls Class of the counter for namespacing the counter
+   * @param cls     Class of the counter for namespacing the counter
    * @param counter the counter
    */
   public void incrCounter(Class<?> cls, String counter);
 
   /**
    * Decrement a counter with the name costructed using given class and counter name Actual name of the counter will be
-   *
+   * <p/>
    * <pre>MetricRegistry.name(cls, counter)
-   *
+   * <p/>
    * <pre>
    *
-   * @param cls Class of the counter for namespacing of counters
+   * @param cls     Class of the counter for namespacing of counters
    * @param counter the counter
    */
   public void decrCounter(Class<?> cls, String counter);
 
   /**
    * Decrement a counter with the given name Actual name of the counter will be
-   *
+   * <p/>
    * <pre>MetricRegistry.name(MetricsService.class, counter)
-   *
+   * <p/>
    * <pre>
    *
    * @param counter the counter
@@ -75,8 +77,7 @@ public interface MetricsService {
   /**
    * Get current value of the counter.
    *
-   * @param counter
-   *          the counter
+   * @param counter the counter
    * @return the counter
    */
   public long getCounter(String counter);
@@ -84,30 +85,40 @@ public interface MetricsService {
   /**
    * Get current value of the counter.
    *
-   * @param cls
-   *          the cls
-   * @param counter
-   *          the counter
+   * @param cls     the cls
+   * @param counter the counter
    * @return the counter
    */
   public long getCounter(Class<?> cls, String counter);
 
-  /** Query engine counter names. */
+  /**
+   * Query engine counter names.
+   */
   public static final String CANCELLED_QUERIES = "cancelled-queries";
 
-  /** The Constant FAILED_QUERIES. */
+  /**
+   * The Constant FAILED_QUERIES.
+   */
   public static final String FAILED_QUERIES = "failed-queries";
 
-  /** The Constant ACCEPTED_QUERIES. */
+  /**
+   * The Constant ACCEPTED_QUERIES.
+   */
   public static final String ACCEPTED_QUERIES = "accepted-queries";
 
-  /** Query engine gauge names. */
+  /**
+   * Query engine gauge names.
+   */
   public static final String QUEUED_QUERIES = "queued-queries";
 
-  /** The Constant RUNNING_QUERIES. */
+  /**
+   * The Constant RUNNING_QUERIES.
+   */
   public static final String RUNNING_QUERIES = "running-queries";
 
-  /** The Constant FINISHED_QUERIES. */
+  /**
+   * The Constant FINISHED_QUERIES.
+   */
   public static final String FINISHED_QUERIES = "finished-queries";
 
   public long getQueuedQueries();

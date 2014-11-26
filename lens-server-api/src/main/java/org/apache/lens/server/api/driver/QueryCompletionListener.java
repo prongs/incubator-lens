@@ -34,18 +34,15 @@ public interface QueryCompletionListener {
   /**
    * On completion.
    *
-   * @param handle
-   *          the handle
+   * @param handle the handle
    */
   public void onCompletion(QueryHandle handle);
 
   /**
    * On error.
    *
-   * @param handle
-   *          the handle
-   * @param error
-   *          the error
+   * @param handle the handle
+   * @param error  the error
    */
   public void onError(QueryHandle handle, String error);
 
