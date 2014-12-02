@@ -33,7 +33,7 @@ import static org.apache.lens.cube.parse.StorageUtil.joinWithAnd;
 
 /**
  * Dimension HQLContext.
- * 
+ *
  * Contains all the dimensions queried and their candidate dim tables Update
  * where string with storage filters added dimensions queried.
  */

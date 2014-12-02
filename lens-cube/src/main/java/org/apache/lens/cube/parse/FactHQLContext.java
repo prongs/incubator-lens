@@ -30,7 +30,7 @@ import org.apache.lens.cube.metadata.Dimension;
 /**
  * HQL context class which passes all query strings from the fact and works with
  * required dimensions for the fact.
- * 
+ *
  */
 public class FactHQLContext extends DimHQLContext {
 

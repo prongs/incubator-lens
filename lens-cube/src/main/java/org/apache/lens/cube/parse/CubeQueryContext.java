@@ -191,6 +191,10 @@ public class CubeQueryContext {
     }
   }
 
+  public boolean isAutoJoinResolved() {
+    return autoJoinCtx != null && autoJoinCtx.isJoinsResolved();
+  }
+
   // Holds the context of optional dimension
   // A dimension is optional if it is not queried directly by the user, but is
   // required by a candidate table to get a denormalized field from reference
