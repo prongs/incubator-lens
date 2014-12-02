@@ -200,7 +200,7 @@ public class MockDriver implements LensDriver {
    */
   @Override
   public DriverQueryPlan explainAndPrepare(PreparedQueryContext pContext) throws LensException {
-    DriverQueryPlan p = new MockQueryPlan(pContext.getDriverQuery());
+    DriverQueryPlan p = new MockQueryPlan(pContext.getSelectedDriverQuery());
     p.setPrepareHandle(pContext.getPrepareHandle());
     return p;
   }
@@ -223,7 +223,7 @@ public class MockDriver implements LensDriver {
    */
   @Override
   public LensResultSet execute(QueryContext context) throws LensException {
-    this.query = context.getDriverQuery();
+    this.query = context.getSelectedDriverQuery();
     return new PersistentResultSet() {
 
       @Override
@@ -260,7 +260,7 @@ public class MockDriver implements LensDriver {
    */
   @Override
   public void executeAsync(QueryContext context) throws LensException {
-    this.query = context.getDriverQuery();
+    this.query = context.getSelectedDriverQuery();
   }
 
   /*
