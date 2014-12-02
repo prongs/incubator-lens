@@ -48,13 +48,15 @@ class StorageUtil {
     return partStr.toString();
   }
 
-  public static String getNotLatestClauseForDimensions(String alias, Set<String> timedDimensions) {
+  public static String getNotLatestClauseForDimensions(String alias, Set<String> timedDimensions, String partCol) {
     StringBuilder sb = new StringBuilder();
     String sep = "";
     for (String timePartCol : timedDimensions) {
-      sb.append(sep).append(alias).append(".").append(timePartCol).
-        append("!=").append(StorageConstants.LATEST_PARTITION_VALUE);
-      sep = " AND ";
+      if(!timePartCol.equals(partCol)) {
+        sb.append(sep).append(alias).append(".").append(timePartCol)
+          .append(" != ").append(StorageConstants.LATEST_PARTITION_VALUE);
+        sep = " AND ";
+      }
     }
     return sb.toString();
   }
@@ -71,7 +73,7 @@ class StorageUtil {
       }
     }
     return sb
-      .append("))")
+      .append(sep.equals("((") ? "" : "))")
       .toString();
   }
 
