@@ -969,11 +969,13 @@ public class CubeQueryContext {
   }
 
   public String getTimeDimOfPartitionColumn(String partCol) {
-    if (!hasCubeInQuery()) {
+    return getTimeDimOfPartitionColumn(getCube(), partCol);
+  }
+
+  public static String getTimeDimOfPartitionColumn(CubeInterface cube, String partCol) {
+    if (cube != null) {
       return partCol;
     }
-
-    CubeInterface cube = getCube();
     if (cube instanceof DerivedCube) {
       return ((DerivedCube) cube).getParent().getTimeDimOfPartitionColumn(partCol);
     } else {

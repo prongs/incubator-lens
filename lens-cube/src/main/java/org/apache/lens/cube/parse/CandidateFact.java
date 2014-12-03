@@ -396,13 +396,7 @@ class CandidateFact implements CandidateTable {
       throw new SemanticException(e);
     }
     for(FieldSchema fs: partitionKeys) {
-      String timeDimOfPartitionKey = null;
-      if(baseTable instanceof Cube) {
-        timeDimOfPartitionKey = ((Cube) baseTable).getTimeDimOfPartitionColumn(fs.getName());
-      } else if (baseTable instanceof DerivedCube) {
-        timeDimOfPartitionKey = ((DerivedCube) baseTable).getParent().getTimeDimOfPartitionColumn(fs.getName());
-      }
-      if(cubeTimeDimensions.contains(timeDimOfPartitionKey)) {
+      if(cubeTimeDimensions.contains(CubeQueryContext.getTimeDimOfPartitionColumn(baseTable, fs.getName()))) {
         timePartDimensions.add(fs.getName());
       }
     }
