@@ -956,11 +956,12 @@ public class CubeQueryContext {
   }
 
   public String getPartitionColumnOfTimeDim(String timeDimName) {
-    if (!hasCubeInQuery()) {
+    return getPartitionColumnOfTimeDim(cube, timeDimName);
+  }
+  public static String getPartitionColumnOfTimeDim(CubeInterface cube, String timeDimName) {
+    if (cube == null) {
       return timeDimName;
     }
-
-    CubeInterface cube = getCube();
     if (cube instanceof DerivedCube) {
       return ((DerivedCube) cube).getParent().getPartitionColumnOfTimeDim(timeDimName);
     } else {
@@ -969,11 +970,10 @@ public class CubeQueryContext {
   }
 
   public String getTimeDimOfPartitionColumn(String partCol) {
-    return getTimeDimOfPartitionColumn(getCube(), partCol);
+    return getTimeDimOfPartitionColumn(cube, partCol);
   }
-
   public static String getTimeDimOfPartitionColumn(CubeInterface cube, String partCol) {
-    if (cube != null) {
+    if (cube == null) {
       return partCol;
     }
     if (cube instanceof DerivedCube) {
