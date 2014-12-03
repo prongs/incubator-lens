@@ -26,8 +26,13 @@ import static org.apache.lens.cube.parse.CubeTestSetup.twoDaysRange;
 import static org.apache.lens.cube.parse.TestCubeRewriter.compareQueries;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.parse.ParseException;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
+import org.apache.lens.cube.parse.CandidateFact;
+import org.apache.lens.cube.parse.CubeQueryConfUtil;
+import org.apache.lens.cube.parse.CubeQueryContext;
+import org.apache.lens.cube.parse.CubeQueryRewriter;
 import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
