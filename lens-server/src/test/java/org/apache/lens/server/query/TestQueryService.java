@@ -1192,7 +1192,8 @@ public class TestQueryService extends LensJerseyTest {
     Assert.assertEquals(ctx.getStatus().getStatus(), QueryStatus.Status.SUCCESSFUL);
 
     // fetch results
-    validateResultSetMetadata(handle2, "temp_output.", target(), lensSessionId);
+    validateResultSetMetadata(handle2, "temp_output.", new String[][]{{"ID", "INT"}, {"IDSTR", "STRING"}},
+      target(), lensSessionId);
 
     InMemoryQueryResult resultset = target.path(handle2.toString()).path("resultset")
         .queryParam("sessionid", lensSessionId).request().get(InMemoryQueryResult.class);
@@ -1210,7 +1211,8 @@ public class TestQueryService extends LensJerseyTest {
    *          the lens session id
    */
   static void validateResultSetMetadata(QueryHandle handle, WebTarget parent, LensSessionHandle lensSessionId) {
-    validateResultSetMetadata(handle, "", parent, lensSessionId);
+    validateResultSetMetadata(handle, "", new String[][]{{"ID", "INT"}, {"IDSTR", "STRING"}, {"IDARR", "ARRAY<STRING"}},
+      parent, lensSessionId);
   }
 
   /**
@@ -1225,19 +1227,20 @@ public class TestQueryService extends LensJerseyTest {
    * @param lensSessionId
    *          the lens session id
    */
-  static void validateResultSetMetadata(QueryHandle handle, String outputTablePfx, WebTarget parent,
+  static void validateResultSetMetadata(QueryHandle handle, String outputTablePfx, String[][] columns, WebTarget parent,
       LensSessionHandle lensSessionId) {
     final WebTarget target = parent.path("queryapi/queries");
 
     QueryResultSetMetadata metadata = target.path(handle.toString()).path("resultsetmetadata")
         .queryParam("sessionid", lensSessionId).request().get(QueryResultSetMetadata.class);
-    Assert.assertEquals(metadata.getColumns().size(), 2);
-    assertTrue(metadata.getColumns().get(0).getName().toLowerCase().equals((outputTablePfx + "ID").toLowerCase())
-        || metadata.getColumns().get(0).getName().toLowerCase().equals("ID".toLowerCase()));
-    assertEquals("INT".toLowerCase(), metadata.getColumns().get(0).getType().name().toLowerCase());
-    assertTrue(metadata.getColumns().get(1).getName().toLowerCase().equals((outputTablePfx + "IDSTR").toLowerCase())
-        || metadata.getColumns().get(0).getName().toLowerCase().equals("IDSTR".toLowerCase()));
-    assertEquals("STRING".toLowerCase(), metadata.getColumns().get(1).getType().name().toLowerCase());
+    Assert.assertEquals(metadata.getColumns().size(), columns.length);
+    for(int i = 0; i < columns.length; i++) {
+
+      assertTrue(metadata.getColumns().get(i).getName().toLowerCase().equals
+        ((outputTablePfx + columns[i][0]).toLowerCase())
+        || metadata.getColumns().get(i).getName().toLowerCase().equals(columns[i][0].toLowerCase()));
+      assertEquals(columns[i][1].toLowerCase(), metadata.getColumns().get(0).getType().name().toLowerCase());
+    }
   }
 
   /**
