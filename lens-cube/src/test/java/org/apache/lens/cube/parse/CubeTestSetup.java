@@ -448,7 +448,7 @@ public class CubeTestSetup {
         try {
           for(FieldSchema fs: Hive.get().getTable(storageTableName).getPartitionKeys()) {
             if(!fs.getName().equals(timePart)) {
-              add(cubeName + "." + fs.getName() + " != " + StorageConstants.LATEST_PARTITION_VALUE);
+              add(cubeName + "." + fs.getName() + " != '" + StorageConstants.LATEST_PARTITION_VALUE + "'");
             }
           }
         } catch (HiveException e) {

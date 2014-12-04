@@ -54,7 +54,7 @@ class StorageUtil {
     for (String timePartCol : timedDimensions) {
       if(!timePartCol.equals(partCol)) {
         sb.append(sep).append(alias).append(".").append(timePartCol)
-          .append(" != ").append(StorageConstants.LATEST_PARTITION_VALUE);
+          .append(" != '").append(StorageConstants.LATEST_PARTITION_VALUE).append("'");
         sep = " AND ";
       }
     }
