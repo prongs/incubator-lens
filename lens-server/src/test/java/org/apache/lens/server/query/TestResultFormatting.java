@@ -234,6 +234,11 @@ public class TestResultFormatting extends LensJerseyTest {
       stat = ctx.getStatus();
       Thread.sleep(1000);
     }
+
+    if(ctx.getStatus().getStatus().equals(Status.FAILED)) {
+      Assert.fail(ctx.getStatus().getStatusMessage() + "ERROR_MSG: " + ctx.getStatus().getErrorMessage());
+    }
+
     Assert.assertEquals(ctx.getStatus().getStatus(), status);
 
     if (status.equals(QueryStatus.Status.SUCCESSFUL)) {

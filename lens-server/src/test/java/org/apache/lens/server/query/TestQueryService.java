@@ -1211,7 +1211,8 @@ public class TestQueryService extends LensJerseyTest {
    *          the lens session id
    */
   static void validateResultSetMetadata(QueryHandle handle, WebTarget parent, LensSessionHandle lensSessionId) {
-    validateResultSetMetadata(handle, "", new String[][]{{"ID", "INT"}, {"IDSTR", "STRING"}, {"IDARR", "ARRAY<STRING"}},
+    validateResultSetMetadata(handle, "",
+      new String[][]{{"ID", "INT"}, {"IDSTR", "STRING"}, {"IDARR", "ARRAY"}},
       parent, lensSessionId);
   }
 
@@ -1235,11 +1236,10 @@ public class TestQueryService extends LensJerseyTest {
         .queryParam("sessionid", lensSessionId).request().get(QueryResultSetMetadata.class);
     Assert.assertEquals(metadata.getColumns().size(), columns.length);
     for(int i = 0; i < columns.length; i++) {
-
       assertTrue(metadata.getColumns().get(i).getName().toLowerCase().equals
         ((outputTablePfx + columns[i][0]).toLowerCase())
         || metadata.getColumns().get(i).getName().toLowerCase().equals(columns[i][0].toLowerCase()));
-      assertEquals(columns[i][1].toLowerCase(), metadata.getColumns().get(0).getType().name().toLowerCase());
+      assertEquals(columns[i][1].toLowerCase(), metadata.getColumns().get(i).getType().name().toLowerCase());
     }
   }
 
