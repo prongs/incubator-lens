@@ -42,6 +42,7 @@ import org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat;
 import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.parse.ParseException;
+import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.hive.serde.serdeConstants;
 import org.apache.hadoop.mapred.TextInputFormat;
@@ -56,6 +57,7 @@ import org.apache.lens.cube.metadata.ExprColumn;
 import org.apache.lens.cube.metadata.HDFSStorage;
 import org.apache.lens.cube.metadata.HierarchicalDimAttribute;
 import org.apache.lens.cube.metadata.InlineDimAttribute;
+import org.apache.lens.cube.metadata.JoinChain;
 import org.apache.lens.cube.metadata.MetastoreConstants;
 import org.apache.lens.cube.metadata.MetastoreUtil;
 import org.apache.lens.cube.metadata.ReferencedDimAtrribute;
@@ -183,7 +185,12 @@ public class CubeTestSetup {
   }
 
   public static String getExpectedQuery(String cubeName, String selExpr, String whereExpr, String postWhereExpr,
-      Map<String, String> storageTableToWhereClause) {
+    Map<String, String> storageTableToWhereClause) {
+    return getExpectedQuery(cubeName, selExpr, whereExpr, postWhereExpr, storageTableToWhereClause, null);
+  }
+
+  public static String getExpectedQuery(String cubeName, String selExpr, String whereExpr, String postWhereExpr,
+      Map<String, String> storageTableToWhereClause, List<String> notLatestConditions) {
     StringBuilder expected = new StringBuilder();
     int numTabs = storageTableToWhereClause.size();
     Assert.assertEquals(1, numTabs);
@@ -195,6 +202,11 @@ public class CubeTestSetup {
       expected.append(cubeName);
       expected.append(" WHERE ");
       expected.append("(");
+      if(notLatestConditions!= null) {
+        for(String cond: notLatestConditions) {
+          expected.append(cond).append(" AND ");
+        }
+      }
       if (whereExpr != null) {
         expected.append(whereExpr);
         expected.append(" AND ");
@@ -207,9 +219,12 @@ public class CubeTestSetup {
     }
     return expected.toString();
   }
-
   public static String getExpectedQuery(String cubeName, String selExpr, String whereExpr, String postWhereExpr,
-      String rangeWhere, String storageTable) {
+    String rangeWhere, String storageTable) {
+    return getExpectedQuery(cubeName, selExpr, whereExpr, postWhereExpr, rangeWhere, storageTable, null);
+  }
+  public static String getExpectedQuery(String cubeName, String selExpr, String whereExpr, String postWhereExpr,
+    String rangeWhere, String storageTable, List<String> notLatestConditions) {
     StringBuilder expected = new StringBuilder();
     expected.append(selExpr);
     expected.append(getDbName() + storageTable);
@@ -217,6 +232,11 @@ public class CubeTestSetup {
     expected.append(cubeName);
     expected.append(" WHERE ");
     expected.append("(");
+    if(notLatestConditions!= null) {
+      for(String cond: notLatestConditions) {
+        expected.append(cond).append(" AND ");
+      }
+    }
     if (whereExpr != null) {
       expected.append(whereExpr);
       expected.append(" AND ");
@@ -228,9 +248,14 @@ public class CubeTestSetup {
     }
     return expected.toString();
   }
-
   public static String getExpectedQuery(String cubeName, String selExpr, String joinExpr, String whereExpr,
-      String postWhereExpr, List<String> joinWhereConds, Map<String, String> storageTableToWhereClause) {
+    String postWhereExpr, List<String> joinWhereConds, Map<String, String> storageTableToWhereClause) {
+    return getExpectedQuery(cubeName, selExpr, joinExpr, whereExpr, postWhereExpr,
+      joinWhereConds, storageTableToWhereClause, null);
+  }
+  public static String getExpectedQuery(String cubeName, String selExpr, String joinExpr, String whereExpr,
+      String postWhereExpr, List<String> joinWhereConds, Map<String, String> storageTableToWhereClause,
+    List<String> notLatestConditions) {
     StringBuilder expected = new StringBuilder();
     int numTabs = storageTableToWhereClause.size();
     Assert.assertEquals(1, numTabs);
@@ -243,6 +268,11 @@ public class CubeTestSetup {
       expected.append(joinExpr);
       expected.append(" WHERE ");
       expected.append("(");
+      if(notLatestConditions!= null) {
+        for(String cond: notLatestConditions) {
+          expected.append(cond).append(" AND ");
+        }
+      }
       if (whereExpr != null) {
         expected.append(whereExpr);
         expected.append(" AND ");
@@ -412,6 +442,23 @@ public class CubeTestSetup {
     return getExpectedQuery(dimName, selExpr, null, null, postWhereExpr, storageTable, hasPart);
   }
 
+  public static List<String> getNotLatestConditions(final String cubeName, final String timePart,
+    final String storageTableName) throws SemanticException {
+    return new ArrayList<String>() {
+      {
+        try {
+          for(FieldSchema fs: Hive.get().getTable(storageTableName).getPartitionKeys()) {
+            if(!fs.getName().equals(timePart)) {
+              add(cubeName + "." + fs.getName() + " != '" + StorageConstants.LATEST_PARTITION_VALUE + "'");
+            }
+          }
+        } catch (HiveException e) {
+          throw new SemanticException(e);
+        }
+      }
+    };
+  }
+
   public static String getExpectedQuery(String dimName, String selExpr, String joinExpr, String whereExpr,
       String postWhereExpr, String storageTable, boolean hasPart) {
     StringBuilder expected = new StringBuilder();
@@ -566,7 +613,35 @@ public class CubeTestSetup {
     cubeProperties.put(MetastoreConstants.TIMEDIM_TO_PART_MAPPING_PFX + "et", "et");
     cubeProperties.put(MetastoreConstants.TIMEDIM_TO_PART_MAPPING_PFX + "pt", "pt");
     cubeProperties.put(MetastoreConstants.CUBE_ALL_FIELDS_QUERIABLE, "false");
-    client.createCube(BASE_CUBE_NAME, cubeMeasures2, cubeDimensions2, exprs, cubeProperties);
+
+    Set<JoinChain> joinchains = new HashSet<JoinChain>();
+    JoinChain cityState = new JoinChain("cityState", "city-state", "state thru city");
+    List<TableReference> statePaths1 = new ArrayList<TableReference>();
+    statePaths1.add(new TableReference("basecube", "cityid"));
+    statePaths1.add(new TableReference("citydim", "id"));
+    statePaths1.add(new TableReference("citydim", "stateid"));
+    statePaths1.add(new TableReference("statedim", "id"));
+    cityState.addPath(statePaths1);
+    List<TableReference> statePaths2 = new ArrayList<TableReference>();
+    statePaths2.add(new TableReference("basecube", "cityid"));
+    statePaths2.add(new TableReference("citydim", "id"));
+    statePaths2.add(new TableReference("citydim", "statename"));
+    statePaths2.add(new TableReference("statedim", "name"));
+    cityState.addPath(statePaths2);
+    joinchains.add(cityState);
+
+    JoinChain cubeState = new JoinChain("cubeState", "cube-state", "state thru cube");
+    List<TableReference> statePaths3 = new ArrayList<TableReference>();
+    statePaths3.add(new TableReference("basecube", "stateid"));
+    statePaths3.add(new TableReference("statedim", "id"));
+    cubeState.addPath(statePaths3);
+    joinchains.add(cubeState);
+
+    // add ref dim through chain
+    cubeDimensions2.add(new ReferencedDimAtrribute(
+        new FieldSchema("cityStateCapital", "string", "State's capital thru city"), "State's capital thru city",
+        "cityState", "capital", null, null, null));
+    client.createCube(BASE_CUBE_NAME, cubeMeasures2, cubeDimensions2, exprs, joinchains, cubeProperties);
 
     Map<String, String> derivedProperties = new HashMap<String, String>();
     derivedProperties.put(MetastoreConstants.CUBE_ALL_FIELDS_QUERIABLE, "true");
@@ -1079,6 +1154,8 @@ public class CubeTestSetup {
     cityAttrs.add(new BaseDimAttribute(new FieldSchema("name", "string", "city name")));
     cityAttrs.add(new BaseDimAttribute(new FieldSchema("ambigdim1", "string", "used in testColumnAmbiguity")));
     cityAttrs.add(new BaseDimAttribute(new FieldSchema("ambigdim2", "string", "used in testColumnAmbiguity")));
+    cityAttrs.add(new BaseDimAttribute(new FieldSchema("nocandidatecol", "string", "used in testing no" +
+        " candidate available")));
     cityAttrs.add(new ReferencedDimAtrribute(new FieldSchema("stateid", "int", "state id"), "State refer",
         new TableReference("statedim", "id")));
     cityAttrs.add(new ReferencedDimAtrribute(new FieldSchema("statename", "string", "state name"), "State name",
@@ -1125,6 +1202,25 @@ public class CubeTestSetup {
     storageTables.put(c2, s2);
 
     client.createCubeDimensionTable(cityDim.getName(), dimName, dimColumns, 0L, dumpPeriods, dimProps, storageTables);
+
+    dimName = "citytable2";
+
+    dimColumns = new ArrayList<FieldSchema>();
+    dimColumns.add(new FieldSchema("id", "int", "code"));
+    dimColumns.add(new FieldSchema("stateid", "int", "state id"));
+
+    storageTables = new HashMap<String, StorageTableDesc>();
+    storageTables.put(c4, s2);
+
+    client.createCubeDimensionTable(cityDim.getName(), dimName, dimColumns, 0L, dumpPeriods, dimProps, storageTables);
+
+    dimName = "citytable3";
+
+    dimColumns = new ArrayList<FieldSchema>();
+    dimColumns.add(new FieldSchema("id", "int", "code"));
+
+    client.createCubeDimensionTable(cityDim.getName(), dimName, dimColumns, 0L, dumpPeriods, dimProps, storageTables);
+
   }
 
   private void createTestDim2(CubeMetastoreClient client) throws HiveException {
