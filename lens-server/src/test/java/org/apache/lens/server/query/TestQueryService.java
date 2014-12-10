@@ -107,7 +107,7 @@ public class TestQueryService extends LensJerseyTest {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see org.glassfish.jersey.test.JerseyTest#setUp()
    */
   @BeforeTest
@@ -128,7 +128,7 @@ public class TestQueryService extends LensJerseyTest {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see org.glassfish.jersey.test.JerseyTest#tearDown()
    */
   @AfterTest
@@ -145,7 +145,7 @@ public class TestQueryService extends LensJerseyTest {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see org.glassfish.jersey.test.JerseyTest#configure()
    */
   @Override
@@ -155,7 +155,7 @@ public class TestQueryService extends LensJerseyTest {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see org.glassfish.jersey.test.JerseyTest#configureClient(org.glassfish.jersey.client.ClientConfig)
    */
   @Override
@@ -962,11 +962,27 @@ public class TestQueryService extends LensJerseyTest {
   static void validatePersistentResult(PersistentQueryResult resultset, QueryHandle handle, boolean isDir)
       throws IOException {
     List<String> actualRows = readResultSet(resultset, handle, isDir);
-    Assert.assertEquals(actualRows.get(0), "1one");
-    Assert.assertEquals(actualRows.get(1), "\\Ntwo");
-    Assert.assertEquals(actualRows.get(2), "3\\N");
-    Assert.assertEquals(actualRows.get(3), "\\N\\N");
-    Assert.assertEquals(actualRows.get(4), "5");
+    validatePersistentResult(actualRows);
+  }
+
+  static void validatePersistentResult(List<String> actualRows) {
+    String[] expected1 = new String[]{
+      "1one",
+      "\\Ntwo123item1item2",
+      "3\\Nitem1item2",
+      "\\N\\N",
+      "5nothing"
+    };
+    String[] expected2 = new String[]{
+      "1one[][]",
+      "\\Ntwo[1,2,3][\"item1\",\"item2\"]",
+      "3\\N[][\"item1\",\"item2\"]",
+      "\\N\\N[][]",
+      "5[][\"nothing\"]"
+    };
+    for(int i = 0; i < 5; i++) {
+      Assert.assertEquals(actualRows.get(i).equals(expected1[i]) || actualRows.get(i).equals(expected2[i]), true);
+    }
   }
 
   /**
@@ -1000,11 +1016,7 @@ public class TestQueryService extends LensJerseyTest {
 
       String result = new String(bos.toByteArray());
       List<String> actualRows = Arrays.asList(result.split("\n"));
-      Assert.assertEquals(actualRows.get(0), "1one");
-      Assert.assertEquals(actualRows.get(1), "\\Ntwo");
-      Assert.assertEquals(actualRows.get(2), "3\\N");
-      Assert.assertEquals(actualRows.get(3), "\\N\\N");
-      Assert.assertEquals(actualRows.get(4), "5");
+      validatePersistentResult(actualRows);
     } else {
       Assert.assertEquals(Response.Status.SEE_OTHER.getStatusCode(), response.getStatus());
       Assert.assertTrue(response.getHeaderString("Location").contains(redirectUrl));
@@ -1212,7 +1224,7 @@ public class TestQueryService extends LensJerseyTest {
    */
   static void validateResultSetMetadata(QueryHandle handle, WebTarget parent, LensSessionHandle lensSessionId) {
     validateResultSetMetadata(handle, "",
-      new String[][]{{"ID", "INT"}, {"IDSTR", "STRING"}, {"IDARR", "ARRAY"}},
+      new String[][]{{"ID", "INT"}, {"IDSTR", "STRING"}, {"IDARR", "ARRAY"}, {"IDSTRARR", "ARRAY"}},
       parent, lensSessionId);
   }
 

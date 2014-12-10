@@ -72,7 +72,7 @@ public class TestResultFormatting extends LensJerseyTest {
     super.setUp();
     queryService = (QueryExecutionServiceImpl) LensServices.get().getService("query");
     lensSessionId = queryService.openSession("foo", "bar", new HashMap<String, String>());
-    LensTestUtil.createTable(testTable, target(), lensSessionId, "(ID INT, IDSTR STRING, IDARR ARRAY<STRING>)");
+    LensTestUtil.createTable(testTable, target(), lensSessionId, "(ID INT, IDSTR STRING, IDARR ARRAY<INT>, IDSTRARR ARRAY<STRING>)");
     LensTestUtil.loadData(testTable, TEST_DATA_FILE, target(), lensSessionId);
   }
 
@@ -214,8 +214,8 @@ public class TestResultFormatting extends LensJerseyTest {
     conf.addProperty(LensConfConstants.QUERY_PERSISTENT_RESULT_SET, "true");
     mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("sessionid").build(), lensSessionId,
         MediaType.APPLICATION_XML_TYPE));
-    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("query").build(), "select ID, IDSTR, IDARR from "
-        + testTable));
+    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("query").build(),
+      "select ID, IDSTR, IDARR, IDSTRARR from " + testTable));
     mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("operation").build(), "execute"));
     mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("conf").fileName("conf").build(), conf,
         MediaType.APPLICATION_XML_TYPE));
@@ -233,10 +233,6 @@ public class TestResultFormatting extends LensJerseyTest {
       ctx = target.path(handle.toString()).queryParam("sessionid", lensSessionId).request().get(LensQuery.class);
       stat = ctx.getStatus();
       Thread.sleep(1000);
-    }
-
-    if(ctx.getStatus().getStatus().equals(Status.FAILED)) {
-      Assert.fail(ctx.getStatus().getStatusMessage() + "ERROR_MSG: " + ctx.getStatus().getErrorMessage());
     }
 
     Assert.assertEquals(ctx.getStatus().getStatus(), status);
