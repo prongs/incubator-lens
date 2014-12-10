@@ -153,7 +153,7 @@ public class TestFileSerdeFormatter extends TestAbstractFileFormatter {
 
     mapElements = new LinkedHashMap<Integer, String>();
     mapElements.put(1, "one");
-    mapElements.put(2, "two");
+    mapElements.put(2, "two, 3=three");
     elements = new ArrayList<Object>();
     elements.add(2);
     elements.add("two");

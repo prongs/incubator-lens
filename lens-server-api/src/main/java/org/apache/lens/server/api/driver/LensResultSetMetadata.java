@@ -73,6 +73,7 @@ public abstract class LensResultSetMetadata {
       switch (typeDesc.getType()) {
       case ARRAY_TYPE:
       case MAP_TYPE:
+      case STRUCT_TYPE:
         return "string";
       }
     }
