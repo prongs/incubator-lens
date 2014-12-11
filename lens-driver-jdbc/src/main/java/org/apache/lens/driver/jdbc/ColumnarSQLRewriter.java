@@ -84,6 +84,9 @@ public class ColumnarSQLRewriter implements QueryRewriter {
 
   /** The merged query. */
   protected StringBuilder mergedQuery = new StringBuilder();
+  
+  /** The join list. */
+  protected ArrayList<String> joinList = new ArrayList<String>();
 
   /** The join condition. */
   protected StringBuilder joinCondition = new StringBuilder();
@@ -307,10 +310,7 @@ public class ColumnarSQLRewriter implements QueryRewriter {
         // User has specified a join condition for filter pushdown.
         joinFilter = HQLParser.getString((ASTNode) node.getChild(2));
       }
-
-      joinCondition.append(" ").append(joinType).append(" ").append(rightTable).append(" on ").append(joinFilter)
-          .append(" ");
-
+      joinList.add(joinType + (" ") + (rightTable) + (" on ")+ (joinFilter) + (" "));
     }
 
     for (int i = 0; i < node.getChildCount(); i++) {
@@ -319,6 +319,21 @@ public class ColumnarSQLRewriter implements QueryRewriter {
     }
   }
 
+  /**
+   * Construct join chain
+   * 
+   * @return
+   */
+  public StringBuilder constructJoinChain() {
+    getJoinCond(fromAST);
+    Collections.reverse(joinList);
+
+    for (String key : joinList) {
+      joinCondition.append(" ").append(key);
+    }
+    return joinCondition;
+  }
+  
   /*
    * Get filter conditions if user has specified a join condition for filter pushdown.
    */
@@ -372,13 +387,24 @@ public class ColumnarSQLRewriter implements QueryRewriter {
         ASTNode left = (ASTNode) node.getChild(0);
         ASTNode right = (ASTNode) node.getChild(1);
 
+        // Get fact table and alias and match with join keys
+        String factTable = "";
+        String factAlias = "";
+        String factNameAndAlis = getFactNameAlias(fromAST);
+        String[] keys = factNameAndAlis.split(" +");
+        if (keys.length == 2) {
+          factTable = keys[0];
+          factAlias = keys[1];
+        }
+
         // Get the fact and dimension columns in table_name.column_name format
         String factJoinKeys = HQLParser.getString((ASTNode) left).toString().replaceAll("\\s+", "")
             .replaceAll("[(,)]", "");
         String dimJoinKeys = HQLParser.getString((ASTNode) right).toString().replaceAll("\\s+", "")
             .replaceAll("[(,)]", "");
         String dimTableName = dimJoinKeys.substring(0, dimJoinKeys.indexOf("__"));
-        factKeys.append(factJoinKeys).append(",");
+        if (factJoinKeys.matches("(.*)".concat(factAlias).concat("(.*)")))
+          factKeys.append(factJoinKeys).append(",");
 
         // Construct part of subquery by referring join condition
         // fact.fact_key = dim_table.dim_key
@@ -610,6 +636,7 @@ public class ColumnarSQLRewriter implements QueryRewriter {
     selectTree = fromTree = joinTree = whereTree = groupByTree = havingTree = orderByTree = null;
     selectAST = fromAST = joinAST = whereAST = groupByAST = havingAST = orderByAST = null;
     mapAliases.clear();
+    joinList.clear();
     limit = null;
   }
 
@@ -690,7 +717,7 @@ public class ColumnarSQLRewriter implements QueryRewriter {
     replaceAliasInAST();
     getFilterInJoinCond(fromAST);
     getAggregateColumns(selectAST);
-    getJoinCond(fromAST);
+    constructJoinChain();
     getAllFilters(whereAST);
     buildSubqueries(fromAST);
 
