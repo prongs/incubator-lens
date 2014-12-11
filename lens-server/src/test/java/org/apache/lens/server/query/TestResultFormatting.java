@@ -239,7 +239,9 @@ public class TestResultFormatting extends LensJerseyTest {
 
     if (status.equals(QueryStatus.Status.SUCCESSFUL)) {
       // fetch results
-      TestQueryService.validatePersistedResult(handle, target(), lensSessionId, isDir);
+      TestQueryService.validatePersistedResult(handle, target(), lensSessionId, new String[][]{
+        {"ID", "INT"}, {"IDSTR", "STRING"}, {"IDARR", "ARRAY"}, {"IDSTRARR", "ARRAY"},
+      }, isDir);
       if (!isDir) {
         TestQueryService.validateHttpEndPoint(target(), lensSessionId, handle, reDirectUrl);
       }

@@ -167,7 +167,7 @@ public class TestQueryService extends LensJerseyTest {
   private static String testTable = "TEST_TABLE";
 
   /** The Constant TEST_DATA_FILE. */
-  public static final String TEST_DATA_FILE = "../lens-driver-hive/testdata/testdata2.txt";
+  public static final String TEST_DATA_FILE = "./testdata/testdata2.txt";
 
   /**
    * Creates the table.
@@ -745,7 +745,7 @@ public class TestQueryService extends LensJerseyTest {
     assertTrue(ctx.getFinishTime() > 0);
     Assert.assertEquals(ctx.getStatus().getStatus(), QueryStatus.Status.SUCCESSFUL);
 
-    validatePersistedResult(handle, target(), lensSessionId, true);
+    validatePersistedResult(handle, target(), lensSessionId, new String[][]{{"ID", "INT"}, {"IDSTR", "STRING"}}, true);
 
     // test cancel query
     final QueryHandle handle2 = target.request().post(Entity.entity(mp, MediaType.MULTIPART_FORM_DATA_TYPE),
@@ -866,10 +866,12 @@ public class TestQueryService extends LensJerseyTest {
    *           Signals that an I/O exception has occurred.
    */
   static void validatePersistedResult(QueryHandle handle, WebTarget parent, LensSessionHandle lensSessionId,
-      boolean isDir) throws IOException {
+      String[][] schema, boolean isDir) throws IOException {
     final WebTarget target = parent.path("queryapi/queries");
     // fetch results
-    validateResultSetMetadata(handle, parent, lensSessionId);
+    validateResultSetMetadata(handle, "",
+      schema,
+      parent, lensSessionId);
 
     String presultset = target.path(handle.toString()).path("resultset").queryParam("sessionid", lensSessionId)
         .request().get(String.class);
@@ -980,8 +982,9 @@ public class TestQueryService extends LensJerseyTest {
       "\\N\\N[][]",
       "5[][\"nothing\"]"
     };
-    for(int i = 0; i < 5; i++) {
-      Assert.assertEquals(actualRows.get(i).equals(expected1[i]) || actualRows.get(i).equals(expected2[i]), true);
+    for(int i = 0; i < actualRows.size(); i++) {
+      Assert.assertEquals(
+        expected1[i].indexOf(actualRows.get(i)) == 0 || expected2[i].indexOf(actualRows.get(i)) == 0, true);
     }
   }
 
@@ -1095,7 +1098,10 @@ public class TestQueryService extends LensJerseyTest {
     Assert.assertEquals(ctx.getStatus().getStatus(), QueryStatus.Status.SUCCESSFUL);
 
     // fetch results
-    validateResultSetMetadata(handle, target(), lensSessionId);
+    validateResultSetMetadata(handle, "",
+      new String[][]{{"ID", "INT"}, {"IDSTR", "STRING"}},
+      target(), lensSessionId);
+
 
     InMemoryQueryResult resultset = target.path(handle.toString()).path("resultset")
         .queryParam("sessionid", lensSessionId).request().get(InMemoryQueryResult.class);
