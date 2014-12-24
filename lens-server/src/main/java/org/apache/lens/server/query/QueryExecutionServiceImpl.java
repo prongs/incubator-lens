@@ -400,6 +400,16 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
     /*
      * (non-Javadoc)
      *
+     * @see java.lang.Comparable#compareTo(java.lang.Object)
+     */
+    @Override
+    public int compareTo(Delayed o) {
+      return (int) (this.finishTime.getTime() - ((FinishedQuery) o).finishTime.getTime());
+    }
+
+    /*
+     * (non-Javadoc)
+     *
      * @see java.util.concurrent.Delayed#getDelay(java.util.concurrent.TimeUnit)
      */
     @Override
@@ -409,16 +419,6 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
       } else {
         return Integer.MAX_VALUE;
       }
-    }
-
-    /*
-     * (non-Javadoc)
-     *
-     * @see java.lang.Comparable#compareTo(java.lang.Object)
-     */
-    @Override
-    public int compareTo(Delayed o) {
-      return (int) (this.finishTime.getTime() - ((FinishedQuery) o).finishTime.getTime());
     }
     /**
      * @return the finishTime
