@@ -18,17 +18,8 @@
  */
 package org.apache.lens.server.query;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.fail;
-
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
-import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.lens.api.LensException;
+import org.apache.lens.api.query.QueryHandle;
 import org.apache.lens.api.query.QueryStatus;
 import org.apache.lens.server.EventServiceImpl;
 import org.apache.lens.server.LensServerConf;
@@ -44,31 +35,51 @@ import org.apache.log4j.Logger;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+import static org.testng.Assert.*;
+
 /**
  * The Class TestEventService.
  */
 @Test(groups = "unit-test")
 public class TestEventService {
 
-  /** The Constant LOG. */
+  /**
+   * The Constant LOG.
+   */
   public static final Logger LOG = Logger.getLogger(TestEventService.class);
 
-  /** The service. */
+  /**
+   * The service.
+   */
   EventServiceImpl service;
 
-  /** The generic event listener. */
+  /**
+   * The generic event listener.
+   */
   GenericEventListener genericEventListener;
 
-  /** The failed listener. */
+  /**
+   * The failed listener.
+   */
   MockFailedListener failedListener;
 
-  /** The queue position change listener. */
+  /**
+   * The queue position change listener.
+   */
   MockQueuePositionChange queuePositionChangeListener;
 
-  /** The ended listener. */
+  /**
+   * The ended listener.
+   */
   MockEndedListener endedListener;
 
-  /** The latch. */
+  /**
+   * The latch.
+   */
   CountDownLatch latch;
 
   /**
@@ -77,11 +88,12 @@ public class TestEventService {
    * component's <code>addGenericEventListener<code> method. When
    * the genericEvent event occurs, that object's appropriate
    * method is invoked.
-   *
    */
   class GenericEventListener extends AsyncEventListener<LensEvent> {
 
-    /** The processed. */
+    /**
+     * The processed.
+     */
     boolean processed = false;
 
     /*
@@ -103,11 +115,12 @@ public class TestEventService {
    * component's <code>addMockFailedListener<code> method. When
    * the mockFailed event occurs, that object's appropriate
    * method is invoked.
-   *
    */
   class MockFailedListener implements LensEventListener<QueryFailed> {
 
-    /** The processed. */
+    /**
+     * The processed.
+     */
     boolean processed = false;
 
     /*
@@ -129,11 +142,12 @@ public class TestEventService {
    * component's <code>addMockEndedListener<code> method. When
    * the mockEnded event occurs, that object's appropriate
    * method is invoked.
-   *
    */
   class MockEndedListener implements LensEventListener<QueryEnded> {
 
-    /** The processed. */
+    /**
+     * The processed.
+     */
     boolean processed = false;
 
     /*
@@ -154,7 +168,9 @@ public class TestEventService {
    */
   class MockQueuePositionChange implements LensEventListener<QueuePositionChange> {
 
-    /** The processed. */
+    /**
+     * The processed.
+     */
     boolean processed = false;
 
     /*
@@ -173,8 +189,7 @@ public class TestEventService {
   /**
    * Setup.
    *
-   * @throws Exception
-   *           the exception
+   * @throws Exception the exception
    */
   @BeforeTest
   public void setup() throws Exception {
@@ -231,8 +246,7 @@ public class TestEventService {
   /**
    * Test handle event.
    *
-   * @throws Exception
-   *           the exception
+   * @throws Exception the exception
    */
   @Test
   public void testHandleEvent() throws Exception {
@@ -313,7 +327,7 @@ public class TestEventService {
 
     QueryHandle queryHandle = new QueryHandle(UUID.randomUUID());
     QueryAccepted queryAccepted = new QueryAccepted(System.currentTimeMillis(), "beforeAccept", "afterAccept",
-        queryHandle);
+      queryHandle);
 
     QueryExecutionStatistics queryExecStats = new QueryExecutionStatistics(System.currentTimeMillis());
 
