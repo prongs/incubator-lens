@@ -40,6 +40,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
 
+import lombok.Getter;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -70,8 +71,10 @@ import org.apache.lens.driver.cube.RewriteUtil;
 import org.apache.lens.driver.hive.HiveDriver;
 import org.apache.lens.server.LensService;
 import org.apache.lens.server.LensServices;
+import org.apache.lens.server.alerts.AlertHandler;
 import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.driver.*;
+import org.apache.lens.server.api.events.LensEvent;
 import org.apache.lens.server.api.events.LensEventListener;
 import org.apache.lens.server.api.events.LensEventService;
 import org.apache.lens.server.api.metrics.MetricsService;
@@ -251,6 +254,7 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
       }
     }
   };
+  private int purgeMaxTimeout;
 
   /**
    * Instantiates a new query execution service impl.
@@ -383,7 +387,17 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
    * The Class FinishedQuery.
    */
   private class FinishedQuery implements Delayed {
-
+    /**
+     * currentPurgeDelay in seconds.
+     */
+    @Getter
+    public int currentPurgeDelay = 0;
+    private int totalDelayIncurred = 0;
+    /**
+     * How many purge retries have happened so far.
+     */
+    @Getter
+    private int numTries = 0;
     /**
      * The ctx.
      */
@@ -393,6 +407,7 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
      * The finish time.
      */
     private final Date finishTime;
+    private long startTime;
 
     /**
      * Instantiates a new finished query.
@@ -407,7 +422,7 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see java.lang.Comparable#compareTo(java.lang.Object)
      */
     @Override
@@ -421,13 +436,8 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
      * @see java.util.concurrent.Delayed#getDelay(java.util.concurrent.TimeUnit)
      */
     @Override
-    public long getDelay(TimeUnit units) {
-      int size = finishedQueries.size();
-      if (size > maxFinishedQueries) {
-        return 0;
-      } else {
-        return Integer.MAX_VALUE;
-      }
+    public long getDelay(TimeUnit unit) {
+      return unit.convert(currentPurgeDelay * 1000 - (System.currentTimeMillis() - startTime), TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -442,6 +452,39 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
      */
     public QueryContext getCtx() {
       return ctx;
+    }
+
+    /**
+     * <p>
+     * If purge failed, increase the delay before retrying.
+     * A backoff is successful if already maximum number of
+     * backoffs are not completed for this query. Maximun number
+     * of backoffs is bound by totalDelayIncurred <= PURGE_MAX_TIMEOUT.
+     * We keep increasing currentPurgeDelay in each backoff.
+     * And totalDelayIncurred is increased by in each backoff by currentPurgeDelay
+     * </p>
+     * <p>
+     * Backoff policy is new delay = 2 (old delay + 5)
+     * </p>
+     *
+     * @return true if backoff was successful
+     */
+    public boolean exponentialBackoffForPurgeDelay() {
+      currentPurgeDelay += 5;
+      currentPurgeDelay *= 2;
+      totalDelayIncurred += currentPurgeDelay;
+      numTries++;
+      startTime = System.currentTimeMillis();
+      return whetherBackoffSuccessful();
+    }
+
+    /**
+     *
+     * @return Whether last backoff was successful or not.
+     * @see #exponentialBackoffForPurgeDelay()
+     */
+    private boolean whetherBackoffSuccessful() {
+      return totalDelayIncurred <= purgeMaxTimeout;
     }
   }
 
@@ -769,7 +812,14 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
             LOG.info("Saved query " + finishedQuery.getHandle() + " to DB");
           } catch (Exception e) {
             LOG.warn("Exception while purging query ", e);
-            finishedQueries.add(finished);
+            if(finished.exponentialBackoffForPurgeDelay()) {
+              //Re-insert with increased delay.
+              finishedQueries.offer(finished, finished.getCurrentPurgeDelay(), TimeUnit.SECONDS);
+            } else {
+              LOG.error("Query purge failed.  Lens Session id = " + finished.getCtx().getLensSessionIdentifier()
+                + ". User query = " + finished.getCtx().getUserQuery());
+            }
+            getEventService().notifyEvent(new QueryPurgeFailed(finished.getCtx(), getCliService().getHiveConf(), finished.getNumTries(), e));
             continue;
           }
 
@@ -786,7 +836,7 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
             resultSets.remove(finished.getCtx().getQueryHandle());
           }
           fireStatusChangeEvent(finished.getCtx(),
-                                new QueryStatus(1f, Status.CLOSED, "Query purged", false, null, null), finished.getCtx().getStatus());
+            new QueryStatus(1f, Status.CLOSED, "Query purged", false, null, null), finished.getCtx().getStatus());
           LOG.info("Query purged: " + finished.getCtx().getQueryHandle());
         } catch (LensException e) {
           incrCounter(QUERY_PURGER_COUNTER);
@@ -848,7 +898,9 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
       throw new IllegalStateException("Could not load drivers");
     }
     maxFinishedQueries = conf.getInt(LensConfConstants.MAX_NUMBER_OF_FINISHED_QUERY,
-                                     LensConfConstants.DEFAULT_FINISHED_QUERIES);
+      LensConfConstants.DEFAULT_FINISHED_QUERIES);
+    purgeMaxTimeout = conf.getInt(LensConfConstants.PURGE_MAX_TIMEOUT,
+      LensConfConstants.DEFAULT_PURGE_MAX_TIMEOUT);
     initalizeFinishedQueryStore(conf);
     LOG.info("Query execution service initialized");
   }

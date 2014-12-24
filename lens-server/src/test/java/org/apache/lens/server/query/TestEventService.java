@@ -24,12 +24,11 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
-import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.lens.api.LensException;
-import org.apache.lens.api.query.QueryHandle;
 import org.apache.lens.api.query.QueryStatus;
 import org.apache.lens.server.EventServiceImpl;
 import org.apache.lens.server.LensServerConf;
@@ -38,12 +37,7 @@ import org.apache.lens.server.api.events.AsyncEventListener;
 import org.apache.lens.server.api.events.LensEvent;
 import org.apache.lens.server.api.events.LensEventListener;
 import org.apache.lens.server.api.events.LensEventService;
-import org.apache.lens.server.api.query.QueryAccepted;
-import org.apache.lens.server.api.query.QueryEnded;
-import org.apache.lens.server.api.query.QueryFailed;
-import org.apache.lens.server.api.query.QuerySuccess;
-import org.apache.lens.server.api.query.QueuePositionChange;
-import org.apache.lens.server.api.query.StatusChange;
+import org.apache.lens.server.api.query.*;
 import org.apache.lens.server.query.QueryExecutionServiceImpl.QueryStatusLogger;
 import org.apache.lens.server.stats.event.query.QueryExecutionStatistics;
 import org.apache.log4j.Logger;
@@ -84,7 +78,6 @@ public class TestEventService {
    * the genericEvent event occurs, that object's appropriate
    * method is invoked.
    *
-   * @see GenericEventEvent
    */
   class GenericEventListener extends AsyncEventListener<LensEvent> {
 
@@ -111,7 +104,6 @@ public class TestEventService {
    * the mockFailed event occurs, that object's appropriate
    * method is invoked.
    *
-   * @see MockFailedEvent
    */
   class MockFailedListener implements LensEventListener<QueryFailed> {
 
@@ -138,7 +130,6 @@ public class TestEventService {
    * the mockEnded event occurs, that object's appropriate
    * method is invoked.
    *
-   * @see MockEndedEvent
    */
   class MockEndedListener implements LensEventListener<QueryEnded> {
 
