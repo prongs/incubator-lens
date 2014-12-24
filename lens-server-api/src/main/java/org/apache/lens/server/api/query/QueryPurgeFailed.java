@@ -20,12 +20,6 @@ package org.apache.lens.server.api.query;
 
 import lombok.Getter;
 import org.apache.hadoop.hive.conf.HiveConf;
-import org.apache.lens.api.query.QueryHandle;
-import org.apache.lens.api.query.QueryStatus;
-import org.apache.lens.server.api.LensConfConstants;
-import org.apache.lens.server.api.alerts.Alertable;
-import org.apache.lens.server.api.alerts.Email;
-import org.apache.lens.server.api.events.LensEvent;
 
 import java.util.UUID;
 
@@ -52,7 +46,7 @@ public class QueryPurgeFailed extends QueryEvent<String> {
   private final HiveConf serverConf;
 
   public QueryPurgeFailed(QueryContext context, HiveConf serverConf, int numTries, Exception e) {
-    super(System.currentTimeMillis(), context.getUserQuery(), context.getUserQuery(), context);
+    super(System.currentTimeMillis(), context.getUserQuery(), context.getUserQuery(), context.getQueryHandle());
     this.context = context;
     this.serverConf = serverConf;
     this.cause = e;
