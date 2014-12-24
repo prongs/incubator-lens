@@ -31,6 +31,9 @@ import java.util.Map;
 
 public class DurationBasedQueryPriorityDecider implements QueryPriorityDecider {
 
+
+  CostToPriorityRangeConf costToPriorityRangeMap;
+
   /** Partition Weights for priority calculation based on selected partitions **/
 
   /** weight of monthly partition **/
@@ -42,28 +45,18 @@ public class DurationBasedQueryPriorityDecider implements QueryPriorityDecider {
 
   /**
    * Constructor. Takes three weights for partitions.
+   * @param ranges
    * @param mmonthlyPartitoinWeight
    * @param dailyPartitionWeight
    * @param hourlyPartitionWeight
    */
-  public DurationBasedQueryPriorityDecider(float mmonthlyPartitoinWeight,
+  public DurationBasedQueryPriorityDecider(String ranges, float mmonthlyPartitoinWeight,
     float dailyPartitionWeight, float hourlyPartitionWeight){
-    monthlyPartitionWeight = mmonthlyPartitoinWeight;
+    this.costToPriorityRangeMap = new CostToPriorityRangeConf(ranges);
+    this.monthlyPartitionWeight = mmonthlyPartitoinWeight;
     this.dailyPartitionWeight = dailyPartitionWeight;
     this.hourlyPartitionWeight = hourlyPartitionWeight;
   }
-
-  /**
-   * Hard Coded
-   * Arbitrary for now. Will need to tune it.
-   * Some perspective wrt default weights(1 for hourly, 0.75 for daily, 0.5 for monthly)
-   * For exclusively hourly data this translates to VERY_HIGH,7days,HIGH,30days,NORMAL,90days,LOW
-   * FOR exclusively daily data this translates to VERY_HIGH,9days,HIGH,40days,NORMAL,120days,LOW
-   * for exclusively monthly data this translates to VERY_HIGH,never,HIGH,1month,NORMAL,6months,LOW
-   */
-  static final CostToPriorityRangeConf costToPriorityRangeMap =
-
-    new CostToPriorityRangeConf("VERY_HIGH,7.0,HIGH,30.0,NORMAL,90,LOW");
 
   /**
    * The Implementation

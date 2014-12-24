@@ -81,12 +81,31 @@ public class HiveDriver implements LensDriver {
   public  static final String HS2_CONNECTION_EXPIRY_DELAY = "lens.driver.hive.hs2.connection.expiry.delay";
 
   public static final String HS2_CALCULATE_PRIORITY = "lens.driver.hive.calculate.priority";
+
+  /**
+   * Config param for defining priority ranges.
+   */
+  public static final String HS2_PRIORITY_RANGES = "lens.driver.hive.priority.ranges";
   public static final String HS2_PARTITION_WEIGHT_MONTHLY = "lens.driver.hive.priority.partition.weight.monthly";
   public static final String HS2_PARTITION_WEIGHT_DAILY = "lens.driver.hive.priority.partition.weight.daily";
   public static final String HS2_PARTITION_WEIGHT_HOURLY = "lens.driver.hive.priority.partition.weight.hourly";
+
   // Default expiry is 10 minutes
-  /** The Constant DEFAULT_EXPIRY_DELAY. */
   public static final long DEFAULT_EXPIRY_DELAY = 600 * 1000;
+  /**
+   * Some perspective wrt default weights and default ranges(1 for hourly, 0.75 for daily, 0.5 for monthly):
+   * For exclusively hourly data this translates to VERY_HIGH,7days,HIGH,30days,NORMAL,90days,LOW
+   * FOR exclusively daily data this translates to VERY_HIGH,9days,HIGH,40days,NORMAL,120days,LOW
+   * for exclusively monthly data this translates to VERY_HIGH,never,HIGH,1month,NORMAL,6months,LOW
+   * <p/>
+   * One use case in range tuning can be that you never want queries to run with VERY_HIGH,
+   * assuming no other changes, you'll modify the value of this param in hivedriver-site.xml to be
+   * HIGH,30.0,NORMAL,90,LOW
+   * <p/>
+   * via the configs, you can tune both the ranges and partition weights. this would give the end
+   * user more control.
+   */
+  public static final String HS2_PRIORITY_DEFAULT_RANGES = "VERY_HIGH,7.0,HIGH,30.0,NORMAL,90,LOW";
   public static final float MONTHLY_PARTITION_WEIGHT_DEFAULT = 0.5f;
   public static final float DAILY_PARTITION_WEIGHT_DEFAULT = 0.75f;
   public static final float HOURLY_PARTITION_WEIGHT_DEFAULT = 1.0f;
@@ -298,6 +317,7 @@ public class HiveDriver implements LensDriver {
     connectionExpiryTimeout = this.driverConf.getLong(HS2_CONNECTION_EXPIRY_DELAY, DEFAULT_EXPIRY_DELAY);
     whetherCalculatePriority = this.driverConf.getBoolean(HS2_CALCULATE_PRIORITY, true);
     queryPriorityDecider = new DurationBasedQueryPriorityDecider(
+      this.driverConf.get(HS2_PRIORITY_RANGES, HS2_PRIORITY_DEFAULT_RANGES),
       this.driverConf.getFloat(HS2_PARTITION_WEIGHT_MONTHLY, MONTHLY_PARTITION_WEIGHT_DEFAULT),
       this.driverConf.getFloat(HS2_PARTITION_WEIGHT_DAILY, DAILY_PARTITION_WEIGHT_DEFAULT),
       this.driverConf.getFloat(HS2_PARTITION_WEIGHT_HOURLY, HOURLY_PARTITION_WEIGHT_DEFAULT)
