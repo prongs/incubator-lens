@@ -261,7 +261,7 @@ public class TestEventService {
       latch = new CountDownLatch(3);
       LOG.info("Sending event: " + failed);
       service.notifyEvent(failed);
-      latch.await(5, TimeUnit.SECONDS);
+      latch.await(15, TimeUnit.SECONDS);
       assertTrue(genericEventListener.processed);
       assertTrue(endedListener.processed);
       assertTrue(failedListener.processed);
@@ -271,7 +271,7 @@ public class TestEventService {
       latch = new CountDownLatch(2);
       LOG.info("Sending event : " + success);
       service.notifyEvent(success);
-      latch.await(5, TimeUnit.SECONDS);
+      latch.await(15, TimeUnit.SECONDS);
       assertTrue(genericEventListener.processed);
       assertTrue(endedListener.processed);
       assertFalse(failedListener.processed);
@@ -281,7 +281,7 @@ public class TestEventService {
       latch = new CountDownLatch(2);
       LOG.info("Sending event: " + positionChange);
       service.notifyEvent(positionChange);
-      latch.await(5, TimeUnit.SECONDS);
+      latch.await(15, TimeUnit.SECONDS);
       assertTrue(genericEventListener.processed);
       assertFalse(endedListener.processed);
       assertFalse(failedListener.processed);
@@ -298,7 +298,7 @@ public class TestEventService {
       latch = new CountDownLatch(1);
       LOG.info("Sending generic event " + genEvent.getEventId());
       service.notifyEvent(genEvent);
-      latch.await(5, TimeUnit.SECONDS);
+      latch.await(15, TimeUnit.SECONDS);
       assertTrue(genericEventListener.processed);
       assertFalse(endedListener.processed);
       assertFalse(failedListener.processed);
