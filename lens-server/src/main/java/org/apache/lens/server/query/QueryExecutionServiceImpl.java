@@ -793,7 +793,7 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
             LOG.warn("Exception while purging query ", e);
             if (finished.exponentialBackoffForPurgeDelay()) {
               //Re-insert with increased delay.
-              finishedQueries.offer(finished, finished.getCurrentPurgeDelay(), TimeUnit.SECONDS);
+              finishedQueries.offer(finished);
             } else {
               LOG.error("Query purge failed.  Lens Session id = " + finished.getCtx().getLensSessionIdentifier()
                 + ". User query = " + finished.getCtx().getUserQuery());
