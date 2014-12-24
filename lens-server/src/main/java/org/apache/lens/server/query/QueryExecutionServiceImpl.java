@@ -400,23 +400,26 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
     /*
      * (non-Javadoc)
      *
+     * @see java.util.concurrent.Delayed#getDelay(java.util.concurrent.TimeUnit)
+     */
+    @Override
+    public long getDelay(TimeUnit unit) {
+      if (finishedQueries.size() > maxFinishedQueries) {
+        return unit.convert(currentPurgeDelay * 1000 - (System.currentTimeMillis() - startTime), TimeUnit.MILLISECONDS);
+      } else {
+        return Integer.MAX_VALUE;
+      }
+    }
+
+    /*
+     * (non-Javadoc)
+     *
      * @see java.lang.Comparable#compareTo(java.lang.Object)
      */
     @Override
     public int compareTo(Delayed o) {
       return (int) (this.finishTime.getTime() - ((FinishedQuery) o).finishTime.getTime());
     }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.util.concurrent.Delayed#getDelay(java.util.concurrent.TimeUnit)
-     */
-    @Override
-    public long getDelay(TimeUnit unit) {
-      return unit.convert(currentPurgeDelay * 1000 - (System.currentTimeMillis() - startTime), TimeUnit.MILLISECONDS);
-    }
-
     /**
      * @return the finishTime
      */
