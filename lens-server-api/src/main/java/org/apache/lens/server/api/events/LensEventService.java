@@ -39,7 +39,7 @@ public interface LensEventService {
    * @param listener  the listener
    * @param eventType the event type
    */
-  <T extends LensEvent> void addListenerForType(LensEventListener<? super T> listener, Class<T> eventType);
+  void addListenerForType(LensEventListener listener, Class<? extends LensEvent> eventType);
 
   /**
    * Remove listener for a given event type.
@@ -47,14 +47,14 @@ public interface LensEventService {
    * @param listener  the listener
    * @param eventType the event type
    */
-  <T extends LensEvent> void removeListenerForType(LensEventListener<? super T> listener, Class<T> eventType);
+  void removeListenerForType(LensEventListener listener, Class<? extends LensEvent> eventType);
 
   /**
    * Remove this listener instance from all subscribed event types.
    *
    * @param listener the listener
    */
-  <T extends LensEvent> void removeListener(LensEventListener<? super T> listener);
+  void removeListener(LensEventListener listener);
 
   /**
    * Process an event, and notify all listeners interested in this event.
@@ -70,5 +70,5 @@ public interface LensEventService {
    * @param changeType the change type
    * @return all the listeners
    */
-  <T extends LensEvent> Collection<LensEventListener> getListeners(Class<T> changeType);
+  Collection<LensEventListener> getListeners(Class<? extends LensEvent> changeType);
 }
