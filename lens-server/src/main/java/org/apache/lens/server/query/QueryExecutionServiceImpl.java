@@ -439,7 +439,7 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
      * <p>
      * If purge failed, increase the delay before retrying.
      * A backoff is successful if already maximum number of
-     * backoffs are not completed for this query. Maximun number
+     * backoffs are not completed for this query. Maximum number
      * of backoffs is bound by totalDelayIncurred <= PURGE_MAX_TIMEOUT.
      * We keep increasing currentPurgeDelay in each backoff.
      * And totalDelayIncurred is increased by in each backoff by currentPurgeDelay
