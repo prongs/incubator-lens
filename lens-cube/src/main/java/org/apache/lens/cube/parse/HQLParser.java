@@ -82,6 +82,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import com.google.common.base.Optional;
 import org.antlr.runtime.tree.Tree;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.Context;
@@ -673,5 +674,74 @@ public class HQLParser {
     }
 
     return false;
+  }
+
+  /**
+   *
+   * @param node an ASTNode
+   * @return true when input node is a SELECT AST Node. Otherwise, false.
+   *
+   */
+  public static boolean isSelectASTNode(final ASTNode node) {
+
+    Optional<Integer> astNodeType = getASTNodeType(node);
+    if (astNodeType.isPresent()) {
+      return astNodeType.get() == HiveParser.TOK_SELECT;
+    }
+
+    return false;
+  }
+
+  /**
+   *
+   * @param node an ASTNode
+   * @return When node is null or token inside node is null, then Optional.absent is returned.
+   *         Otherwise, an integer representing ASTNodeType is returned.
+   */
+  private static Optional<Integer> getASTNodeType(final ASTNode node) {
+
+    Optional<Integer> astNodeType = Optional.absent();
+    if (node != null && node.getToken() != null) {
+      astNodeType = Optional.of(node.getToken().getType());
+    }
+
+    return astNodeType;
+  }
+
+  public static boolean equalsAST(ASTNode n1, ASTNode n2) {
+    if (n1 == null && n2 != null) {
+      return false;
+    }
+
+    if (n1 != null && n2 == null) {
+      return false;
+    }
+
+    if (n1 == null) {
+      return true;
+    }
+
+    if (n1.getToken().getType() != n2.getToken().getType()) {
+      return false;
+    }
+
+    // Compare text. For literals, comparison is case sensitive
+    if ((n1.getToken().getType() == StringLiteral && !n1.getText().equals(n2.getText()))
+      || !n1.getText().equalsIgnoreCase(n2.getText())) {
+      return false;
+    }
+
+    // Compare children
+    if (n1.getChildCount() != n2.getChildCount()) {
+      return false;
+    }
+
+    for (int i = 0; i < n1.getChildCount(); i++) {
+      if (!equalsAST((ASTNode) n1.getChild(i), (ASTNode)n2.getChild(i))) {
+        return false;
+      }
+    }
+
+    return true;
   }
 }
