@@ -236,8 +236,8 @@ public class QueryServiceResource {
    * @param state
    *          If any state is passed, all the queries in that state will be cancelled, otherwise all queries will be
    *          cancelled. Possible states are {@value QueryStatus.Status#values()} The queries in
-   *          {@value QueryStatus.Status#FAILED},{@value QueryStatus.Status#FAILED}, {@value QueryStatus.Status#CLOSED},
-   *          {@value QueryStatus.Status#UNKNOWN},{@value QueryStatus.Status#SUCCESSFUL}  cannot be cancelled
+   *          {@value QueryStatus.Status#FAILED}, {@value QueryStatus.Status#CLOSED},
+   *          {@value QueryStatus.Status#SUCCESSFUL} cannot be cancelled
    * @param user
    *          If any user is passed, all the queries submitted by the user will be cancelled, otherwise all the queries
    *          will be cancelled
