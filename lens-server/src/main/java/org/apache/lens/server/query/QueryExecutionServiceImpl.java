@@ -92,7 +92,8 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
   /**
    * The Constant QUERY_PURGER_COUNTER.
    */
-  public static final String QUERY_PURGER_COUNTER = "query-purger-errors";
+  public static final String QUERY_PURGER_DROPPED_QUERIES = "query-purger-dropped-queries";
+  public static final String QUERY_PURGER_FAILED_TRIES = "query-purger-failed-tries";
 
   /**
    * The Constant PREPARED_QUERY_PURGER_COUNTER.
@@ -365,6 +366,8 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
    * The Class FinishedQuery.
    */
   private class FinishedQuery implements Delayed {
+    final int x = conf.getInt(LensConfConstants.PURGE_MAX_TIMEOUT,
+    LensConfConstants.DEFAULT_PURGE_MAX_TIMEOUT);
     /**
      * currentPurgeDelay in seconds.
      */
@@ -379,13 +382,15 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
     /**
      * The ctx.
      */
+    @Getter
     private final QueryContext ctx;
 
     /**
      * The finish time.
      */
+    @Getter
     private final Date finishTime;
-    private long startTime;
+    private long timerStartTime = System.currentTimeMillis();
 
     /**
      * Instantiates a new finished query.
@@ -416,23 +421,10 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
     @Override
     public long getDelay(TimeUnit unit) {
       if (finishedQueries.size() > maxFinishedQueries) {
-        return unit.convert(currentPurgeDelay * 1000 - (System.currentTimeMillis() - startTime), TimeUnit.MILLISECONDS);
+        return unit.convert(currentPurgeDelay * 1000 - (System.currentTimeMillis() - timerStartTime), TimeUnit.MILLISECONDS);
       } else {
         return Integer.MAX_VALUE;
       }
-    }
-    /**
-     * @return the finishTime
-     */
-    public Date getFinishTime() {
-      return finishTime;
-    }
-
-    /**
-     * @return the ctx
-     */
-    public QueryContext getCtx() {
-      return ctx;
     }
 
     /**
@@ -455,7 +447,7 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
       currentPurgeDelay *= 2;
       totalDelayIncurred += currentPurgeDelay;
       numTries++;
-      startTime = System.currentTimeMillis();
+      timerStartTime = System.currentTimeMillis();
       return whetherBackoffSuccessful();
     }
 
@@ -791,6 +783,7 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
             lensServerDao.insertFinishedQuery(finishedQuery);
             LOG.info("Saved query " + finishedQuery.getHandle() + " to DB");
           } catch (Exception e) {
+            incrCounter(QUERY_PURGER_FAILED_TRIES);
             LOG.warn("Exception while purging query ", e);
             if (finished.exponentialBackoffForPurgeDelay()) {
               //Re-insert with increased delay.
@@ -798,8 +791,9 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
             } else {
               LOG.error("Query purge failed.  Lens Session id = " + finished.getCtx().getLensSessionIdentifier()
                 + ". User query = " + finished.getCtx().getUserQuery());
+              incrCounter(QUERY_PURGER_DROPPED_QUERIES);
             }
-            getEventService().notifyEvent(new QueryPurgeFailed(finished.getCtx(), getCliService().getHiveConf(), finished.getNumTries(), e));
+            getEventService().notifyEvent(new QueryPurgeFailed(finished.getCtx(), e));
             continue;
           }
 
@@ -819,10 +813,10 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
             new QueryStatus(1f, Status.CLOSED, "Query purged", false, null, null), finished.getCtx().getStatus());
           LOG.info("Query purged: " + finished.getCtx().getQueryHandle());
         } catch (LensException e) {
-          incrCounter(QUERY_PURGER_COUNTER);
+          incrCounter(QUERY_PURGER_DROPPED_QUERIES);
           LOG.error("Error closing  query ", e);
         } catch (Exception e) {
-          incrCounter(QUERY_PURGER_COUNTER);
+          incrCounter(QUERY_PURGER_DROPPED_QUERIES);
           LOG.error("Error in query purger", e);
         }
       }

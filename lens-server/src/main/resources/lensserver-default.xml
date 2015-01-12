@@ -567,17 +567,26 @@
     <description>Service provider factory implementation class. This parameter is used
     to lookup the factory implementation class name that would provide an
     instance of ServiceProvider. Users should instantiate the class to obtain its instance.
-    
+
     Example
     --
-    Class spfClass 
+    Class spfClass
 				= conf.getClass("lens.server.service.provider.factory",
       	null, ServiceProviderFactory.class);
 
     ServiceProviderFactory spf = spfClass.newInstance();
 		ServiceProvider serviceProvider = spf.getServiceProvider();
-		--   
+		--
     This is not supposed to be overridden by users.</description>
+</property>
+<property>
+    <name>lens.server.purge.max.timeout</name>
+    <value>18000</value> <!-- 5 hours by default -->
+    <description>
+    purge max timeout when purge is failing for some reason.
+    Try for total this number of seconds before giving up.
+    In between the timeout between consecutive retries keeps on increasing according to exponential backoff.
+    </description>
 </property>
 
 </configuration>

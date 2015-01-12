@@ -41,15 +41,10 @@ public class QueryPurgeFailed extends QueryEvent<String> {
   /**
    * Number of failed tries.
    */
-  @Getter
-  private final int numTries;
-  private final HiveConf serverConf;
 
-  public QueryPurgeFailed(QueryContext context, HiveConf serverConf, int numTries, Exception e) {
+  public QueryPurgeFailed(QueryContext context, Exception e) {
     super(System.currentTimeMillis(), context.getUserQuery(), context.getUserQuery(), context.getQueryHandle());
     this.context = context;
-    this.serverConf = serverConf;
     this.cause = e;
-    this.numTries = numTries;
   }
 }
