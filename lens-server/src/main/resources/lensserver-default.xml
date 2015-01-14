@@ -566,17 +566,14 @@
     <final>true</final>
     <description>Service provider factory implementation class. This parameter is used
     to lookup the factory implementation class name that would provide an
-    instance of ServiceProvider. Users should instantiate the class to obtain its instance.
+    instance of ServiceProvider. Users should instantiate the class to obtain its instance.\
 
-    Example
-    --
-    Class spfClass
-				= conf.getClass("lens.server.service.provider.factory",
-      	null, ServiceProviderFactory.class);
-
-    ServiceProviderFactory spf = spfClass.newInstance();
-		ServiceProvider serviceProvider = spf.getServiceProvider();
-		--
+    Example\
+    --\
+    Class spfClass = conf.getClass("lens.server.service.provider.factory", null, ServiceProviderFactory.class);\
+    ServiceProviderFactory spf = spfClass.newInstance();\
+    ServiceProvider serviceProvider = spf.getServiceProvider();\
+    --\
     This is not supposed to be overridden by users.</description>
 </property>
 <property>
