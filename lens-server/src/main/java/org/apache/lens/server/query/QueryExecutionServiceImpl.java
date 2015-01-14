@@ -21,6 +21,7 @@ package org.apache.lens.server.query;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -214,6 +215,10 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
    * The max finished queries.
    */
   private int maxFinishedQueries;
+  /**
+   *
+   */
+  private int purgeMaxTimeout;
 
   /**
    * The lens server dao.
@@ -233,7 +238,7 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
       }
     }
   };
-  private int purgeMaxTimeout;
+
 
   /**
    * Instantiates a new query execution service impl.
@@ -782,7 +787,7 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
           try {
             lensServerDao.insertFinishedQuery(finishedQuery);
             LOG.info("Saved query " + finishedQuery.getHandle() + " to DB");
-          } catch (Exception e) {
+          } catch (SQLException e) {
             incrCounter(QUERY_PURGER_FAILED_TRIES);
             LOG.warn("Exception while purging query ", e);
             if (finished.exponentialBackoffForPurgeDelay()) {
@@ -790,10 +795,10 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
               finishedQueries.offer(finished);
             } else {
               LOG.error("Query purge failed.  Lens Session id = " + finished.getCtx().getLensSessionIdentifier()
-                + ". User query = " + finished.getCtx().getUserQuery());
+                + ". User query = " + finished.getCtx().getUserQuery(), e);
               incrCounter(QUERY_PURGER_DROPPED_QUERIES);
             }
-            getEventService().notifyEvent(new QueryPurgeFailed(finished.getCtx(), e));
+            getEventService().notifyEvent(new QueryDroppedInPurge(finished.getCtx(), e));
             continue;
           }
 
@@ -815,9 +820,9 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
         } catch (LensException e) {
           incrCounter(QUERY_PURGER_DROPPED_QUERIES);
           LOG.error("Error closing  query ", e);
-        } catch (Exception e) {
+        } catch (IOException e) {
           incrCounter(QUERY_PURGER_DROPPED_QUERIES);
-          LOG.error("Error in query purger", e);
+          LOG.error("Error closing  query ", e);
         }
       }
       LOG.info("QueryPurger exited");

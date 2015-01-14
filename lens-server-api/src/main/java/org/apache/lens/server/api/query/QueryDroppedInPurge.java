@@ -24,9 +24,9 @@ import org.apache.hadoop.hive.conf.HiveConf;
 import java.util.UUID;
 
 /**
- * Event fired when a query fails to purge. Use getCause() to get the reason for failure.
+ * Event fired when a query fails to purge after all retries. Use getCause() to get the reason for failure.
  */
-public class QueryPurgeFailed extends QueryEvent<String> {
+public class QueryDroppedInPurge extends QueryEvent<String> {
   protected final UUID id = UUID.randomUUID();
   /**
    * query context of the failed query
@@ -42,7 +42,7 @@ public class QueryPurgeFailed extends QueryEvent<String> {
    * Number of failed tries.
    */
 
-  public QueryPurgeFailed(QueryContext context, Exception e) {
+  public QueryDroppedInPurge(QueryContext context, Exception e) {
     super(System.currentTimeMillis(), context.getUserQuery(), context.getUserQuery(), context.getQueryHandle());
     this.context = context;
     this.cause = e;
