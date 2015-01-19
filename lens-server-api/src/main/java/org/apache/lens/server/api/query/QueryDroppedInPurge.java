@@ -25,6 +25,7 @@ import java.util.UUID;
 
 /**
  * Event fired when a query fails to purge after all retries. Use getCause() to get the reason for failure.
+ * This event means all the retries are exhausted and the query is not available in db or memory.
  */
 public class QueryDroppedInPurge extends QueryEvent<String> {
   protected final UUID id = UUID.randomUUID();
@@ -38,9 +39,6 @@ public class QueryDroppedInPurge extends QueryEvent<String> {
    */
   @Getter
   private final Exception cause;
-  /**
-   * Number of failed tries.
-   */
 
   public QueryDroppedInPurge(QueryContext context, Exception e) {
     super(System.currentTimeMillis(), context.getUserQuery(), context.getUserQuery(), context.getQueryHandle());
