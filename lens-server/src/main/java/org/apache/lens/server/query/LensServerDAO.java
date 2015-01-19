@@ -131,6 +131,7 @@ public class LensServerDAO {
         query.getErrorMessage(), query.getDriverStartTime(), query.getDriverEndTime(), query.getMetadataClass(),
         query.getQueryName(), query.getSubmissionTime());
     } else {
+      LOG.warn("Re insert happening in purge: " + Thread.currentThread().getStackTrace());
       if(alreadyExisting.equals(query)) {
         // This is also okay
         LOG.warn("Skipping Re-insert. Finished Query found in DB while trying to insert, handle=" + query.getHandle());
