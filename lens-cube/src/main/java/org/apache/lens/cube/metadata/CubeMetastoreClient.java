@@ -1530,10 +1530,23 @@ public class CubeMetastoreClient {
     }
   }
 
+  private void clearFactCache() {
+    allFactTables.clear();
+  }
+
   private void updateDimCache(String dimTblName) throws HiveException {
     if (enableCaching) {
       allDimTables.put(dimTblName, getDimensionTable(refreshTable(dimTblName)));
     }
+  }
+
+  private void clearDimCache() {
+    allDimTables.clear();
+  }
+
+  public void clearFactAndDimCache() {
+    clearFactCache();
+    clearDimCache();
   }
 
   /**
