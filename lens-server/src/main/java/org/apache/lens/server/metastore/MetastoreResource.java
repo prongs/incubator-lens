@@ -1482,6 +1482,7 @@ public class MetastoreResource {
    * Lens caches the hive metastore. This method provides an interface
    * to clear that cache. So when facts/dimensions are updated, this method
    * should be called.
+   *
    * This method is not supposed to be called by regular users as it will
    * degrade the performance of lens server. For this reason, this method will
    * be removed in a later iteration.
