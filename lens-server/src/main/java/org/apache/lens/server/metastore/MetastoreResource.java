@@ -1487,8 +1487,11 @@ public class MetastoreResource {
    * degrade the performance of lens server. For this reason, this method will
    * be removed in a later iteration.
    *
+   * This is deprecated and will be removed soon
+   *
    * @param sessionid  The sessionid in which user is working
    */
+  @Deprecated
   @GET
   @Path("/cache/clear")
   public void clearCache(@QueryParam("sessionid") LensSessionHandle sessionid) throws LensException {
