@@ -706,7 +706,7 @@ public class CubeMetastoreClient {
       throws HiveException {
     String storageTableName = MetastoreUtil.getDimStorageTableName(dimTblName, storageName);
     return partitionExists(storageTableName, getDimensionTable(dimTblName).getSnapshotDumpPeriods().get(storageName),
-        partitionTimestamps);
+      partitionTimestamps);
   }
 
   boolean latestPartitionExists(String factName, String storageName, String latestPartCol) throws HiveException {
@@ -1530,23 +1530,19 @@ public class CubeMetastoreClient {
     }
   }
 
-  private void clearFactCache() {
-    allFactTables.clear();
-  }
-
   private void updateDimCache(String dimTblName) throws HiveException {
     if (enableCaching) {
       allDimTables.put(dimTblName, getDimensionTable(refreshTable(dimTblName)));
     }
   }
 
-  private void clearDimCache() {
+  public void clearCache() {
+    allHiveTables.clear();
+    allDims.clear();
+    allCubes.clear();
     allDimTables.clear();
-  }
-
-  public void clearFactAndDimCache() {
-    clearFactCache();
-    clearDimCache();
+    allFactTables.clear();
+    allStorages.clear();
   }
 
   /**

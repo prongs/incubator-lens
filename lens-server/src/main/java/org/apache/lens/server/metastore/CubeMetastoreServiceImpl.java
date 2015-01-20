@@ -1358,6 +1358,6 @@ public class CubeMetastoreServiceImpl extends LensService implements CubeMetasto
   }
   public void clearCache(LensSessionHandle sessionid) {
     CubeMetastoreClient client = getClient(sessionid);
-    client.clearFactAndDimCache();
+    client.clearCache();
   }
 }
