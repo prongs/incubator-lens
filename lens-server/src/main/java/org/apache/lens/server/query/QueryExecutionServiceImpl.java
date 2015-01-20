@@ -823,6 +823,9 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
         } catch (IOException e) {
           incrCounter(QUERY_PURGER_DROPPED_QUERIES);
           LOG.error("Error closing  query ", e);
+        } catch (Exception e) {
+          incrCounter(QUERY_PURGER_DROPPED_QUERIES);
+          LOG.error("Error closing  query ", e);
         }
       }
       LOG.info("QueryPurger exited");

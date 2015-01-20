@@ -578,11 +578,30 @@
 </property>
 <property>
     <name>lens.server.purge.max.timeout</name>
-    <value>18000</value> <!-- 5 hours by default -->
+    <value>21600</value> <!-- 6 hours by default -->
     <description>
     purge max timeout when purge is failing for some reason.
     Try for total this number of seconds before giving up.
-    In between the timeout between consecutive retries keeps on increasing according to exponential backoff.
+    In between the timeout between consecutive retries keeps on increasing according to exponential backoff.\
+    6 hours by default. The mechanism is this:\
+    \
+    each retry is attempted after a delay. On each failure the delay is increased:\
+    new delay = 2 * (old delay + 5)\
+    \
+    So each retry happens after waiting for current delay amount. Relating this to total 6 hr value, we see:\
+    retry 00: 00:00:00 seconds, total delay: 00:00:00 seconds\
+    retry 01: 00:00:10 seconds, total delay: 00:00:10 seconds\
+    retry 02: 00:00:30 seconds, total delay: 00:00:40 seconds\
+    retry 03: 00:01:10 seconds, total delay: 00:01:50 seconds\
+    retry 04: 00:02:30 seconds, total delay: 00:04:20 seconds\
+    retry 05: 00:05:10 seconds, total delay: 00:09:30 seconds\
+    retry 06: 00:10:30 seconds, total delay: 00:20:00 seconds\
+    retry 07: 00:21:10 seconds, total delay: 00:41:10 seconds\
+    retry 08: 00:42:30 seconds, total delay: 01:23:40 seconds\
+    retry 09: 01:25:10 seconds, total delay: 02:48:50 seconds\
+    retry 10: 02:50:30 seconds, total delay: 05:39:20 seconds\
+    \
+    a total of 10 retries will take place, effective total purge timeout is 05:39:20.
     </description>
 </property>
 
