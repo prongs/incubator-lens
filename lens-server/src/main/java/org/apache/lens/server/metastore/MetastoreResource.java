@@ -1482,11 +1482,15 @@ public class MetastoreResource {
    * Lens caches the hive metastore. This method provides an interface
    * to clear that cache. So when facts/dimensions are updated, this method
    * should be called.
+   * This method is not supposed to be called by regular users as it will
+   * degrade the performance of lens server. For this reason, this method will
+   * be removed in a later iteration.
+   *
    * @param sessionid  The sessionid in which user is working
    */
   @GET
   @Path("/cache/clear")
-  public void clearCache(@QueryParam("sessionid") LensSessionHandle sessionid) {
+  public void clearCache(@QueryParam("sessionid") LensSessionHandle sessionid) throws LensException {
     checkSessionId(sessionid);
     getSvc().clearCache(sessionid);
   }

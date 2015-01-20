@@ -333,5 +333,11 @@ public interface CubeMetastoreService {
   Date getLatestDateOfCube(LensSessionHandle sessionid, String cubeName, String timeDimension)
     throws LensException, HiveException;
 
+  /**
+   * This service keeps a CubeMetastoreClient instance, which caches hive metastore results internally
+   * This method provides a method to clear that cache.
+   * @param sessionid     The session id
+   * @throws LensException
+   */
   void clearCache(LensSessionHandle sessionid) throws LensException;
 }

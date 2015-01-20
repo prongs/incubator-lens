@@ -316,9 +316,7 @@ public class CubeMetastoreClient {
    *          Columns of the dimension table
    * @param weight
    *          Weight of the dimension table
-   * @param dimensionReferences
-   *          References to other dimensions
-   * @param storages
+   * @param storageNames
    *          Storages on which dimension is available without any dumps
    * @param properties
    *          Properties of dimension table
@@ -346,8 +344,6 @@ public class CubeMetastoreClient {
    *          Columns of the dimension table
    * @param weight
    *          Weight of the dimension table
-   * @param dimensionReferences
-   *          References to other dimensions
    * @param dumpPeriods
    *          Storage names and their dump periods on which dimension is
    *          available
@@ -436,7 +432,7 @@ public class CubeMetastoreClient {
    * 
    * @param partSpec
    *          The storage partition description
-   * @param storage
+   * @param storageName
    *          The storage object
    * 
    * @throws HiveException
@@ -561,14 +557,13 @@ public class CubeMetastoreClient {
   }
 
   /**
-   * Add a partition specified by the storage partition desc on the storage
-   * passed.
-   * 
-   * @param partSpec
-   *          The storage partition description
-   * @param storage
-   *          The storage object
-   * 
+   *
+   * @param cubeTableName        the cube table name, dimtable/fact
+   * @param storageName          storage name
+   * @param timePartSpec
+   * @param nonTimePartSpec
+   * @param updatePeriod         update periods to drop
+   *
    * @throws HiveException
    */
   public void dropPartition(String cubeTableName, String storageName, Map<String, Date> timePartSpec,
@@ -1335,8 +1330,8 @@ public class CubeMetastoreClient {
    * Alter dimension specified by the dimension name to new definition
    * 
    * @param dimName
-   *          The cube name to be altered
-   * @param cube
+   *          dimension name to be altered
+   * @param newDim
    *          The new dimension definition
    * 
    * @throws HiveException
@@ -1409,7 +1404,7 @@ public class CubeMetastoreClient {
   /**
    * Drop a dimension
    * 
-   * @param cubeName
+   * @param dimName         dimension to be dropped.
    * @throws HiveException
    */
   public void dropDimension(String dimName) throws HiveException {
