@@ -333,5 +333,5 @@ public interface CubeMetastoreService {
   Date getLatestDateOfCube(LensSessionHandle sessionid, String cubeName, String timeDimension)
     throws LensException, HiveException;
 
-  void clearCache(LensSessionHandle sessionid);
+  void clearCache(LensSessionHandle sessionid) throws LensException;
 }
