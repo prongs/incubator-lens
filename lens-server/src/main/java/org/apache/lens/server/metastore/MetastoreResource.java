@@ -1490,12 +1490,13 @@ public class MetastoreResource {
    * This is deprecated and will be removed soon
    *
    * @param sessionid  The sessionid in which user is working
+   * @deprecated Not supposed to be used and will be removed soon
    */
   @Deprecated
   @GET
   @Path("/cache/clear")
   public void clearCache(@QueryParam("sessionid") LensSessionHandle sessionid) throws LensException {
     checkSessionId(sessionid);
-    getSvc().clearCache(sessionid);
+    ((CubeMetastoreServiceImpl)getSvc()).clearCache(sessionid);
   }
 }

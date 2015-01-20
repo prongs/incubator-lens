@@ -1357,6 +1357,18 @@ public class CubeMetastoreServiceImpl extends LensService implements CubeMetasto
     return latestDate;
   }
 
+  /**
+   * This service keeps a CubeMetastoreClient instance, which caches hive metastore results internally
+   * This method provides a method to clear that cache.
+   *
+   * Deprecated and will be removed soon.
+   *
+   * @param sessionid     The session id
+   * @throws LensException
+   * @deprecated It's not supposed to be used and will be removed soon. The Interface doesn't have this method,
+   *                      it's directly added in Impl class.
+   */
+  @Deprecated
   public void clearCache(LensSessionHandle sessionid) throws LensException {
     getClient(sessionid).clearCache();
   }
