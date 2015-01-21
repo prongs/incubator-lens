@@ -56,7 +56,7 @@ public class CubeMetastoreClient {
   private final HiveConf config;
   private final boolean enableCaching;
 
-  private CubeMetastoreClient(HiveConf conf) {
+  CubeMetastoreClient(HiveConf conf) {
     this.config = conf;
     this.enableCaching = conf.getBoolean(MetastoreConstants.METASTORE_ENABLE_CACHING, true);
   }
@@ -442,7 +442,7 @@ public class CubeMetastoreClient {
         MetastoreUtil.getStorageTableName(partSpec.getCubeTableName(), Storage.getPrefix(storageName));
 
     getStorage(storageName).addPartition(getClient(), partSpec,
-        getLatestInfo(storageTableName, partSpec.getTimePartSpec(), partSpec.getUpdatePeriod()));
+      getLatestInfo(storageTableName, partSpec.getTimePartSpec(), partSpec.getUpdatePeriod()));
   }
 
   private LatestInfo getLatestInfo(String storageTableName, Map<String, Date> partitionTimestamps,

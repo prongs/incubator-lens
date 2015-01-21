@@ -2029,22 +2029,39 @@ public class TestCubeMetastoreClient {
   public void testCaching() throws HiveException, ParseException {
     client = CubeMetastoreClient.getInstance(conf);
     CubeMetastoreClient client2 = CubeMetastoreClient.getInstance(new HiveConf(TestCubeMetastoreClient.class));
+    Assert.assertEquals(client, client2);
+    client2 = new CubeMetastoreClient(conf);
+    Assert.assertNotEquals(client, client2);
     Assert.assertEquals(5, client.getAllCubes().size());
     Assert.assertEquals(5, client2.getAllCubes().size());
 
     defineCube("testcache1", "testcache2", "derived1", "derived2");
-    client.createCube("testcache1", cubeMeasures, cubeDimensions);
-    client.createCube("testcache2", cubeMeasures, cubeDimensions, cubeProperties);
+    Cube cube1 = new Cube("testcache1", cubeMeasures, cubeDimensions);
+    Cube cube2 = new Cube("testcache2", cubeMeasures, cubeDimensions, cubeProperties);
+    client.createCube(cube1);
+    client.createCube(cube2);
     client.createDerivedCube("testcache1", "derived1", measures, dimensions, new HashMap<String, String>(), 0L);
+    DerivedCube derived2 = new DerivedCube("derived2", measures, dimensions, cubeProperties, 0L, (Cube)client.getCube("testcache1"));
     client.createDerivedCube("testcache2", "derived2", measures, dimensions, cubeProperties, 0L);
     Assert.assertNotNull(client.getCube("testcache1"));
     Assert.assertNotNull(client2.getCube("testcache1"));
     Assert.assertEquals(9, client.getAllCubes().size());
     Assert.assertEquals(9, client2.getAllCubes().size());
 
-    client2 = CubeMetastoreClient.getInstance(conf);
-    Assert.assertEquals(9, client.getAllCubes().size());
-    Assert.assertEquals(9, client2.getAllCubes().size());
+    DerivedCube derived2_temp = new DerivedCube("derived2", new HashSet<String>(), new HashSet<String>(), new HashMap<String, String>(), 0L, (Cube) client.getCube("testcache1"));
+    // Cache derived2 in client2
+    client2.getCube("derived2");
+    // alter by client2
+    client.alterCube("derived2", derived2_temp);
+    // alter successful
+    Assert.assertTrue(client.getCube("derived2").getMeasures().isEmpty());
+    // client2 returns from cache
+    Assert.assertFalse(client2.getCube("derived2").getMeasures().isEmpty());
+    // clear cache in client2
+    client2.clearCache();
+    // not returns correct result.
+    Assert.assertTrue(client2.getCube("derived2").getMeasures().isEmpty());
+    client.alterCube("derived2", derived2);
 
     conf.setBoolean(MetastoreConstants.METASTORE_ENABLE_CACHING, false);
     client = CubeMetastoreClient.getInstance(conf);
