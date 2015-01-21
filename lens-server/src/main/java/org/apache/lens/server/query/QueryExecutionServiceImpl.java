@@ -90,11 +90,14 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
    */
   public static final String STATUS_UPDATE_COUNTER = "status-update-errors";
 
-  /**
-   * The Constant QUERY_PURGER_COUNTER.
-   */
+  // query dropped from purging
   public static final String QUERY_PURGER_DROPPED_QUERIES = "query-purger-dropped-queries";
+  // A single try of purge failed, will be retried if all retries not exhausted.
   public static final String QUERY_PURGER_FAILED_TRIES = "query-purger-failed-tries";
+  // Errors occuring before trying insertion.
+  public static final String QUERY_PURGER_PRE_INSERT_UNEXPECTED_ERRORS = "query-purger-pre-insert-unexpected-errors";
+  // Errors occuring after insertion succeeded.
+  public static final String QUERY_PURGER_POST_INSERT_UNEXPECTED_ERRORS = "query-purger-post-insert-unexpected-errors";
 
   /**
    * The Constant PREPARED_QUERY_PURGER_COUNTER.
@@ -761,47 +764,64 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
     public void run() {
       LOG.info("Starting Query purger thread");
       while (!stopped && !queryPurger.isInterrupted()) {
-        FinishedQuery finished = null;
+        /**
+         * The code here is divided in three blocks. Since we don't want this thread exiting in
+         * any situation, in each block we are catching exception and handling it accordingly
+         */
+
+
+        /**
+         * Block1: before taking from list; Errors not expected.
+         */
+        FinishedQuery finished;
         try {
           finished = finishedQueries.take();
         } catch (InterruptedException e) {
           LOG.info("QueryPurger has been interrupted, exiting");
           return;
+        } catch (Exception e) {
+          handleUnexpectedException(e, true);
+          continue;
         }
+
+        /**
+         * Block 2: Populate data and try insertion. Handle all intermediate errors before actually
+         * making insert call. So the errors in the final catch(Exception) blocks will (generally) not be
+         * unexpected. We're doing an exponential backoff retry in this block.
+         */
         try {
           FinishedLensQuery finishedQuery = new FinishedLensQuery(finished.getCtx());
-          if (finished.ctx.getStatus().getStatus() == Status.SUCCESSFUL) {
-            if (finished.ctx.getStatus().isResultSetAvailable()) {
-              LensResultSet set = getResultset(finished.getCtx().getQueryHandle());
-              if (set != null && PersistentResultSet.class.isAssignableFrom(set.getClass())) {
-                LensResultSetMetadata metadata = set.getMetadata();
-                String outputPath = ((PersistentResultSet) set).getOutputPath();
-                int rows = set.size();
-                finishedQuery.setMetadataClass(metadata.getClass().getName());
-                finishedQuery.setResult(outputPath);
-                finishedQuery.setMetadata(mapper.writeValueAsString(metadata));
-                finishedQuery.setRows(rows);
+          try {
+            if (finished.ctx.getStatus().getStatus() == Status.SUCCESSFUL) {
+              if (finished.ctx.getStatus().isResultSetAvailable()) {
+                LensResultSet set = getResultset(finished.getCtx().getQueryHandle());
+                if (set != null && PersistentResultSet.class.isAssignableFrom(set.getClass())) {
+                  LensResultSetMetadata metadata = set.getMetadata();
+                  String outputPath = ((PersistentResultSet) set).getOutputPath();
+                  int rows = set.size();
+                  finishedQuery.setMetadataClass(metadata.getClass().getName());
+                  finishedQuery.setResult(outputPath);
+                  finishedQuery.setMetadata(mapper.writeValueAsString(metadata));
+                  finishedQuery.setRows(rows);
+                }
               }
             }
+          } catch (LensException e) {
+            LOG.warn("Result set data for finished query didn't succeed. The data might be incomplete", e);
+          } catch (IOException e) {
+            LOG.warn("converting finished query metadata to string failed. The data might be incomplete", e);
           }
-          try {
-            lensServerDao.insertFinishedQuery(finishedQuery);
-            LOG.info("Saved query " + finishedQuery.getHandle() + " to DB");
-          } catch (SQLException e) {
-            incrCounter(QUERY_PURGER_FAILED_TRIES);
-            LOG.warn("Exception while purging query ", e);
-            if (finished.exponentialBackoffForPurgeDelay()) {
-              //Re-insert with increased delay.
-              finishedQueries.offer(finished);
-            } else {
-              LOG.error("Query purge failed.  Lens Session id = " + finished.getCtx().getLensSessionIdentifier()
-                + ". User query = " + finished.getCtx().getUserQuery(), e);
-              incrCounter(QUERY_PURGER_DROPPED_QUERIES);
-            }
-            getEventService().notifyEvent(new QueryDroppedInPurge(finished.getCtx(), e));
-            continue;
-          }
+          lensServerDao.insertFinishedQuery(finishedQuery);
+          LOG.info("Saved query " + finishedQuery.getHandle() + " to DB");
+        } catch (Exception e) {
+          handleFailedTry(finished, e);
+          continue;
+        }
 
+        /**
+         * Block 3: Insertion succeeded. This block is mere book keeping. No errors expected.
+         */
+        try{
           synchronized (finished.ctx) {
             finished.ctx.setFinishedQueryPersisted(true);
             try {
@@ -817,18 +837,37 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
           fireStatusChangeEvent(finished.getCtx(),
             new QueryStatus(1f, Status.CLOSED, "Query purged", false, null, null), finished.getCtx().getStatus());
           LOG.info("Query purged: " + finished.getCtx().getQueryHandle());
-        } catch (LensException e) {
-          incrCounter(QUERY_PURGER_DROPPED_QUERIES);
-          LOG.error("Error closing  query ", e);
-        } catch (IOException e) {
-          incrCounter(QUERY_PURGER_DROPPED_QUERIES);
-          LOG.error("Error closing  query ", e);
-        } catch (Exception e) {
-          incrCounter(QUERY_PURGER_DROPPED_QUERIES);
-          LOG.error("Error closing  query ", e);
+        } catch(Exception e) {
+          handleUnexpectedException(e, false);
         }
       }
       LOG.info("QueryPurger exited");
+    }
+
+    private void handleFailedTry(FinishedQuery finished, Exception e) {
+      incrCounter(QUERY_PURGER_FAILED_TRIES);
+      LOG.warn("Exception while purging query ", e);
+      if (finished.exponentialBackoffForPurgeDelay()) {
+        //Re-insert with increased delay.
+        finishedQueries.offer(finished);
+      } else {
+        LOG.error("Query purge failed.  Lens Session id = " + finished.getCtx().getLensSessionIdentifier()
+          + ". User query = " + finished.getCtx().getUserQuery(), e);
+        incrCounter(QUERY_PURGER_DROPPED_QUERIES);
+      }
+      try {
+        getEventService().notifyEvent(new QueryDroppedInPurge(finished.getCtx(), e));
+      } catch (LensException e1) {
+        LOG.error("Purge drop event firing failed.", e);
+      }
+    }
+
+    private void handleUnexpectedException(Exception e, boolean beforeInsertion) {
+      incrCounter(
+        beforeInsertion ? QUERY_PURGER_PRE_INSERT_UNEXPECTED_ERRORS : QUERY_PURGER_POST_INSERT_UNEXPECTED_ERRORS
+      );
+      LOG.error("Unexpected Error in query purger " + (beforeInsertion ? "before" : "after") + " insertion. " +
+        "Continuing on normal path", e);
     }
   }
 
