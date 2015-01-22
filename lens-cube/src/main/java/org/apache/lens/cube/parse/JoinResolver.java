@@ -171,19 +171,21 @@ class JoinResolver implements ContextRewriter {
       return root;
     }
   }
-
+  @Data
+  @ToString(exclude = "parent")
+  @EqualsAndHashCode(exclude = "parent")
   public static class JoinTree {
     //parent of the node
     JoinTree parent;
     // current table is parentRelationship.destTable;
     TableRelationship parentRelationship;
     // Alias for the join clause
-    @Getter @Setter String alias;
+    String alias;
     public Map<TableRelationship, JoinTree> subtrees = new LinkedHashMap<TableRelationship, JoinTree>();
     // Number of nodes from root to this node. depth of root is 0. Unused for now.
-    @Getter private int depthFromRoot;
+    private int depthFromRoot;
     // join type of the current table.
-    @Getter @Setter JoinType joinType;
+    JoinType joinType;
 
     public static JoinTree createRoot() {
       return new JoinTree(null, null, 0);
@@ -227,7 +229,9 @@ class JoinResolver implements ContextRewriter {
       }
       return ret;
     }
-
+    public boolean isLeaf() {
+      return this.subtrees.isEmpty();
+    }
     // Breadth First Traversal. Unused currently.
     public Iterator<JoinTree> bft() {
       return new Iterator<JoinTree>() {
@@ -280,6 +284,18 @@ class JoinResolver implements ContextRewriter {
           throw new RuntimeException("Not implemented");
         }
       };
+    }
+
+    public Set<JoinTree> leaves() {
+      Set<JoinTree> leaves = new HashSet<JoinTree>();
+      Iterator<JoinTree> dft = dft();
+      while(dft.hasNext()) {
+        JoinTree cur = dft.next();
+        if(cur.isLeaf()) {
+          leaves.add(cur);
+        }
+      }
+      return leaves;
     }
   }
 
@@ -444,7 +460,7 @@ class JoinResolver implements ContextRewriter {
         }
       }
 
-      //TODO: prune from tails according to qdims.contains(dimensionAliased.getObject())) {
+      pruneJoinTree(joinClause.joinTree, qdims);
 
       Iterator<JoinTree> iter = joinClause.joinTree.dft();
       while (iter.hasNext()) {
@@ -541,6 +557,30 @@ class JoinResolver implements ContextRewriter {
         clauses.add(clause.toString());
       }
       return StringUtils.join(clauses, "");
+    }
+
+    /**
+     * Prune the tree so that only leaf edges are qdims.
+     *
+     * @param joinTree
+     * @param qdims
+     */
+    private void pruneJoinTree(JoinTree joinTree, Set<Dimension> qdims) {
+      Set<JoinTree> leaves = joinTree.leaves();
+      Queue<JoinTree> removeQueue = new LinkedList<JoinTree>();
+      for(JoinTree leaf: leaves) {
+        if(!qdims.contains(leaf.parentRelationship.getToTable())) {
+          removeQueue.add(leaf);
+        }
+      }
+      while(!removeQueue.isEmpty()) {
+        JoinTree cur = removeQueue.remove();
+        LOG.info("pruning from jointree: " + cur);
+        cur.parent.subtrees.remove(cur.parentRelationship);
+        if(cur.parent.subtrees.size() == 0) {
+          removeQueue.add(cur.parent);
+        }
+      }
     }
 
     public Set<Dimension> getDimsOnPath
