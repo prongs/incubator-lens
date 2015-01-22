@@ -460,7 +460,7 @@ class JoinResolver implements ContextRewriter {
         }
       }
 
-      pruneJoinTree(joinClause.joinTree, qdims);
+//      pruneJoinTree(joinClause.joinTree, qdims);
 
       Iterator<JoinTree> iter = joinClause.joinTree.dft();
       while (iter.hasNext()) {
@@ -585,6 +585,9 @@ class JoinResolver implements ContextRewriter {
 
     public Set<Dimension> getDimsOnPath
       (Map<Aliased<Dimension>, List<TableRelationship>> joinChain, Set<Dimension> qdims) {
+      LOG.info("getdimsonpath");
+      LOG.info("joinChain: " + joinChain);
+      LOG.info("qdims: " + qdims);
       Set<Dimension> dimsOnPath = new HashSet<Dimension>();
       for (Map.Entry<Aliased<Dimension>, List<TableRelationship>> entry : joinChain.entrySet()) {
         List<TableRelationship> chain = entry.getValue();
@@ -779,6 +782,9 @@ class JoinResolver implements ContextRewriter {
       if (fact != null) {
         allPaths = pruneFactPaths(cubeql.getCube(), fact);
       }
+      // prune allPaths with qdims
+      pruneAllPathsWithQueriedDims(allPaths, qdims);
+
       // Number of paths in each path set
       final int groupSizes[] = new int[allPaths.values().size()];
       // Total number of elements in the cartesian product
@@ -835,6 +841,25 @@ class JoinResolver implements ContextRewriter {
           throw new UnsupportedOperationException("Cannot remove elements!");
         }
       };
+    }
+
+    /**
+     * Given allPaths, it will remove entries where key is a non-join chain dimension and not contained
+     * in qdims
+     * @param allPaths
+     * @param qdims
+     */
+    private void pruneAllPathsWithQueriedDims
+      (Map<Aliased<Dimension>, List<SchemaGraph.JoinPath>> allPaths, Set<Dimension> qdims) {
+      Iterator<Map.Entry<Aliased<Dimension>, List<SchemaGraph.JoinPath>>> iter = allPaths.entrySet().iterator();
+      while(iter.hasNext()) {
+        Map.Entry<Aliased<Dimension>, List<SchemaGraph.JoinPath>> cur = iter.next();
+        if(cur.getKey().getAlias() == null) {
+          if(!qdims.contains(cur.getKey().getObject())) {
+            iter.remove();
+          }
+        }
+      }
     }
 
     public Set<Dimension> pickOptionalTables(final CandidateFact fact,

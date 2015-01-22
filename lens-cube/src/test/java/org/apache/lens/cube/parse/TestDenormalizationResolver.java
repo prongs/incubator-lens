@@ -50,7 +50,7 @@ public class TestDenormalizationResolver extends TestQueryRewrite {
     String twoDaysITRange =
         "time_range_in(it, '" + CubeTestSetup.getDateUptoHours(twodaysBack) + "','"
             + CubeTestSetup.getDateUptoHours(now) + "')";
-    String hqlQuery = rewrite("select dim2big1, max(msr3)," + " msr2 from testCube" + " where " + twoDaysITRange, conf);
+    String hqlQuery = rewrite("select dim2big1, citydim.name, max(msr3)," + " msr2 from testCube" + " where " + twoDaysITRange, conf);
     String expecteddim2big1 =
         getExpectedQuery(cubeName, "select testcube.dim2big1," + " max(testcube.msr3), sum(testcube.msr2) FROM ", null,
             " group by testcube.dim2big1", getWhereForDailyAndHourly2daysWithTimeDim(cubeName, "it", "C2_summary4"),

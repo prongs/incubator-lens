@@ -1706,14 +1706,16 @@ public class CubeTestSetup {
     dimColumns.add(new FieldSchema("region", "string", "region name"));
     dimColumns.add(new FieldSchema("ambigdim2", "string", "used in" + " testColumnAmbiguity"));
 
+    Map<String, StorageTableDesc> storageTables = new HashMap<String, StorageTableDesc>();
+
     Map<String, UpdatePeriod> dumpPeriods = new HashMap<String, UpdatePeriod>();
     StorageTableDesc s1 = new StorageTableDesc();
     s1.setInputFormat(TextInputFormat.class.getCanonicalName());
     s1.setOutputFormat(HiveIgnoreKeyTextOutputFormat.class.getCanonicalName());
     dumpPeriods.put(c1, null);
-
-    Map<String, StorageTableDesc> storageTables = new HashMap<String, StorageTableDesc>();
+    dumpPeriods.put(c2, null);
     storageTables.put(c1, s1);
+    storageTables.put(c2, s1);
 
     client.createCubeDimensionTable(dimName, dimTblName, dimColumns, 0L, dumpPeriods, dimProps, storageTables);
   }
@@ -1750,9 +1752,11 @@ public class CubeTestSetup {
     s1.setPartCols(partCols);
     s1.setTimePartCols(timePartCols);
     dumpPeriods.put(c1, UpdatePeriod.HOURLY);
+    dumpPeriods.put(c2, UpdatePeriod.HOURLY);
 
     Map<String, StorageTableDesc> storageTables = new HashMap<String, StorageTableDesc>();
     storageTables.put(c1, s1);
+    storageTables.put(c2, s1);
 
     client.createCubeDimensionTable(dimName, dimTblName, dimColumns, 0L, dumpPeriods, dimProps, storageTables);
   }
@@ -1896,7 +1900,7 @@ public class CubeTestSetup {
     storageTables.put(c2, s2);
     factName = "summary4";
     properties = new HashMap<String, String>();
-    validColumns = commonCols.toString() + ",dim1,dim2big1,dim2big2";
+    validColumns = commonCols.toString() + ",dim1,dim2big1,dim2big2,cityid,test_time_dim_hour_id2";
     properties.put(MetastoreUtil.getValidColumnsKey(factName), validColumns);
     CubeFactTable fact4 =
         new CubeFactTable(TEST_CUBE_NAME, factName, factColumns, storageUpdatePeriods, 15L, properties);
