@@ -16,23 +16,43 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.lens.server.api.query;
+package org.apache.lens.server.api.util;
 
 import java.io.IOException;
 
-import org.apache.lens.api.query.ResultRow;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 /**
- * Query result formatter, if the result from driver is in in-memory.
+ * Tests for lens util
  */
-public interface InMemoryOutputFormatter extends QueryOutputFormatter {
+public class TestLensUtil {
 
-  /**
-   * Write a row of the result.
-   *
-   * @param row {@link ResultRow} object
-   * @throws IOException Signals that an I/O exception has occurred.
-   */
-  void writeRow(ResultRow row) throws IOException;
+  @Test
+  public void testExceptionCauseMessage() {
+    Throwable th = null;
 
+    try {
+      try {
+        throw new IOException("base cause");
+      } catch (IOException e) {
+        throw new RuntimeException("run time exception", e);
+      }
+    } catch (Exception e) {
+      th = e;
+    }
+    Assert.assertEquals(LensUtil.getCauseMessage(th), "base cause");
+
+    // no message in base exception
+    try {
+      try {
+        throw new IOException();
+      } catch (IOException e) {
+        throw new RuntimeException("run time exception", e);
+      }
+    } catch (Exception e) {
+      th = e;
+    }
+    Assert.assertEquals(LensUtil.getCauseMessage(th), "run time exception");
+  }
 }

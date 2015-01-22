@@ -16,29 +16,34 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.lens.server.api.query;
+package org.apache.lens.server.api.util;
 
-import java.util.Collection;
-
-import org.apache.lens.api.LensConf;
-import org.apache.lens.server.api.driver.LensDriver;
-
-import org.apache.hadoop.conf.Configuration;
+import org.apache.commons.lang3.StringUtils;
 
 /**
- * The class ExplainQueryContext
+ * Utility methods for Lens
  */
-public class ExplainQueryContext extends AbstractQueryContext {
-  private static final long serialVersionUID = 1L;
+public final class LensUtil {
+
+  private LensUtil() {
+  }
 
   /**
-   * Constructor. Only needs user query and conf.
+   * Get the message corresponding to base cause. If no cause is available or no message is available
+   *  parent's message is returned.
    *
-   * @param query
-   * @param qconf
+   * @param e
+   * @return message
    */
-  public ExplainQueryContext(String query, final String user, LensConf conf, Configuration qconf,
-      Collection<LensDriver> drivers) {
-    super(query, user, conf, qconf, drivers);
+  public static String getCauseMessage(Throwable e) {
+    String expMsg = null;
+    if (e.getCause() != null) {
+      expMsg = getCauseMessage(e.getCause());
+    }
+    if (StringUtils.isBlank(expMsg)) {
+      expMsg = e.getLocalizedMessage();
+    }
+    return expMsg;
   }
+
 }
