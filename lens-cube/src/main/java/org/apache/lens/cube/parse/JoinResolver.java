@@ -460,8 +460,6 @@ class JoinResolver implements ContextRewriter {
         }
       }
 
-//      pruneJoinTree(joinClause.joinTree, qdims);
-
       Iterator<JoinTree> iter = joinClause.joinTree.dft();
       while (iter.hasNext()) {
         JoinTree cur = iter.next();
@@ -557,30 +555,6 @@ class JoinResolver implements ContextRewriter {
         clauses.add(clause.toString());
       }
       return StringUtils.join(clauses, "");
-    }
-
-    /**
-     * Prune the tree so that only leaf edges are qdims.
-     *
-     * @param joinTree
-     * @param qdims
-     */
-    private void pruneJoinTree(JoinTree joinTree, Set<Dimension> qdims) {
-      Set<JoinTree> leaves = joinTree.leaves();
-      Queue<JoinTree> removeQueue = new LinkedList<JoinTree>();
-      for(JoinTree leaf: leaves) {
-        if(!qdims.contains(leaf.parentRelationship.getToTable())) {
-          removeQueue.add(leaf);
-        }
-      }
-      while(!removeQueue.isEmpty()) {
-        JoinTree cur = removeQueue.remove();
-        LOG.info("pruning from jointree: " + cur);
-        cur.parent.subtrees.remove(cur.parentRelationship);
-        if(cur.parent.subtrees.size() == 0) {
-          removeQueue.add(cur.parent);
-        }
-      }
     }
 
     public Set<Dimension> getDimsOnPath

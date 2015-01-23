@@ -761,7 +761,6 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
                 finishedQuery.setMetadataClass(metadata.getClass().getName());
                 finishedQuery.setResult(outputPath);
                 finishedQuery.setMetadata(mapper.writeValueAsString(metadata));
-
                 finishedQuery.setRows(rows);
               }
             }
