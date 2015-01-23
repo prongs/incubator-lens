@@ -585,9 +585,6 @@ class JoinResolver implements ContextRewriter {
 
     public Set<Dimension> getDimsOnPath
       (Map<Aliased<Dimension>, List<TableRelationship>> joinChain, Set<Dimension> qdims) {
-      LOG.info("getdimsonpath");
-      LOG.info("joinChain: " + joinChain);
-      LOG.info("qdims: " + qdims);
       Set<Dimension> dimsOnPath = new HashSet<Dimension>();
       for (Map.Entry<Aliased<Dimension>, List<TableRelationship>> entry : joinChain.entrySet()) {
         List<TableRelationship> chain = entry.getValue();

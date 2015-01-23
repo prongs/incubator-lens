@@ -57,7 +57,7 @@ public class TestDenormalizationResolver extends TestQueryRewrite {
           getNotLatestConditions(cubeName, "it", "C2_summary4"));
     TestCubeRewriter.compareQueries(expecteddim2big1, hqlQuery);
      // with another table
-    hqlQuery = rewrite("select dim2big1, max(msr3)," + " msr2 from testCube" + " where " + twoDaysITRange, conf);
+    hqlQuery = rewrite("select dim2big1, citydim.name, max(msr3)," + " msr2 from testCube" + " where " + twoDaysITRange, conf);
     String expecteddim2big1WithAnotherTable = getExpectedQuery(cubeName,
       "select testcube.dim2big1, citydim.name, max(testcube.msr3), sum(testcube.msr2) FROM ", " JOIN "
       + getDbName() + "c1_citytable citydim " + "on testcube.cityid = citydim.id and citydim.dt = 'latest' " , null,
