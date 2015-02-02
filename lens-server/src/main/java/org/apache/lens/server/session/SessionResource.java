@@ -201,8 +201,8 @@ public class SessionResource {
    *
    * @param sessionid session handle object
    * @param verbose   If true, all the parameters will be returned. If false, configuration parameters will be returned
-   * @param key       if this is empty, output will contain all parameters and their values, if it is non empty parameters will
-   *                  be filtered by key
+   * @param key       if this is empty, output will contain all parameters and their values,
+   *                  if it is non empty parameters will be filtered by key
    * @return List of Strings, one entry per key-value pair
    */
   @GET

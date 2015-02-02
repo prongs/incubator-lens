@@ -1705,8 +1705,10 @@ public class TestMetastoreService extends LensJerseyTest {
       final String timeDimensionPresentInPartitionOfAllFacts = "it";
       final String timeDimOnlyPresentInPartitionOfFact1 = "et";
       String fact1TableName = "fact1";
-      String[] fact1TimePartColNames = {timeDimensionPresentInPartitionOfAllFacts,
-        timeDimOnlyPresentInPartitionOfFact1};
+      String[] fact1TimePartColNames = {
+        timeDimensionPresentInPartitionOfAllFacts,
+        timeDimOnlyPresentInPartitionOfFact1,
+      };
 
       String fact2TableName = "fact2";
       String[] fact2TimePartColNames = {timeDimensionPresentInPartitionOfAllFacts};

@@ -87,9 +87,6 @@ public class TestQueryService extends LensJerseyTest {
   /** The lens session id. */
   LensSessionHandle lensSessionId;
 
-  /** The nrows. */
-  final int NROWS = 10000;
-
   /** The wiser. */
   private Wiser wiser;
 
@@ -170,12 +167,12 @@ public class TestQueryService extends LensJerseyTest {
   /**
    * Load data.
    *
-   * @param tblName        the tbl name
-   * @param TEST_DATA_FILE the test data file
+   * @param tblName      the tbl name
+   * @param testDataFile the test data file
    * @throws InterruptedException the interrupted exception
    */
-  private void loadData(String tblName, final String TEST_DATA_FILE) throws InterruptedException {
-    LensTestUtil.loadData(tblName, TEST_DATA_FILE, target(), lensSessionId);
+  private void loadData(String tblName, final String testDataFile) throws InterruptedException {
+    LensTestUtil.loadData(tblName, testDataFile, target(), lensSessionId);
   }
 
   /**
@@ -215,7 +212,8 @@ public class TestQueryService extends LensJerseyTest {
     final FormDataMultiPart mp = new FormDataMultiPart();
     mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("sessionid").build(), lensSessionId,
       MediaType.APPLICATION_XML_TYPE));
-    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("query").build(), "select ID from non_exist_table"));
+    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("query").build(),
+      "select ID from non_exist_table"));
     mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("operation").build(), "execute"));
     mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("conf").fileName("conf").build(), conf,
       MediaType.APPLICATION_XML_TYPE));
@@ -430,7 +428,8 @@ public class TestQueryService extends LensJerseyTest {
     final FormDataMultiPart mp = new FormDataMultiPart();
     mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("sessionid").build(), lensSessionId,
       MediaType.APPLICATION_XML_TYPE));
-    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("query").build(), "select NO_ID from " + testTable));
+    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("query").build(),
+      "select NO_ID from " + testTable));
     mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("operation").build(), "explain"));
     mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("conf").fileName("conf").build(), new LensConf(),
       MediaType.APPLICATION_XML_TYPE));
@@ -439,8 +438,8 @@ public class TestQueryService extends LensJerseyTest {
       .post(Entity.entity(mp, MediaType.MULTIPART_FORM_DATA_TYPE), QueryPlan.class);
     Assert.assertTrue(plan.isError());
     Assert.assertNotNull(plan.getErrorMsg());
-    Assert.assertTrue(plan.getErrorMsg().contains("Invalid table alias or column reference 'NO_ID': " +
-      "(possible column names are: id, idstr)"));
+    Assert.assertTrue(plan.getErrorMsg().contains("Invalid table alias or column reference 'NO_ID': "
+      + "(possible column names are: id, idstr)"));
 
     // Test explain and prepare
     final WebTarget ptarget = target().path("queryapi/preparedqueries");
@@ -459,8 +458,8 @@ public class TestQueryService extends LensJerseyTest {
     Assert.assertTrue(plan2.isError());
     Assert.assertNotNull(plan2.getErrorMsg());
     Assert.assertNull(plan2.getPrepareHandle());
-    Assert.assertTrue(plan.getErrorMsg().contains("Invalid table alias or column reference 'NO_ID': " +
-      "(possible column names are: id, idstr)"));
+    Assert.assertTrue(plan.getErrorMsg().contains("Invalid table alias or column reference 'NO_ID': "
+      + "(possible column names are: id, idstr)"));
   }
 
   // post to preparedqueries
@@ -932,14 +931,14 @@ public class TestQueryService extends LensJerseyTest {
       "\\Ntwo123item1item2",
       "3\\Nitem1item2",
       "\\N\\N",
-      "5nothing"
+      "5nothing",
     };
     String[] expected2 = new String[]{
       "1one[][]",
       "\\Ntwo[1,2,3][\"item1\",\"item2\"]",
       "3\\N[][\"item1\",\"item2\"]",
       "\\N\\N[][]",
-      "5[][\"nothing\"]"
+      "5[][\"nothing\"]",
     };
     for (int i = 0; i < actualRows.size(); i++) {
       Assert.assertEquals(
@@ -1195,9 +1194,10 @@ public class TestQueryService extends LensJerseyTest {
       .queryParam("sessionid", lensSessionId).request().get(QueryResultSetMetadata.class);
     Assert.assertEquals(metadata.getColumns().size(), columns.length);
     for (int i = 0; i < columns.length; i++) {
-      assertTrue(metadata.getColumns().get(i).getName().toLowerCase().equals
-        ((outputTablePfx + columns[i][0]).toLowerCase())
-        || metadata.getColumns().get(i).getName().toLowerCase().equals(columns[i][0].toLowerCase()));
+      assertTrue(
+        metadata.getColumns().get(i).getName().toLowerCase().equals(outputTablePfx + columns[i][0].toLowerCase())
+          || metadata.getColumns().get(i).getName().toLowerCase().equals(columns[i][0].toLowerCase())
+      );
       assertEquals(columns[i][1].toLowerCase(), metadata.getColumns().get(i).getType().name().toLowerCase());
     }
   }

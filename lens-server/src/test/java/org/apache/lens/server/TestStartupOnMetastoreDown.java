@@ -26,7 +26,7 @@ import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.testng.Assert;
 
 public class TestStartupOnMetastoreDown {
-  private static Log LOG = LogFactory.getLog(TestStartupOnMetastoreDown.class);
+  private static final Log LOG = LogFactory.getLog(TestStartupOnMetastoreDown.class);
 
   // @Test
   public void testServicesStartOnMetastoreDown() throws Exception {

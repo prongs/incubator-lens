@@ -104,10 +104,10 @@ public class QueryServiceUIResource {
    * Get all the queries in the query server; can be filtered with state and user.
    *
    * @param publicId  The public id of the session in which user is working
-   * @param state     If any state is passed, all the queries in that state will be returned, otherwise all queries will be
-   *                  returned. Possible states are {@value QueryStatus.Status#values()}
-   * @param user      return queries matching the user. If set to "all", return queries of all users. By default, returns
-   *                  queries of the current user.
+   * @param state     If any state is passed, all the queries in that state will be returned, otherwise all queries will
+   *                  be returned. Possible states are {@value QueryStatus.Status#values()}
+   * @param user      return queries matching the user. If set to "all", return queries of all users. By default,
+   *                  returns queries of the current user.
    * @param queryName human readable query name set by user (optional)
    * @param fromDate  the from date
    * @param toDate    the to date
@@ -133,8 +133,8 @@ public class QueryServiceUIResource {
   /**
    * Submit the query for explain or execute or execute with a timeout.
    *
-   * @param publicId  The public id of the session in which user is submitting the query. Any configuration set in the session
-   *                  will be picked up.
+   * @param publicId  The public id of the session in which user is submitting the query. Any configuration set in the
+   *                  session will be picked up.
    * @param query     The query to run
    * @param queryName human readable query name set by user (optional)
    * @return {@link QueryHandle}
@@ -226,8 +226,8 @@ public class QueryServiceUIResource {
    * @param publicId    The user session handle
    * @param queryHandle The query handle
    * @return APIResult with state {@value org.apache.lens.api.APIResult.Status#SUCCEEDED} in case of successful
-   * cancellation. APIResult with state {@value org.apache.lens.api.APIResult.Status#FAILED} in case of
-   * cancellation failure.
+   * cancellation. APIResult with state {@value org.apache.lens.api.APIResult.Status#FAILED} in case of cancellation
+   * failure.
    */
   @DELETE
   @Path("queries/{queryHandle}")

@@ -27,8 +27,10 @@ import org.apache.hadoop.hive.conf.HiveConf;
 /**
  * A factory for creating UserConfigLoader objects.
  */
-public class UserConfigLoaderFactory {
+public final class UserConfigLoaderFactory {
+  private UserConfigLoaderFactory() {
 
+  }
   /** The conf. */
   private static HiveConf conf;
 

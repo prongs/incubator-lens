@@ -93,7 +93,7 @@ public class LensSessionImpl extends HiveSessionImpl {
   }
 
   /** The default hive session conf. */
-  public static Map<String, String> DEFAULT_HIVE_SESSION_CONF = getHiveSessionConf();
+  public static final Map<String, String> DEFAULT_HIVE_SESSION_CONF = getHiveSessionConf();
 
   public static Map<String, String> getHiveSessionConf() {
     Configuration defaultConf = createDefaultConf();

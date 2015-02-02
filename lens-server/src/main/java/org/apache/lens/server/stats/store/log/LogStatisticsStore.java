@@ -87,7 +87,8 @@ public class LogStatisticsStore extends StatisticsStore<LoggableLensStatistics> 
       String representation = null;
       try {
         representation = mapper.writeValueAsString(event);
-      } catch (JsonProcessingException ignored) {
+      } catch (JsonProcessingException e) {
+        LOG.error("json processing exception", e);
       }
       if (representation != null) {
         rollupHandler.addToScanTask(eventClass.getName());

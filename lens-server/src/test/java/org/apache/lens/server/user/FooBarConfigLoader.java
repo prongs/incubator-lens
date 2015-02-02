@@ -29,7 +29,7 @@ import org.apache.hadoop.hive.conf.HiveConf;
 public class FooBarConfigLoader extends UserConfigLoader {
 
   /** The const hash map. */
-  public static HashMap<String, String> CONST_HASH_MAP = new HashMap<String, String>() {
+  public static final HashMap<String, String> CONST_HASH_MAP = new HashMap<String, String>() {
     {
       put("key", "value");
     }

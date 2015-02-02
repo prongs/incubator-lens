@@ -68,8 +68,8 @@ public class LDAPBackedDatabaseUserConfigLoader extends DatabaseUserConfigLoader
   /** The intermediate insert sql. */
   private final String intermediateInsertSql;
 
-  /** The Constant outputFormatter. */
-  private final static DateTimeFormatter outputFormatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:SS")
+  /** The Constant DATE_TIME_FORMATTER. */
+  private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:SS")
     .withZoneUTC();
 
   /** The expiry hours. */
@@ -171,7 +171,7 @@ public class LDAPBackedDatabaseUserConfigLoader extends DatabaseUserConfigLoader
         @Override
         public String[] call() throws Exception {
           String[] config = queryDatabase(intermediateQuerySql, true, loggedInUser,
-            Timestamp.valueOf(DateTime.now().toString(outputFormatter)));
+            Timestamp.valueOf(DateTime.now().toString(DATE_TIME_FORMATTER)));
           if (config == null) {
             config = getAttributes(loggedInUser);
             Object[] updateArray = new Object[config.length + 2];
@@ -180,7 +180,7 @@ public class LDAPBackedDatabaseUserConfigLoader extends DatabaseUserConfigLoader
             }
             updateArray[0] = loggedInUser;
             updateArray[config.length + 1] = Timestamp.valueOf(DateTime.now().plusHours(expiryHours)
-              .toString(outputFormatter));
+              .toString(DATE_TIME_FORMATTER));
             QueryRunner runner = new QueryRunner(ds);
             runner.update(intermediateDeleteSql, loggedInUser);
             runner.update(intermediateInsertSql, updateArray);

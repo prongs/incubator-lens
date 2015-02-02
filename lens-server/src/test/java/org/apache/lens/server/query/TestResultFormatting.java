@@ -77,7 +77,8 @@ public class TestResultFormatting extends LensJerseyTest {
     super.setUp();
     queryService = (QueryExecutionServiceImpl) LensServices.get().getService("query");
     lensSessionId = queryService.openSession("foo", "bar", new HashMap<String, String>());
-    LensTestUtil.createTable(testTable, target(), lensSessionId, "(ID INT, IDSTR STRING, IDARR ARRAY<INT>, IDSTRARR ARRAY<STRING>)");
+    LensTestUtil.createTable(testTable, target(), lensSessionId,
+      "(ID INT, IDSTR STRING, IDARR ARRAY<INT>, IDSTRARR ARRAY<STRING>)");
     LensTestUtil.loadData(testTable, TEST_DATA_FILE, target(), lensSessionId);
   }
 

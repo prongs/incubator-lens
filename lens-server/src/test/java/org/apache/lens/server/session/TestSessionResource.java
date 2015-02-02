@@ -163,10 +163,11 @@ public class TestSessionResource extends LensJerseyTest {
 
     // get myvar session params on handle2
     try {
-      sessionParams = paramtarget.queryParam("sessionid", handle2).queryParam("key", "hivevar:myvar").request()
+      paramtarget.queryParam("sessionid", handle2).queryParam("key", "hivevar:myvar").request()
         .get(StringList.class);
       Assert.fail("Expected 404");
-    } catch (NotFoundException ne) {
+    } catch (Exception ne) {
+      Assert.assertTrue(ne instanceof NotFoundException);
     }
     // get the my.conf session param on handle2
     try {
@@ -174,7 +175,8 @@ public class TestSessionResource extends LensJerseyTest {
         .get(StringList.class);
       System.out.println("sessionParams:" + sessionParams.getElements());
       Assert.fail("Expected 404");
-    } catch (NotFoundException ne) {
+    } catch (Exception ne) {
+      Assert.assertTrue(ne instanceof NotFoundException);
     }
 
     // close session
@@ -341,8 +343,8 @@ public class TestSessionResource extends LensJerseyTest {
 
   }
 
-  private void addResource(final LensSessionHandle lensSessionHandle, final String resourceType, final String resourcePath) {
-
+  private void addResource(final LensSessionHandle lensSessionHandle, final String resourceType,
+    final String resourcePath) {
     final WebTarget target = target().path("session/resources");
     final FormDataMultiPart mp = new FormDataMultiPart();
     mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("sessionid").build(), lensSessionHandle,

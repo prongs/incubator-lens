@@ -91,7 +91,7 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
   private boolean fileCreated;
 
   /** The nrows. */
-  final int NROWS = 10000;
+  public static final int NROWS = 10000;
 
   /**
    * Creates the restart test data file.

@@ -138,7 +138,8 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
   /**
    * The prepared queries.
    */
-  private Map<QueryPrepareHandle, PreparedQueryContext> preparedQueries = new HashMap<QueryPrepareHandle, PreparedQueryContext>();
+  private Map<QueryPrepareHandle, PreparedQueryContext> preparedQueries
+    = new HashMap<QueryPrepareHandle, PreparedQueryContext>();
 
   /**
    * The all queries.
@@ -524,12 +525,10 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
             LOG.info("Polling status for " + ctx.getQueryHandle());
             try {
               // session is not required to update status of the query
-              // acquire(ctx.getLensSessionIdentifier());
+              // don't need to wrap this with acquire/release
               updateStatus(ctx.getQueryHandle());
             } catch (LensException e) {
               LOG.error("Error updating status ", e);
-            } finally {
-              // release(ctx.getLensSessionIdentifier());
             }
           }
           Thread.sleep(pollInterval);
@@ -654,7 +653,8 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
    * @param currState the curr state
    * @return the status change
    */
-  private static StatusChange newStatusChangeEvent(QueryContext ctx, QueryStatus.Status prevState, QueryStatus.Status currState) {
+  private static StatusChange newStatusChangeEvent(QueryContext ctx,
+    QueryStatus.Status prevState, QueryStatus.Status currState) {
     QueryHandle query = ctx.getQueryHandle();
     switch (currState) {
     case CANCELED:
@@ -1028,8 +1028,7 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
                   ctx.getQueryOutputFormatter().getNumRows())
               );
           } else if (allQueries.get(queryHandle).isResultAvailableInDriver()) {
-            resultSet = allQueries.get(queryHandle).getSelectedDriver().fetchResultSet(allQueries
-              .get(queryHandle));
+            resultSet = allQueries.get(queryHandle).getSelectedDriver().fetchResultSet(allQueries.get(queryHandle));
             resultSets.put(queryHandle, resultSet);
           } else {
             throw new NotFoundException("Result set not available for query:" + queryHandle);
@@ -1358,7 +1357,8 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
    * @return the prepared query context
    * @throws LensException the lens exception
    */
-  private PreparedQueryContext getPreparedQueryContext(LensSessionHandle sessionHandle, QueryPrepareHandle prepareHandle)
+  private PreparedQueryContext getPreparedQueryContext(LensSessionHandle sessionHandle,
+    QueryPrepareHandle prepareHandle)
     throws LensException {
     try {
       acquire(sessionHandle);
@@ -1429,10 +1429,8 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
       }
     }
     QueryCompletionListener listener = new QueryCompletionListenerImpl(handle);
-    getQueryContext(sessionHandle, handle).getSelectedDriver().registerForCompletionNotification
-      (handle,
-        timeoutMillis,
-        listener);
+    getQueryContext(sessionHandle, handle).getSelectedDriver()
+      .registerForCompletionNotification(handle, timeoutMillis, listener);
     try {
       synchronized (listener) {
         listener.wait(timeoutMillis);

@@ -151,9 +151,12 @@ public class TestUserConfigLoader {
     conf.addResource(TestUserConfigLoader.class.getResourceAsStream("/user/database.xml"));
     UserConfigLoaderFactory.init(conf);
     setupHsqlDb(dbName, path, "/user/db_changelog.xml");
-    String[][] valuesToVerify = new String[][]{{"user1", "clusteruser1", "queue12"},
-      {"user2", "clusteruser2", "queue12"}, {"user3", "clusteruser3", "queue34"},
-      {"user4", "clusteruser4", "queue34"},};
+    String[][] valuesToVerify = new String[][]{
+      {"user1", "clusteruser1", "queue12"},
+      {"user2", "clusteruser2", "queue12"},
+      {"user3", "clusteruser3", "queue34"},
+      {"user4", "clusteruser4", "queue34"},
+    };
     for (final String[] sa : valuesToVerify) {
       Assert.assertEquals(UserConfigLoaderFactory.getUserConfig(sa[0]), new HashMap<String, String>() {
         {
