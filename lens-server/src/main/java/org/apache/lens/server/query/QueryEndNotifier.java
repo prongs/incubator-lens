@@ -164,11 +164,11 @@ public class QueryEndNotifier extends AsyncEventListener<QueryEnded> {
   }
   @Data
   public static class Email {
-    public final String from;
-    public final String to;
-    public final String cc;
-    public final String subject;
-    public final String message;
+    private final String from;
+    private final String to;
+    private final String cc;
+    private final String subject;
+    private final String message;
   }
   /**
    * Send mail.

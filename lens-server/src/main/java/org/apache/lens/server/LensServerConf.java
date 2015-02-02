@@ -29,10 +29,10 @@ public final class LensServerConf {
 
   }
   private static final class ConfHolder {
-    public static final HiveConf conf = new HiveConf();
+    public static final HiveConf CONF = new HiveConf();
     static {
-      conf.addResource("lensserver-default.xml");
-      conf.addResource("lens-site.xml");
+      CONF.addResource("lensserver-default.xml");
+      CONF.addResource("lens-site.xml");
     }
   }
 
@@ -41,6 +41,6 @@ public final class LensServerConf {
    * @return the hive conf
    */
   public static HiveConf get() {
-    return ConfHolder.conf;
+    return ConfHolder.CONF;
   }
 }
