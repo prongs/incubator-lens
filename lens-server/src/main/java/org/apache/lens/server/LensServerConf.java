@@ -22,9 +22,12 @@ import org.apache.hadoop.hive.conf.HiveConf;
 
 /**
  * The Class LensServerConf.
+ * SUSPEND CHECKSTYLE CHECK HideUtilityClassConstructorCheck
  */
-public class LensServerConf {
+public final class LensServerConf {
+  private LensServerConf() {
 
+  }
   /** The conf. */
   public static HiveConf conf;
 

@@ -80,7 +80,7 @@ public class MetastoreUIResource {
   @Path("tables")
   @Produces({MediaType.TEXT_HTML, MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
   public String getAllTables(@QueryParam("publicId") UUID publicId) {
-    LensSessionHandle sessionHandle = SessionUIResource.openSessions.get(publicId);
+    LensSessionHandle sessionHandle = SessionUIResource.getOpenSession(publicId);
     checkSessionHandle(sessionHandle);
     JSONArray tableList = new JSONArray();
 
@@ -144,7 +144,7 @@ public class MetastoreUIResource {
   @Produces({MediaType.TEXT_HTML, MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
   public String getDescription(@QueryParam("publicId") UUID publicId, @QueryParam("type") String type,
     @PathParam("name") String name) {
-    LensSessionHandle sessionHandle = SessionUIResource.openSessions.get(publicId);
+    LensSessionHandle sessionHandle = SessionUIResource.getOpenSession(publicId);
     checkSessionHandle(sessionHandle);
     JSONArray attribList = new JSONArray();
     if (type.equals("cube")) {
@@ -216,7 +216,7 @@ public class MetastoreUIResource {
   @Path("searchablefields")
   @Produces({MediaType.TEXT_HTML, MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
   public String getFilterResults(@QueryParam("publicId") UUID publicId, @QueryParam("keyword") String keyword) {
-    LensSessionHandle sessionHandle = SessionUIResource.openSessions.get(publicId);
+    LensSessionHandle sessionHandle = SessionUIResource.getOpenSession(publicId);
     checkSessionHandle(sessionHandle);
     JSONArray tableList = null;
     JSONArray searchResultList = new JSONArray();

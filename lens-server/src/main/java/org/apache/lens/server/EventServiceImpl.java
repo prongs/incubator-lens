@@ -42,7 +42,8 @@ public class EventServiceImpl extends AbstractService implements LensEventServic
   public static final Log LOG = LogFactory.getLog(EventServiceImpl.class);
 
   /** The event listeners. */
-  private final Map<Class<? extends LensEvent>, List<LensEventListener>> eventListeners = new HashMap<Class<? extends LensEvent>, List<LensEventListener>>();
+  private final Map<Class<? extends LensEvent>, List<LensEventListener>> eventListeners
+    = new HashMap<Class<? extends LensEvent>, List<LensEventListener>>();
 
   /** The event handler pool. */
   private ExecutorService eventHandlerPool;

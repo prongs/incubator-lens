@@ -120,7 +120,7 @@ public class QueryServiceUIResource {
     @DefaultValue("") @QueryParam("state") String state, @DefaultValue("") @QueryParam("user") String user,
     @DefaultValue("") @QueryParam("queryName") String queryName,
     @DefaultValue("-1") @QueryParam("fromDate") long fromDate, @DefaultValue("-1") @QueryParam("toDate") long toDate) {
-    LensSessionHandle sessionHandle = SessionUIResource.openSessions.get(publicId);
+    LensSessionHandle sessionHandle = SessionUIResource.getOpenSession(publicId);
     checkSessionHandle(sessionHandle);
     try {
       return queryServer.getAllQueries(sessionHandle, state, user, queryName, fromDate, toDate == -1L ? Long.MAX_VALUE
@@ -145,7 +145,7 @@ public class QueryServiceUIResource {
   @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, MediaType.TEXT_PLAIN})
   public QuerySubmitResult query(@FormDataParam("publicId") UUID publicId, @FormDataParam("query") String query,
     @DefaultValue("") @FormDataParam("queryName") String queryName) {
-    LensSessionHandle sessionHandle = SessionUIResource.openSessions.get(publicId);
+    LensSessionHandle sessionHandle = SessionUIResource.getOpenSession(publicId);
     checkSessionHandle(sessionHandle);
     LensConf conf;
     checkQuery(query);
@@ -168,7 +168,7 @@ public class QueryServiceUIResource {
   @Path("queries/{queryHandle}")
   @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, MediaType.TEXT_PLAIN})
   public LensQuery getStatus(@QueryParam("publicId") UUID publicId, @PathParam("queryHandle") String queryHandle) {
-    LensSessionHandle sessionHandle = SessionUIResource.openSessions.get(publicId);
+    LensSessionHandle sessionHandle = SessionUIResource.getOpenSession(publicId);
     checkSessionHandle(sessionHandle);
     try {
       return queryServer.getQuery(sessionHandle, getQueryHandle(queryHandle));
@@ -191,7 +191,7 @@ public class QueryServiceUIResource {
   @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, MediaType.TEXT_PLAIN})
   public ResultRow getResultSet(@QueryParam("publicId") UUID publicId, @PathParam("queryHandle") String queryHandle,
     @QueryParam("pageNumber") int pageNumber, @QueryParam("fetchsize") int fetchSize) {
-    LensSessionHandle sessionHandle = SessionUIResource.openSessions.get(publicId);
+    LensSessionHandle sessionHandle = SessionUIResource.getOpenSession(publicId);
     checkSessionHandle(sessionHandle);
     List<Object> rows = new ArrayList<Object>();
     LOG.info("FetchResultSet for queryHandle:" + queryHandle);
@@ -233,7 +233,7 @@ public class QueryServiceUIResource {
   @Path("queries/{queryHandle}")
   @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, MediaType.TEXT_PLAIN})
   public APIResult cancelQuery(@QueryParam("sessionid") UUID publicId, @PathParam("queryHandle") String queryHandle) {
-    LensSessionHandle sessionHandle = SessionUIResource.openSessions.get(publicId);
+    LensSessionHandle sessionHandle = SessionUIResource.getOpenSession(publicId);
     checkSessionHandle(sessionHandle);
     try {
       boolean ret = queryServer.cancelQuery(sessionHandle, getQueryHandle(queryHandle));
@@ -258,7 +258,7 @@ public class QueryServiceUIResource {
   @Path("queries/{queryHandle}/httpresultset")
   @Produces({MediaType.APPLICATION_OCTET_STREAM})
   public Response getHttpResultSet(@QueryParam("sessionid") UUID publicId, @PathParam("queryHandle") String queryHandle) {
-    LensSessionHandle sessionHandle = SessionUIResource.openSessions.get(publicId);
+    LensSessionHandle sessionHandle = SessionUIResource.getOpenSession(publicId);
     checkSessionHandle(sessionHandle);
     try {
       return queryServer.getHttpResultSet(sessionHandle, getQueryHandle(queryHandle));

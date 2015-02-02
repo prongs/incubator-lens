@@ -50,10 +50,20 @@ public class SessionUIResource {
   public static final Log LOG = LogFactory.getLog(SessionUIResource.class);
 
   /** The open sessions. */
-  public static HashMap<UUID, LensSessionHandle> openSessions = new HashMap<UUID, LensSessionHandle>();
+  private static HashMap<UUID, LensSessionHandle> openSessions
+    = new HashMap<UUID, LensSessionHandle>();
 
   /** The session service. */
   private SessionService sessionService;
+
+  /**
+   * get open session from uuid
+   * @param id
+   * @return
+   */
+  public static LensSessionHandle getOpenSession(UUID id) {
+    return openSessions.get(id);
+  }
 
   /**
    * API to know if session service is up and running
@@ -125,7 +135,7 @@ public class SessionUIResource {
   @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, MediaType.TEXT_PLAIN})
   public APIResult closeSession(@PathParam("publicId") UUID publicId) {
     LOG.info("Closing session with id: " + publicId);
-    LensSessionHandle sessionHandle = openSessions.get(publicId);
+    LensSessionHandle sessionHandle = getOpenSession(publicId);
     checkSessionHandle(sessionHandle);
     openSessions.remove(publicId);
     try {

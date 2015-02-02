@@ -50,8 +50,8 @@ public class StaticFileResource {
   public static final Log LOG = LogFactory.getLog(StaticFileResource.class);
 
   // Cache for file content, bound by both size and time
-  /** The Constant contentCache. */
-  private static final LoadingCache<String, String> contentCache = CacheBuilder.newBuilder().maximumSize(100)
+  /** The Constant CONTENT_CACHE. */
+  private static final LoadingCache<String, String> CONTENT_CACHE = CacheBuilder.newBuilder().maximumSize(100)
     .expireAfterAccess(10, TimeUnit.MINUTES).build(new CacheLoader<String, String>() {
       String baseDir = null;
 
@@ -90,7 +90,7 @@ public class StaticFileResource {
       HiveConf conf = LensServices.get().getHiveConf();
       if (conf.getBoolean(LensConfConstants.SERVER_UI_ENABLE_CACHING,
         LensConfConstants.DEFAULT_SERVER_UI_ENABLE_CACHING)) {
-        return Response.ok(contentCache.get(filePath), getMediaType(filePath)).build();
+        return Response.ok(CONTENT_CACHE.get(filePath), getMediaType(filePath)).build();
       } else {
         // This is for dev mode
         String baseDir = conf.get(LensConfConstants.SERVER_UI_STATIC_DIR,
