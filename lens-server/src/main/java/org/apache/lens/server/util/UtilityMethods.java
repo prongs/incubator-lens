@@ -32,7 +32,10 @@ import org.apache.hadoop.conf.Configuration;
 /**
  * The Class UtilityMethods.
  */
-public class UtilityMethods {
+public final class UtilityMethods {
+  private UtilityMethods() {
+
+  }
 
   /**
    * Merge maps.

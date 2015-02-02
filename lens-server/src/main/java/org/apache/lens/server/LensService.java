@@ -71,7 +71,8 @@ public abstract class LensService extends CompositeService implements Externaliz
   // Static session map which is used by query submission thread to get the
   // lens session before submitting a query to hive server
   /** The session map. */
-  protected static ConcurrentHashMap<String, LensSessionHandle> sessionMap = new ConcurrentHashMap<String, LensSessionHandle>();
+  protected static ConcurrentHashMap<String, LensSessionHandle> sessionMap
+    = new ConcurrentHashMap<String, LensSessionHandle>();
 
   /**
    * Instantiates a new lens service.

@@ -58,8 +58,8 @@ public class LensRequestListener implements RequestEventListener {
    * (non-Javadoc)
    *
    * @see
-   * org.glassfish.jersey.server.monitoring.RequestEventListener#onEvent(org.glassfish.jersey.server.monitoring.RequestEvent
-   * )
+   * org.glassfish.jersey.server.monitoring.RequestEventListener
+   * #onEvent(org.glassfish.jersey.server.monitoring.RequestEvent)
    */
   @Override
   public void onEvent(RequestEvent event) {

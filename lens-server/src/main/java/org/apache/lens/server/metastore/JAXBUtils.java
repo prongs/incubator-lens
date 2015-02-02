@@ -43,7 +43,11 @@ import org.apache.log4j.Logger;
 /**
  * Utilities for converting to and from JAXB types to hive.ql.metadata.cube types
  */
-public class JAXBUtils {
+public final class JAXBUtils {
+  private JAXBUtils() {
+
+  }
+
   public static final Logger LOG = LogManager.getLogger(JAXBUtils.class);
   private static final ObjectFactory XCF = new ObjectFactory();
 
@@ -132,7 +136,7 @@ public class JAXBUtils {
         xbc.getDimAttributes().getDimAttribute().add(xDimAttrFromHiveDimAttr(cd, (Cube) c));
       }
       for (JoinChain jc : c.getJoinChains()) {
-        xbc.getJoinChains().getJoinChain().add(XJoinChainFromJoinChain(jc));
+        xbc.getJoinChains().getJoinChain().add(getXJoinChainFromJoinChain(jc));
       }
     }
     xc.setName(c.getName());
@@ -153,8 +157,8 @@ public class JAXBUtils {
 
     CubeDimAttribute hiveDim;
 
-    if (xd.getRefSpec() != null && xd.getRefSpec().getTableReferences() != null &&
-      !xd.getRefSpec().getTableReferences().getTableReference().isEmpty()) {
+    if (xd.getRefSpec() != null && xd.getRefSpec().getTableReferences() != null
+      && !xd.getRefSpec().getTableReferences().getTableReference().isEmpty()) {
 
       List<TableReference> dimRefs = new ArrayList<TableReference>(
         xd.getRefSpec().getTableReferences().getTableReference().size());
@@ -290,7 +294,7 @@ public class JAXBUtils {
   /**
    * Create XJoinChain from cube join chain
    */
-  public static XJoinChain XJoinChainFromJoinChain(JoinChain jc) {
+  public static XJoinChain getXJoinChainFromJoinChain(JoinChain jc) {
     XJoinChain xjc = XCF.createXJoinChain();
     xjc.setName(jc.getName());
     xjc.setDescription(jc.getDescription());
@@ -683,8 +687,8 @@ public class JAXBUtils {
     tblDesc.setMapKeyDelimiter(tbl.getSerdeParam(serdeConstants.MAPKEY_DELIM));
     tblDesc.setEscapeChar(tbl.getSerdeParam(serdeConstants.ESCAPE_CHAR));
     tblDesc.setSerdeClassName(tbl.getSerializationLib());
-    tblDesc.setStorageHandlerName(tbl.getStorageHandler() != null ?
-      tbl.getStorageHandler().getClass().getCanonicalName() : "");
+    tblDesc.setStorageHandlerName(tbl.getStorageHandler() != null
+      ? tbl.getStorageHandler().getClass().getCanonicalName() : "");
     return tblDesc;
   }
 
@@ -802,7 +806,7 @@ public class JAXBUtils {
     }
 
     for (JoinChain jc : dimension.getJoinChains()) {
-      xd.getJoinChains().getJoinChain().add(XJoinChainFromJoinChain(jc));
+      xd.getJoinChains().getJoinChain().add(getXJoinChainFromJoinChain(jc));
     }
 
     return xd;

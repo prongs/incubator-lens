@@ -430,7 +430,8 @@ public class CubeMetastoreServiceImpl extends LensService implements CubeMetasto
   }
 
   @Override
-  public void dropStorageOfDimTable(LensSessionHandle sessionid, String dimTblName, String storage) throws LensException {
+  public void dropStorageOfDimTable(LensSessionHandle sessionid, String dimTblName, String storage)
+    throws LensException {
     try {
       acquire(sessionid);
       CubeDimensionTable tab = getClient(sessionid).getDimensionTable(dimTblName);
@@ -592,7 +593,8 @@ public class CubeMetastoreServiceImpl extends LensService implements CubeMetasto
     }
   }
 
-  public XStorageTableElement getStorageOfFact(LensSessionHandle sessionid, String fact, String storageName) throws LensException {
+  public XStorageTableElement getStorageOfFact(LensSessionHandle sessionid, String fact, String storageName)
+    throws LensException {
     try {
       CubeFactTable factTable = getClient(sessionid).getFactTable(fact);
       Set<UpdatePeriod> updatePeriods = factTable.getUpdatePeriods().get(storageName);
@@ -610,7 +612,8 @@ public class CubeMetastoreServiceImpl extends LensService implements CubeMetasto
     }
   }
 
-  public XStorageTableElement getStorageOfDim(LensSessionHandle sessionid, String dimTblName, String storageName) throws LensException {
+  public XStorageTableElement getStorageOfDim(LensSessionHandle sessionid, String dimTblName, String storageName)
+    throws LensException {
     try {
       CubeDimensionTable dimTable = getClient(sessionid).getDimensionTable(dimTblName);
       XStorageTableElement tblElement = JAXBUtils.getXStorageTableFromHiveTable(
@@ -629,7 +632,8 @@ public class CubeMetastoreServiceImpl extends LensService implements CubeMetasto
   }
 
   @Override
-  public void addStorageToFact(LensSessionHandle sessionid, String fact, XStorageTableElement storageTable) throws LensException {
+  public void addStorageToFact(LensSessionHandle sessionid, String fact, XStorageTableElement storageTable)
+    throws LensException {
     Set<UpdatePeriod> updatePeriods = new TreeSet<UpdatePeriod>();
     for (XUpdatePeriod sup : storageTable.getUpdatePeriods().getUpdatePeriod()) {
       updatePeriods.add(UpdatePeriod.valueOf(sup.name()));
@@ -661,7 +665,8 @@ public class CubeMetastoreServiceImpl extends LensService implements CubeMetasto
     }
   }
 
-  private CubeFactTable checkFactStorage(LensSessionHandle sessionid, String fact, String storage) throws HiveException, LensException {
+  private CubeFactTable checkFactStorage(LensSessionHandle sessionid, String fact, String storage)
+    throws HiveException, LensException {
     CubeMetastoreClient client = getClient(sessionid);
     if (!client.isFactTable(fact)) {
       throw new NotFoundException("Fact table not found: " + fact);
@@ -711,8 +716,8 @@ public class CubeMetastoreServiceImpl extends LensService implements CubeMetasto
         JAXBUtils.storagePartSpecFromXPartition(partition),
         storageName);
       LOG.info("Added partition for fact " + fact + " on storage:" + storageName
-        + " dates: " + partition.getTimePartitionSpec() + " spec:" +
-        partition.getNonTimePartitionSpec() + " update period: " + partition.getUpdatePeriod());
+        + " dates: " + partition.getTimePartitionSpec() + " spec:"
+        + partition.getNonTimePartitionSpec() + " update period: " + partition.getUpdatePeriod());
     } catch (HiveException exc) {
       throw new LensException(exc);
     } finally {
@@ -847,8 +852,8 @@ public class CubeMetastoreServiceImpl extends LensService implements CubeMetasto
       UpdatePeriod updatePeriod = populatePartSpec(partitions.get(0), timeSpec, nonTimeSpec);
       getClient(sessionid).dropPartition(cubeTableName,
         storageName, timeSpec, nonTimeSpec, updatePeriod);
-      LOG.info("Dropped partition  for dimension: " + cubeTableName +
-        " storage: " + storageName + " values:" + values);
+      LOG.info("Dropped partition  for dimension: " + cubeTableName
+        + " storage: " + storageName + " values:" + values);
     } catch (HiveException exc) {
       throw new LensException(exc);
     } finally {
@@ -878,8 +883,8 @@ public class CubeMetastoreServiceImpl extends LensService implements CubeMetasto
           }
         }
       }
-      LOG.info("Dropped partition  for cube table: " + cubeTableName +
-        " storage: " + storageName + " by filter:" + filter);
+      LOG.info("Dropped partition  for cube table: " + cubeTableName
+        + " storage: " + storageName + " by filter:" + filter);
     } catch (HiveException exc) {
       throw new LensException(exc);
     } finally {
@@ -1211,8 +1216,8 @@ public class CubeMetastoreServiceImpl extends LensService implements CubeMetasto
 
   private void addAllDirectAttributesToFlattenedListFromCube(ObjectFactory objectFactory, CubeInterface cube,
     List<XFlattenedColumn> columnList) {
-    AbstractBaseTable baseTbl = (AbstractBaseTable) (cube instanceof DerivedCube ?
-      ((DerivedCube) cube).getParent() : cube);
+    AbstractBaseTable baseTbl = (AbstractBaseTable) (cube instanceof DerivedCube
+      ? ((DerivedCube) cube).getParent() : cube);
     for (CubeDimAttribute dim : cube.getDimAttributes()) {
       XFlattenedColumn fcol = objectFactory.createXFlattenedColumn();
       fcol.setDimAttribute(JAXBUtils.xDimAttrFromHiveDimAttr(dim, baseTbl));
@@ -1325,7 +1330,8 @@ public class CubeMetastoreServiceImpl extends LensService implements CubeMetasto
             String storageTableName = MetastoreUtil.getFactStorageTableName(factTable.getName(), storage);
             List<Partition> parts = new LinkedList<Partition>();
             try {
-              parts = getClient(sessionid).getPartitionsByFilter(storageTableName, StorageConstants.getLatestPartFilter(partitionColumn));
+              parts = getClient(sessionid).getPartitionsByFilter(storageTableName,
+                StorageConstants.getLatestPartFilter(partitionColumn));
             } catch (HiveException e) {
               LOG.info("Storage Table " + storageTableName + " skipped while finding latestDate due to exception: ", e);
             }

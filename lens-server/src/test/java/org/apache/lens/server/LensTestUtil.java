@@ -106,19 +106,19 @@ public class LensTestUtil {
    * Load data.
    *
    * @param tblName        the tbl name
-   * @param TEST_DATA_FILE the test data file
+   * @param testDataFile the test data file
    * @param parent         the parent
    * @param lensSessionId  the lens session id
    * @throws InterruptedException the interrupted exception
    */
-  public static void loadData(String tblName, final String TEST_DATA_FILE, WebTarget parent,
+  public static void loadData(String tblName, final String testDataFile, WebTarget parent,
     LensSessionHandle lensSessionId) throws InterruptedException {
     LensConf conf = new LensConf();
     conf.addProperty(LensConfConstants.QUERY_PERSISTENT_RESULT_INDRIVER, "false");
     final WebTarget target = parent.path("queryapi/queries");
 
     final FormDataMultiPart mp = new FormDataMultiPart();
-    String dataLoad = "LOAD DATA LOCAL INPATH '" + TEST_DATA_FILE + "' OVERWRITE INTO TABLE " + tblName;
+    String dataLoad = "LOAD DATA LOCAL INPATH '" + testDataFile + "' OVERWRITE INTO TABLE " + tblName;
 
     mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("sessionid").build(), lensSessionId,
       MediaType.APPLICATION_XML_TYPE));

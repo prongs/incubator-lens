@@ -62,7 +62,7 @@ public class LensServices extends CompositeService implements ServiceProvider {
   private static final String FS_AUTOMATIC_CLOSE = "fs.automatic.close";
 
   /** The instance. */
-  private static LensServices INSTANCE = new LensServices(LENS_SERVICES_NAME);
+  private static LensServices instance = new LensServices(LENS_SERVICES_NAME);
 
   /** The conf. */
   private HiveConf conf;
@@ -112,8 +112,6 @@ public class LensServices extends CompositeService implements ServiceProvider {
     OPEN // All requests are accepted
   }
 
-  ;
-
   /**
    * Instantiates a new lens services.
    *
@@ -125,7 +123,7 @@ public class LensServices extends CompositeService implements ServiceProvider {
 
   // This is only for test, to simulate a restart of the server
   static void setInstance(LensServices newInstance) {
-    INSTANCE = newInstance;
+    instance = newInstance;
   }
 
   /*
@@ -355,7 +353,7 @@ public class LensServices extends CompositeService implements ServiceProvider {
    * @return the lens services
    */
   public static LensServices get() {
-    return INSTANCE;
+    return instance;
   }
 
   /*

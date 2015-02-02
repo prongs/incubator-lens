@@ -111,9 +111,9 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
   public static final String NAME = "query";
 
   /**
-   * The Constant mapper.
+   * The Constant MAPPER.
    */
-  private static final ObjectMapper mapper = new ObjectMapper();
+  private static final ObjectMapper MAPPER = new ObjectMapper();
 
   /**
    * The accepted queries.
@@ -742,7 +742,7 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
                 int rows = set.size();
                 finishedQuery.setMetadataClass(metadata.getClass().getName());
                 finishedQuery.setResult(outputPath);
-                finishedQuery.setMetadata(mapper.writeValueAsString(metadata));
+                finishedQuery.setMetadata(MAPPER.writeValueAsString(metadata));
                 finishedQuery.setRows(rows);
               }
             }
@@ -873,7 +873,7 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
           node.get("position").asInt());
       }
     });
-    mapper.registerModule(module);
+    MAPPER.registerModule(module);
   }
 
   /*
@@ -992,7 +992,7 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
       }
       try {
         Class<LensResultSetMetadata> mdKlass = (Class<LensResultSetMetadata>) Class.forName(query.getMetadataClass());
-        return new LensPersistentResult(mapper.readValue(query.getMetadata(), mdKlass), query.getResult(),
+        return new LensPersistentResult(MAPPER.readValue(query.getMetadata(), mdKlass), query.getResult(),
           query.getRows());
       } catch (Exception e) {
         throw new LensException(e);
@@ -1021,9 +1021,12 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
         if (resultSet == null) {
           if (ctx.isPersistent() && ctx.getQueryOutputFormatter() != null) {
             resultSets
-              .put(queryHandle, new LensPersistentResult(ctx.getQueryOutputFormatter().getMetadata(), ctx
-                .getQueryOutputFormatter().getFinalOutputPath().toString(), ctx.getQueryOutputFormatter()
-                .getNumRows()));
+              .put(queryHandle,
+                new LensPersistentResult(
+                  ctx.getQueryOutputFormatter().getMetadata(),
+                  ctx.getQueryOutputFormatter().getFinalOutputPath(),
+                  ctx.getQueryOutputFormatter().getNumRows())
+              );
           } else if (allQueries.get(queryHandle).isResultAvailableInDriver()) {
             resultSet = allQueries.get(queryHandle).getSelectedDriver().fetchResultSet(allQueries
               .get(queryHandle));
@@ -1045,8 +1048,7 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
    * @throws LensException the lens exception
    */
   LensResultSet getDriverResultset(QueryHandle queryHandle) throws LensException {
-    return allQueries.get(queryHandle).getSelectedDriver().fetchResultSet(allQueries.get
-      (queryHandle));
+    return allQueries.get(queryHandle).getSelectedDriver().fetchResultSet(allQueries.get(queryHandle));
   }
 
   /*
