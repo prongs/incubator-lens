@@ -1025,8 +1025,7 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
                 new LensPersistentResult(
                   ctx.getQueryOutputFormatter().getMetadata(),
                   ctx.getQueryOutputFormatter().getFinalOutputPath(),
-                  ctx.getQueryOutputFormatter().getNumRows())
-              );
+                  ctx.getQueryOutputFormatter().getNumRows()));
           } else if (allQueries.get(queryHandle).isResultAvailableInDriver()) {
             resultSet = allQueries.get(queryHandle).getSelectedDriver().fetchResultSet(allQueries.get(queryHandle));
             resultSets.put(queryHandle, resultSet);

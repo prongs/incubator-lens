@@ -28,24 +28,19 @@ public final class LensServerConf {
   private LensServerConf() {
 
   }
-  /** The conf. */
-  public static HiveConf conf;
+  private static final class ConfHolder {
+    public static final HiveConf conf = new HiveConf();
+    static {
+      conf.addResource("lensserver-default.xml");
+      conf.addResource("lens-site.xml");
+    }
+  }
 
   /**
-   * Gets the.
    *
    * @return the hive conf
    */
   public static HiveConf get() {
-    if (conf == null) {
-      synchronized (LensServerConf.class) {
-        if (conf == null) {
-          conf = new HiveConf();
-          conf.addResource("lensserver-default.xml");
-          conf.addResource("lens-site.xml");
-        }
-      }
-    }
-    return conf;
+    return ConfHolder.conf;
   }
 }

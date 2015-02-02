@@ -42,6 +42,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.conf.HiveConf;
 
+import lombok.Data;
+
 /**
  * The Class QueryEndNotifier.
  */
@@ -130,7 +132,7 @@ public class QueryEndNotifier extends AsyncEventListener<QueryEnded> {
       LensConfConstants.QUERY_RESULT_DEFAULT_EMAIL_CC);
 
     LOG.info("Sending completion email for query handle: " + event.getQueryHandle());
-    sendMail(host, port, from, to, cc, mailSubject, mailMessage, mailSmtpTimeout, mailSmtpConnectionTimeout);
+    sendMail(host, port, new Email(from, to, cc, mailSubject, mailMessage), mailSmtpTimeout, mailSmtpConnectionTimeout);
   }
 
   /**
@@ -160,22 +162,25 @@ public class QueryEndNotifier extends AsyncEventListener<QueryEnded> {
     }
     return msgBuilder.toString();
   }
-
+  @Data
+  public static class Email {
+    public final String from;
+    public final String to;
+    public final String cc;
+    public final String subject;
+    public final String message;
+  }
   /**
    * Send mail.
    *
    * @param host                      the host
    * @param port                      the port
-   * @param from                      the from
-   * @param to                        the to
-   * @param cc                        the cc
-   * @param subject                   the subject
-   * @param mailMessage               the mail message
+   * @param email                     the email
    * @param mailSmtpTimeout           the mail smtp timeout
    * @param mailSmtpConnectionTimeout the mail smtp connection timeout
    */
-  public static void sendMail(String host, String port, String from, String to, String cc, String subject,
-    String mailMessage, int mailSmtpTimeout, int mailSmtpConnectionTimeout) {
+  public static void sendMail(String host, String port,
+    Email email, int mailSmtpTimeout, int mailSmtpConnectionTimeout) {
     Properties props = System.getProperties();
     props.put("mail.smtp.host", host);
     props.put("mail.smtp.port", port);
@@ -184,20 +189,20 @@ public class QueryEndNotifier extends AsyncEventListener<QueryEnded> {
     Session session = Session.getDefaultInstance(props, null);
     try {
       MimeMessage message = new MimeMessage(session);
-      message.setFrom(new InternetAddress(from));
-      for (String recipient : to.trim().split("\\s*,\\s*")) {
+      message.setFrom(new InternetAddress(email.getFrom()));
+      for (String recipient : email.getTo().trim().split("\\s*,\\s*")) {
         message.addRecipients(Message.RecipientType.TO, InternetAddress.parse(recipient));
       }
-      if (cc != null && cc.length() > 0) {
-        for (String recipient : cc.trim().split("\\s*,\\s*")) {
+      if (email.getCc() != null && email.getCc().length() > 0) {
+        for (String recipient : email.getCc().trim().split("\\s*,\\s*")) {
           message.addRecipients(Message.RecipientType.CC, InternetAddress.parse(recipient));
         }
       }
-      message.setSubject(subject);
+      message.setSubject(email.getSubject());
       message.setSentDate(new Date());
 
       MimeBodyPart messagePart = new MimeBodyPart();
-      messagePart.setText(mailMessage);
+      messagePart.setText(email.getMessage());
       Multipart multipart = new MimeMultipart();
 
       multipart.addBodyPart(messagePart);

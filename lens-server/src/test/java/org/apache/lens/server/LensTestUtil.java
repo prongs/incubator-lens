@@ -50,7 +50,10 @@ import org.testng.Assert;
 /**
  * The Class LensTestUtil.
  */
-public class LensTestUtil {
+public final class LensTestUtil {
+  private LensTestUtil() {
+
+  }
 
   /**
    * Creates the table.

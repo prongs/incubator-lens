@@ -257,7 +257,8 @@ public class QueryServiceUIResource {
   @GET
   @Path("queries/{queryHandle}/httpresultset")
   @Produces({MediaType.APPLICATION_OCTET_STREAM})
-  public Response getHttpResultSet(@QueryParam("sessionid") UUID publicId, @PathParam("queryHandle") String queryHandle) {
+  public Response getHttpResultSet(@QueryParam("sessionid") UUID publicId,
+    @PathParam("queryHandle") String queryHandle) {
     LensSessionHandle sessionHandle = SessionUIResource.getOpenSession(publicId);
     checkSessionHandle(sessionHandle);
     try {
