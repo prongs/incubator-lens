@@ -58,7 +58,6 @@ public class TestUserConfigLoader {
    */
   @BeforeTest(alwaysRun = true)
   public void init() {
-    LensServerConf.conf = null;
     conf = new HiveConf(LensServerConf.get());
   }
 
