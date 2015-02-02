@@ -18,21 +18,6 @@
  */
 package org.apache.lens.server.user;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import org.apache.commons.dbutils.QueryRunner;
-import org.apache.hadoop.hive.conf.HiveConf;
-import org.apache.lens.server.api.LensConfConstants;
-import org.joda.time.DateTime;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
-
-import javax.naming.Context;
-import javax.naming.NamingEnumeration;
-import javax.naming.NamingException;
-import javax.naming.directory.SearchControls;
-import javax.naming.directory.SearchResult;
-import javax.naming.ldap.InitialLdapContext;
 import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.Hashtable;
@@ -40,6 +25,25 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+
+import javax.naming.Context;
+import javax.naming.NamingEnumeration;
+import javax.naming.NamingException;
+import javax.naming.directory.SearchControls;
+import javax.naming.directory.SearchResult;
+import javax.naming.ldap.InitialLdapContext;
+
+import org.apache.lens.server.api.LensConfConstants;
+
+import org.apache.commons.dbutils.QueryRunner;
+import org.apache.hadoop.hive.conf.HiveConf;
+
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 
 /**
  * The Class LDAPBackedDatabaseUserConfigLoader.

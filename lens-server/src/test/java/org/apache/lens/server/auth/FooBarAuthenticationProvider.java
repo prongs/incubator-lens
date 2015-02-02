@@ -18,9 +18,9 @@
  */
 package org.apache.lens.server.auth;
 
-import org.apache.hive.service.auth.PasswdAuthenticationProvider;
-
 import javax.security.sasl.AuthenticationException;
+
+import org.apache.hive.service.auth.PasswdAuthenticationProvider;
 
 /**
  * The Class FooBarAuthenticationProvider.
@@ -31,11 +31,11 @@ public class FooBarAuthenticationProvider implements PasswdAuthenticationProvide
   public static String MSG = "<username,password>!=<foo@localhost,bar>";
 
   /** The allowed combinations. */
-  private final String[][] allowedCombinations = new String[][] { { "foo", "bar" }, { "anonymous", "" }, };
+  private final String[][] allowedCombinations = new String[][]{{"foo", "bar"}, {"anonymous", ""},};
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see org.apache.hive.service.auth.PasswdAuthenticationProvider#Authenticate(java.lang.String, java.lang.String)
    */
   @Override

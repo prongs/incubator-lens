@@ -18,24 +18,20 @@
  */
 package org.apache.lens.server;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.hive.conf.HiveConf;
-import org.apache.hive.service.AbstractService;
 import org.apache.lens.api.LensException;
 import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.events.LensEvent;
 import org.apache.lens.server.api.events.LensEventListener;
 import org.apache.lens.server.api.events.LensEventService;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.hive.service.AbstractService;
 
 /**
  * Implementation of LensEventService
@@ -54,8 +50,7 @@ public class EventServiceImpl extends AbstractService implements LensEventServic
   /**
    * Instantiates a new event service impl.
    *
-   * @param name
-   *          the name
+   * @param name the name
    */
   public EventServiceImpl(String name) {
     super(name);
@@ -70,7 +65,7 @@ public class EventServiceImpl extends AbstractService implements LensEventServic
   public synchronized void init(HiveConf hiveConf) {
     int numProcs = Runtime.getRuntime().availableProcessors();
     eventHandlerPool = Executors.newFixedThreadPool(hiveConf.getInt(LensConfConstants.EVENT_SERVICE_THREAD_POOL_SIZE,
-        numProcs));
+      numProcs));
     super.init(hiveConf);
   }
 
@@ -95,10 +90,8 @@ public class EventServiceImpl extends AbstractService implements LensEventServic
   /**
    * Handle event.
    *
-   * @param listeners
-   *          the listeners
-   * @param evt
-   *          the evt
+   * @param listeners the listeners
+   * @param evt       the evt
    */
   @SuppressWarnings("unchecked")
   private void handleEvent(List<LensEventListener> listeners, LensEvent evt) {
@@ -124,8 +117,7 @@ public class EventServiceImpl extends AbstractService implements LensEventServic
     /**
      * Instantiates a new event handler.
      *
-     * @param event
-     *          the event
+     * @param event the event
      */
     EventHandler(LensEvent event) {
       this.event = event;
