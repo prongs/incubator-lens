@@ -39,6 +39,9 @@ import org.apache.lens.server.api.session.SessionService;
 import org.apache.lens.server.common.LenServerTestException;
 import org.apache.lens.server.common.LensServerTestFileUtils;
 import org.apache.lens.server.common.TestResourceFile;
+
+import org.apache.commons.io.FileUtils;
+
 import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
@@ -48,8 +51,6 @@ import org.testng.Assert;
 import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
-
-import com.google.common.io.Files;
 
 /**
  * The Class TestSessionResource.
@@ -264,12 +265,12 @@ public class TestSessionResource extends LensJerseyTest {
       mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("username").build(), "foo"));
       mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("password").build(), "bar"));
       mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("sessionconf").fileName("sessionconf").build(),
-          sessionconf, MediaType.APPLICATION_XML_TYPE));
+        sessionconf, MediaType.APPLICATION_XML_TYPE));
       mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("sessionconf").fileName("sessionconf").build(),
-          new LensConf(), MediaType.APPLICATION_XML_TYPE));
+        new LensConf(), MediaType.APPLICATION_XML_TYPE));
 
       final LensSessionHandle handle = target.request()
-          .post(Entity.entity(mp, MediaType.MULTIPART_FORM_DATA_TYPE), LensSessionHandle.class);
+        .post(Entity.entity(mp, MediaType.MULTIPART_FORM_DATA_TYPE), LensSessionHandle.class);
       Assert.assertNotNull(handle);
 
       // verify aux jars are loaded
@@ -286,7 +287,7 @@ public class TestSessionResource extends LensJerseyTest {
       final WebTarget resourcetarget = target().path("session/resources");
       // list all resources
       StringList listResources = resourcetarget.path("list").queryParam("sessionid", handle).request()
-          .get(StringList.class);
+        .get(StringList.class);
       Assert.assertEquals(listResources.getElements().size(), 1);
       Assert.assertTrue(listResources.getElements().get(0).contains(jarFileName));
 
@@ -325,8 +326,8 @@ public class TestSessionResource extends LensJerseyTest {
     FileUtils.touch(jarFile);
 
     /* Add the created resource jar to lens server */
-    LensSessionHandle sessionHandle = openSession("foo","bar", new LensConf());
-    addResource(sessionHandle,"jar",jarFile.getPath());
+    LensSessionHandle sessionHandle = openSession("foo", "bar", new LensConf());
+    addResource(sessionHandle, "jar", jarFile.getPath());
 
     /* Delete resource jar from current working directory */
     LensServerTestFileUtils.deleteFile(jarFile);
