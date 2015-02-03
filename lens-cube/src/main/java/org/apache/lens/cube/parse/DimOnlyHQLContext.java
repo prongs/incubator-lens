@@ -21,18 +21,17 @@ package org.apache.lens.cube.parse;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.lens.cube.metadata.Dimension;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
-import org.apache.lens.cube.metadata.Dimension;
 
 /**
  * HQL context class which passes all query strings from
  * {@link CubeQueryContext} and works with all dimensions to be queried.
- * 
+ * <p/>
  * Updates from string with join clause expanded
- * 
  */
 class DimOnlyHQLContext extends DimHQLContext {
 
@@ -40,7 +39,7 @@ class DimOnlyHQLContext extends DimHQLContext {
 
   DimOnlyHQLContext(Map<Dimension, CandidateDim> dimsToQuery, CubeQueryContext query) throws SemanticException {
     super(query, dimsToQuery, dimsToQuery.keySet(), query.getSelectTree(), query.getWhereTree(), query.getGroupByTree(), query
-        .getOrderByTree(), query.getHavingTree(), query.getLimitValue());
+      .getOrderByTree(), query.getHavingTree(), query.getLimitValue());
   }
 
   public String toHQL() throws SemanticException {
@@ -50,7 +49,7 @@ class DimOnlyHQLContext extends DimHQLContext {
   protected String getFromTable() throws SemanticException {
     if (query.getAutoJoinCtx() != null && query.getAutoJoinCtx().isJoinsResolved()) {
       return getDimsToQuery().get(query.getAutoJoinCtx().getAutoJoinTarget()).getStorageString(
-          query.getAliasForTabName(query.getAutoJoinCtx().getAutoJoinTarget().getName()));
+        query.getAliasForTabName(query.getAutoJoinCtx().getAutoJoinTarget().getName()));
     } else {
       return query.getQBFromString(null, getDimsToQuery());
     }

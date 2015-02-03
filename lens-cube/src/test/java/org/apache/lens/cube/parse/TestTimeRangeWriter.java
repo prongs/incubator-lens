@@ -21,16 +21,14 @@ package org.apache.lens.cube.parse;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import org.apache.lens.cube.metadata.UpdatePeriod;
+
 import org.apache.hadoop.hive.ql.ErrorMsg;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
-import org.apache.lens.cube.metadata.UpdatePeriod;
-import org.apache.lens.cube.parse.FactPartition;
-import org.apache.lens.cube.parse.TimeRangeWriter;
+
 import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
@@ -73,7 +71,7 @@ public abstract class TestTimeRangeWriter {
     if (failDisjoint()) {
       Assert.assertNotNull(th);
       Assert
-          .assertEquals(th.getCanonicalErrorMsg().getErrorCode(), ErrorMsg.CANNOT_USE_TIMERANGE_WRITER.getErrorCode());
+        .assertEquals(th.getCanonicalErrorMsg().getErrorCode(), ErrorMsg.CANNOT_USE_TIMERANGE_WRITER.getErrorCode());
     } else {
       Assert.assertNull(th);
       validateDisjoint(whereClause, null);

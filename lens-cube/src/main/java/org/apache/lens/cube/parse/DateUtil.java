@@ -25,11 +25,12 @@ import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.lens.cube.metadata.UpdatePeriod;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DateUtils;
 import org.apache.hadoop.hive.ql.ErrorMsg;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
-import org.apache.lens.cube.metadata.UpdatePeriod;
 import org.apache.log4j.Logger;
 
 public class DateUtil {
@@ -56,7 +57,7 @@ public class DateUtil {
   public static final Pattern P_UNIT = Pattern.compile(UNIT, Pattern.CASE_INSENSITIVE);
 
   public static final String RELDATE_VALIDATOR_STR = RELATIVE + "(" + WSPACE + ")?" + "((" + SIGNAGE + ")" + "("
-      + WSPACE + ")?" + "(" + QUANTITY + ")(" + UNIT + ")){0,1}" + "(s?)";
+    + WSPACE + ")?" + "(" + QUANTITY + ")(" + UNIT + ")){0,1}" + "(s?)";
 
   public static final Pattern RELDATE_VALIDATOR = Pattern.compile(RELDATE_VALIDATOR_STR, Pattern.CASE_INSENSITIVE);
 

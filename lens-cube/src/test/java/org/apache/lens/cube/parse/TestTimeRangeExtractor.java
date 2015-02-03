@@ -19,19 +19,16 @@
 
 package org.apache.lens.cube.parse;
 
-import static org.apache.lens.cube.parse.CubeTestSetup.getDateUptoHours;
-import static org.apache.lens.cube.parse.CubeTestSetup.now;
-import static org.apache.lens.cube.parse.CubeTestSetup.twodaysBack;
+import static org.apache.lens.cube.parse.CubeTestSetup.*;
 
 import java.util.List;
+
+import org.apache.lens.cube.metadata.TestCubeMetastoreClient;
 
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.parse.ParseException;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
-import org.apache.lens.cube.metadata.TestCubeMetastoreClient;
-import org.apache.lens.cube.parse.CubeQueryContext;
-import org.apache.lens.cube.parse.CubeQueryRewriter;
-import org.apache.lens.cube.parse.TimeRange;
+
 import org.testng.Assert;
 import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeTest;
@@ -65,7 +62,7 @@ public class TestTimeRangeExtractor extends TestQueryRewrite {
     try {
       // this should throw exception because from date is after to date
       CubeQueryContext rewrittenQuery =
-          driver.rewrite("SELECT cityid, testCube.msr2 from" + " testCube where " + timeRange2);
+        driver.rewrite("SELECT cityid, testCube.msr2 from" + " testCube where " + timeRange2);
       Assert.fail("Should not reach here");
     } catch (SemanticException exc) {
       exc.printStackTrace();
@@ -94,15 +91,15 @@ public class TestTimeRangeExtractor extends TestQueryRewrite {
   @Test
   public void testPartitionColNameExtract() throws Exception {
     String q2 =
-        "SELECT cityid, testCube.msr3 from testCube where cityid=1 AND " + " time_range_in(dt, '" + dateTwoDaysBack
-            + "','" + dateNow + "')";
+      "SELECT cityid, testCube.msr3 from testCube where cityid=1 AND " + " time_range_in(dt, '" + dateTwoDaysBack
+        + "','" + dateNow + "')";
     CubeQueryContext cubeql = driver.rewrite(q2);
     String hql = cubeql.toHQL();
     // Check that column name in time range is extracted properly
     TimeRange range = cubeql.getTimeRanges().get(0);
     Assert.assertNotNull(range);
     Assert.assertEquals(TestCubeMetastoreClient.getDatePartitionKey(), range.getPartitionColumn(),
-        "Time dimension should be " + TestCubeMetastoreClient.getDatePartitionKey());
+      "Time dimension should be " + TestCubeMetastoreClient.getDatePartitionKey());
   }
 
   @Test
@@ -112,10 +109,10 @@ public class TestTimeRangeExtractor extends TestQueryRewrite {
     String dateNow = getDateUptoHours(now);
     // time range within time range
     String q3 =
-        "SELECT cityid, testCube.msr3 FROM testCube where cityid=1 AND" + "  (time_range_in(dt, '" + dateTwoDaysBack
-            + "','" + dateNow + "')  "
-            // Time range as sibling of the first time range
-            + " OR " + " time_range_in(dt, '" + dateTwoDaysBack + "', '" + dateNow + "'))";
+      "SELECT cityid, testCube.msr3 FROM testCube where cityid=1 AND" + "  (time_range_in(dt, '" + dateTwoDaysBack
+        + "','" + dateNow + "')  "
+        // Time range as sibling of the first time range
+        + " OR " + " time_range_in(dt, '" + dateTwoDaysBack + "', '" + dateNow + "'))";
     CubeQueryContext cubeql = driver.rewrite(q3);
     String hql = cubeql.toHQL();
 

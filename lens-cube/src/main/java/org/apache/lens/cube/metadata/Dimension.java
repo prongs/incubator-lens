@@ -24,8 +24,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import com.google.common.base.Preconditions;
-import lombok.Getter;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.metadata.Table;
 
@@ -43,7 +41,7 @@ public class Dimension extends AbstractBaseTable {
   }
 
   public Dimension(String name, Set<CubeDimAttribute> attributes, Set<ExprColumn> expressions, Set<JoinChain> joinChains,
-      Map<String, String> properties, double weight) {
+    Map<String, String> properties, double weight) {
     super(name, expressions, joinChains, properties, weight);
     this.attributes = attributes;
 
@@ -66,7 +64,7 @@ public class Dimension extends AbstractBaseTable {
   }
 
   public Dimension(final String name, final Set<CubeDimAttribute> attributes, final Set<ExprColumn> exprs, final
-    Map<String, String> dimProps, final long weight) {
+  Map<String, String> dimProps, final long weight) {
     this(name, attributes, exprs, null, dimProps, weight);
   }
 
@@ -117,7 +115,7 @@ public class Dimension extends AbstractBaseTable {
         Class<?> clazz = Class.forName(className);
         Constructor<?> constructor;
         constructor = clazz.getConstructor(String.class, Map.class);
-        attr = (CubeDimAttribute) constructor.newInstance(new Object[] { attrName, props });
+        attr = (CubeDimAttribute) constructor.newInstance(new Object[]{attrName, props});
       } catch (Exception e) {
         throw new IllegalArgumentException("Invalid dimension", e);
       }
@@ -174,7 +172,7 @@ public class Dimension extends AbstractBaseTable {
   /**
    * Alters the attribute if already existing or just adds if it is new
    * attribute
-   * 
+   *
    * @param attribute
    * @throws HiveException
    */
@@ -197,7 +195,7 @@ public class Dimension extends AbstractBaseTable {
 
   /**
    * Remove the dimension with name specified
-   * 
+   *
    * @param attrName
    */
   public void removeAttribute(String attrName) {

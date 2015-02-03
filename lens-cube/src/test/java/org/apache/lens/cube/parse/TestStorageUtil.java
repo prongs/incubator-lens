@@ -19,18 +19,12 @@
 
 package org.apache.lens.cube.parse;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+
+import org.apache.lens.cube.metadata.UpdatePeriod;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.lens.cube.metadata.UpdatePeriod;
-import org.apache.lens.cube.parse.FactPartition;
-import org.apache.lens.cube.parse.StorageUtil;
+
 import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
@@ -102,7 +96,7 @@ public class TestStorageUtil {
     Assert.assertTrue(result.keySet().contains("S4"));
     Assert.assertTrue(result.keySet().contains("S5"));
     Assert.assertTrue(result.keySet().contains("S1") || result.keySet().contains("S2")
-        || result.keySet().contains("S3"));
+      || result.keySet().contains("S3"));
     coveredParts = result.get("S4");
     Assert.assertEquals(1, coveredParts.size());
     Assert.assertTrue(contains(coveredParts, CubeTestSetup.twodaysBack));

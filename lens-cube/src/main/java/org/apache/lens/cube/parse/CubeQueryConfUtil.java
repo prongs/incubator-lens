@@ -21,9 +21,10 @@ package org.apache.lens.cube.parse;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.lens.cube.metadata.UpdatePeriod;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.lens.cube.metadata.UpdatePeriod;
 
 /**
  * Contains all configurations of cube query rewriting.
@@ -100,6 +101,6 @@ public class CubeQueryConfUtil {
   public static final boolean DEFAULT_LIGHTEST_FACT_FIRST = false;
   public static final String TIME_RANGE_WRITER_CLASS = "lens.cube.query.time.range.writer.class";
   public static final Class<? extends TimeRangeWriter> DEFAULT_TIME_RANGE_WRITER = ORTimeRangeWriter.class
-      .asSubclass(TimeRangeWriter.class);
+    .asSubclass(TimeRangeWriter.class);
   public static final String PART_WHERE_CLAUSE_DATE_FORMAT = "lens.cube.query.partition.where.clause.format";
 }

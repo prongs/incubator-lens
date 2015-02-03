@@ -25,15 +25,10 @@ import java.util.List;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.Context;
-import org.apache.hadoop.hive.ql.parse.ASTNode;
-import org.apache.hadoop.hive.ql.parse.ParseDriver;
-import org.apache.hadoop.hive.ql.parse.ParseException;
-import org.apache.hadoop.hive.ql.parse.ParseUtils;
-import org.apache.hadoop.hive.ql.parse.SemanticException;
+import org.apache.hadoop.hive.ql.parse.*;
 
 /**
  * Rewrites given cube query into simple storage table HQL.
- * 
  */
 public class CubeQueryRewriter {
   private final Configuration conf;
@@ -51,7 +46,7 @@ public class CubeQueryRewriter {
       // IOException is ignorable
     }
     lightFactFirst =
-        conf.getBoolean(CubeQueryConfUtil.LIGHTEST_FACT_FIRST, CubeQueryConfUtil.DEFAULT_LIGHTEST_FACT_FIRST);
+      conf.getBoolean(CubeQueryConfUtil.LIGHTEST_FACT_FIRST, CubeQueryConfUtil.DEFAULT_LIGHTEST_FACT_FIRST);
     setupRewriters();
   }
 

@@ -19,13 +19,7 @@
 
 package org.apache.lens.cube.metadata;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
@@ -186,6 +180,7 @@ public class MetastoreUtil implements MetastoreConstants {
   public static String getCubeJoinChainFullChainKey(String colName, int index) {
     return getCubeJoinChainKey(colName) + FULL_CHAIN_KEY + index;
   }
+
   public static String getCubeJoinChainDescriptionKey(String colName) {
     return getCubeJoinChainKey(colName) + DESC_SFX;
   }
@@ -205,6 +200,7 @@ public class MetastoreUtil implements MetastoreConstants {
   public static String getDimensionJoinChainFullChainKey(String colName, int index) {
     return getDimensionJoinChainKey(colName) + FULL_CHAIN_KEY + index;
   }
+
   public static String getDimensionJoinChainDescriptionKey(String colName) {
     return getDimensionJoinChainKey(colName) + DESC_SFX;
   }
@@ -212,7 +208,6 @@ public class MetastoreUtil implements MetastoreConstants {
   public static String getDimensionJoinChainDisplayKey(String colName) {
     return getDimensionJoinChainKey(colName) + DISPLAY_SFX;
   }
-
 
 
   // ////////////////////////

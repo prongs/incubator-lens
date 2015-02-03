@@ -57,7 +57,7 @@ import lombok.extern.slf4j.Slf4j;
  *   C99 is not to be used as supported storage in testcases
  *
  * CityTable : C1 - SNAPSHOT and C2 - NO snapshot
- * 
+ *
  * Cube : Basecube
  * Derived cubes : der1, der2,der3
  *

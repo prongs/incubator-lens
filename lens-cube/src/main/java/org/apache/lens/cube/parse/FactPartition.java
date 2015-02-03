@@ -43,7 +43,7 @@ class FactPartition implements Comparable<FactPartition> {
   }
 
   FactPartition(String partCol, Date partSpec, UpdatePeriod period, FactPartition containingPart,
-      DateFormat partFormat, Set<String> storageTables) {
+    DateFormat partFormat, Set<String> storageTables) {
     this(partCol, partSpec, period, containingPart, partFormat);
     this.storageTables.addAll(storageTables);
   }

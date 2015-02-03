@@ -24,9 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lens.cube.metadata.UpdatePeriod;
-import org.apache.lens.cube.parse.ORTimeRangeWriter;
-import org.apache.lens.cube.parse.StorageUtil;
-import org.apache.lens.cube.parse.TimeRangeWriter;
+
 import org.testng.Assert;
 
 public class TestORTimeRangeWriter extends TestTimeRangeWriter {

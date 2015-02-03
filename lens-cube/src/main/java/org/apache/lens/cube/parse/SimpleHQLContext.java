@@ -29,7 +29,7 @@ import org.apache.hadoop.hive.ql.parse.SemanticException;
 
 /**
  * Accepts strings of all expressions and constructs HQL query.
- * 
+ * <p/>
  * Making this as an abstract class because it provides constructors without all
  * expressions being set.
  */
@@ -49,7 +49,7 @@ public abstract class SimpleHQLContext implements HQLContextInterface {
   }
 
   SimpleHQLContext(String select, String from, String where, String groupby, String orderby, String having,
-      Integer limit) {
+    Integer limit) {
     this.select = select;
     this.from = from;
     this.where = where;
@@ -69,7 +69,7 @@ public abstract class SimpleHQLContext implements HQLContextInterface {
 
   /**
    * Set all missing expressions of HQL context.
-   * 
+   * <p/>
    * Leaving this empty implementation for the case of all expressions being
    * passed in constructor. If other constructors are used the missing
    * expressions should be set here

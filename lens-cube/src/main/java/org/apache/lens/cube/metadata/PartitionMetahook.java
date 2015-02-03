@@ -26,7 +26,7 @@ public interface PartitionMetahook {
 
   /**
    * Called before calling add partition
-   * 
+   *
    * @param StoragePartitionDesc
    * @throws HiveException
    */
@@ -34,7 +34,7 @@ public interface PartitionMetahook {
 
   /**
    * Called after successfully adding the partition
-   * 
+   *
    * @param StoragePartitionDesc
    * @throws HiveException
    */
@@ -42,7 +42,7 @@ public interface PartitionMetahook {
 
   /**
    * Called if add partition fails.
-   * 
+   *
    * @param StoragePartitionDesc
    * @throws HiveException
    */
@@ -50,7 +50,7 @@ public interface PartitionMetahook {
 
   /**
    * Called before calling drop partition
-   * 
+   *
    * @param storageTableName
    * @param partVals
    * @throws HiveException
@@ -59,7 +59,7 @@ public interface PartitionMetahook {
 
   /**
    * Called after successfully droping the partition
-   * 
+   *
    * @param storageTableName
    * @param partVals
    * @throws HiveException
@@ -68,7 +68,7 @@ public interface PartitionMetahook {
 
   /**
    * Called if drop partition fails.
-   * 
+   *
    * @param storageTableName
    * @param partVals
    */

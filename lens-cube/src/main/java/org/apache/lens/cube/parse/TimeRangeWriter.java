@@ -24,5 +24,5 @@ import org.apache.hadoop.hive.ql.parse.SemanticException;
 
 interface TimeRangeWriter {
   public String getTimeRangeWhereClause(CubeQueryContext cubeQueryContext, String tableName, Set<FactPartition> parts)
-      throws SemanticException;
+    throws SemanticException;
 }

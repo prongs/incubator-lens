@@ -25,9 +25,7 @@ import java.util.Date;
 import java.util.List;
 
 import org.apache.lens.cube.metadata.UpdatePeriod;
-import org.apache.lens.cube.parse.BetweenTimeRangeWriter;
-import org.apache.lens.cube.parse.StorageUtil;
-import org.apache.lens.cube.parse.TimeRangeWriter;
+
 import org.testng.Assert;
 
 public class TestBetweenTimeRangeWriter extends TestTimeRangeWriter {
@@ -52,7 +50,7 @@ public class TestBetweenTimeRangeWriter extends TestTimeRangeWriter {
     String expected = null;
     if (format == null) {
       expected =
-          getBetweenClause("test", "dt", CubeTestSetup.twodaysBack, CubeTestSetup.now, UpdatePeriod.DAILY.format());
+        getBetweenClause("test", "dt", CubeTestSetup.twodaysBack, CubeTestSetup.now, UpdatePeriod.DAILY.format());
     } else {
       expected = getBetweenClause("test", "dt", CubeTestSetup.twodaysBack, CubeTestSetup.now, format);
     }

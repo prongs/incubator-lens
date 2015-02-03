@@ -31,10 +31,8 @@ public class StorageConstants {
 
   /**
    * Get the partition spec for latest partition
-   * 
-   * @param The
-   *          partition column for latest spec
-   * 
+   *
+   * @param The partition column for latest spec
    * @return latest partition spec as Map from String to String
    */
   public static String getLatestPartFilter(String partCol) {
@@ -43,7 +41,7 @@ public class StorageConstants {
 
   /**
    * Get the latest partition value as List
-   * 
+   *
    * @return List
    */
   public static List<String> getPartitionsForLatest() {
@@ -54,10 +52,8 @@ public class StorageConstants {
 
   /**
    * Get the partition spec for latest partition
-   * 
-   * @param The
-   *          partition column for latest spec
-   * 
+   *
+   * @param The partition column for latest spec
    * @return latest partition spec as Map from String to String
    */
   public static Map<String, String> getLatestPartSpec(Map<String, String> partSpec, String partCol) {

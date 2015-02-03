@@ -21,16 +21,15 @@ package org.apache.lens.cube.parse;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.lens.cube.metadata.Dimension;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
-import org.apache.lens.cube.metadata.Dimension;
 
 /**
  * HQL context class which passes all query strings from the fact and works with
  * required dimensions for the fact.
- *
  */
 public class FactHQLContext extends DimHQLContext {
 
@@ -40,9 +39,9 @@ public class FactHQLContext extends DimHQLContext {
   private final Set<Dimension> factDims;
 
   FactHQLContext(CandidateFact fact, Map<Dimension, CandidateDim> dimsToQuery, Set<Dimension> factDims,
-      CubeQueryContext query) throws SemanticException {
+    CubeQueryContext query) throws SemanticException {
     super(query, dimsToQuery, factDims, fact.getSelectTree(), fact.getWhereTree(), fact.getGroupByTree(), null, fact
-        .getHavingTree(), null);
+      .getHavingTree(), null);
     this.fact = fact;
     this.factDims = factDims;
     LOG.info("factDims:" + factDims + " for fact:" + fact);

@@ -18,22 +18,21 @@
  */
 package org.apache.lens.cube.parse;
 
-import java.util.HashSet;
+import static org.apache.lens.cube.parse.StorageUtil.joinWithAnd;
+
 import java.util.Map;
 import java.util.Set;
+
+import org.apache.lens.cube.metadata.Dimension;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
-import org.apache.lens.cube.metadata.Dimension;
-
-import static org.apache.lens.cube.parse.StorageUtil.joinWithAnd;
 
 /**
  * Dimension HQLContext.
- *
+ * <p/>
  * Contains all the dimensions queried and their candidate dim tables Update
  * where string with storage filters added dimensions queried.
  */
@@ -51,7 +50,7 @@ abstract class DimHQLContext extends SimpleHQLContext {
   }
 
   DimHQLContext(CubeQueryContext query, Map<Dimension, CandidateDim> dimsToQuery, Set<Dimension> queriedDims, String select, String where,
-      String groupby, String orderby, String having, Integer limit) throws SemanticException {
+    String groupby, String orderby, String having, Integer limit) throws SemanticException {
     super(select, groupby, orderby, having, limit);
     this.query = query;
     this.dimsToQuery = dimsToQuery;
@@ -64,7 +63,7 @@ abstract class DimHQLContext extends SimpleHQLContext {
     setWhere(joinWithAnd(
       getQuery().getHiveConf().getBoolean
         (CubeQueryConfUtil.REPLACE_TIMEDIM_WITH_PART_COL, CubeQueryConfUtil.DEFAULT_REPLACE_TIMEDIM_WITH_PART_COL)
-         ? getPostSelectionWhereClause() : null,
+        ? getPostSelectionWhereClause() : null,
       genWhereClauseWithDimPartitions(where)
     ));
   }

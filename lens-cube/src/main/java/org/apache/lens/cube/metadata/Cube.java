@@ -19,14 +19,7 @@
 package org.apache.lens.cube.metadata;
 
 import java.lang.reflect.Constructor;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
-
-import lombok.Getter;
+import java.util.*;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
@@ -48,12 +41,12 @@ public class Cube extends AbstractBaseTable implements CubeInterface {
   }
 
   public Cube(String name, Set<CubeMeasure> measures, Set<CubeDimAttribute> dimensions, Map<String, String> properties,
-      double weight) {
+    double weight) {
     this(name, measures, dimensions, null, null, properties, weight);
   }
 
   public Cube(String name, Set<CubeMeasure> measures, Set<CubeDimAttribute> dimensions, Set<ExprColumn> expressions,
-      Set<JoinChain> joinChains, Map<String, String> properties, double weight) {
+    Set<JoinChain> joinChains, Map<String, String> properties, double weight) {
     super(name, expressions, joinChains, properties, weight);
     this.measures = measures;
     this.dimensions = dimensions;
@@ -150,7 +143,7 @@ public class Cube extends AbstractBaseTable implements CubeInterface {
         Class<?> clazz = Class.forName(className);
         Constructor<?> constructor;
         constructor = clazz.getConstructor(String.class, Map.class);
-        measure = (CubeMeasure) constructor.newInstance(new Object[] { measureName, props });
+        measure = (CubeMeasure) constructor.newInstance(new Object[]{measureName, props});
       } catch (Exception e) {
         throw new IllegalArgumentException("Invalid measure", e);
       }
@@ -170,7 +163,7 @@ public class Cube extends AbstractBaseTable implements CubeInterface {
         Class<?> clazz = Class.forName(className);
         Constructor<?> constructor;
         constructor = clazz.getConstructor(String.class, Map.class);
-        dim = (CubeDimAttribute) constructor.newInstance(new Object[] { dimName, props });
+        dim = (CubeDimAttribute) constructor.newInstance(new Object[]{dimName, props});
       } catch (Exception e) {
         throw new IllegalArgumentException("Invalid dimension", e);
       }
@@ -223,7 +216,7 @@ public class Cube extends AbstractBaseTable implements CubeInterface {
 
   /**
    * Alters the measure if already existing or just adds if it is new measure.
-   * 
+   *
    * @param measure
    * @throws HiveException
    */
@@ -250,7 +243,7 @@ public class Cube extends AbstractBaseTable implements CubeInterface {
    * @param chainName
    */
   public boolean removeJoinChain(String chainName) {
-    if(super.removeJoinChain(chainName)) {
+    if (super.removeJoinChain(chainName)) {
       LOG.info("Removing dimension " + getDimAttributeByName(chainName));
       return true;
     }
@@ -260,7 +253,7 @@ public class Cube extends AbstractBaseTable implements CubeInterface {
   /**
    * Alters the dimension if already existing or just adds if it is new
    * dimension
-   * 
+   *
    * @param dimension
    * @throws HiveException
    */
@@ -282,10 +275,9 @@ public class Cube extends AbstractBaseTable implements CubeInterface {
   }
 
 
-
   /**
    * Remove the dimension with name specified
-   * 
+   *
    * @param dimName
    */
   public void removeDimension(String dimName) {
@@ -299,7 +291,7 @@ public class Cube extends AbstractBaseTable implements CubeInterface {
 
   /**
    * Remove the measure with name specified
-   * 
+   *
    * @param msrName
    */
   public void removeMeasure(String msrName) {
@@ -313,7 +305,7 @@ public class Cube extends AbstractBaseTable implements CubeInterface {
 
   /**
    * Adds the timed dimension
-   * 
+   *
    * @param timedDimension
    * @throws HiveException
    */
@@ -337,7 +329,7 @@ public class Cube extends AbstractBaseTable implements CubeInterface {
 
   /**
    * Removes the timed dimension
-   * 
+   *
    * @param timedDimension
    * @throws HiveException
    */
@@ -411,7 +403,7 @@ public class Cube extends AbstractBaseTable implements CubeInterface {
     Map<String, String> properties = getProperties();
     for (Map.Entry<String, String> entry : properties.entrySet()) {
       if (entry.getKey().startsWith(MetastoreConstants.TIMEDIM_TO_PART_MAPPING_PFX)
-          && entry.getValue().equalsIgnoreCase(partCol)) {
+        && entry.getValue().equalsIgnoreCase(partCol)) {
         String timeDim = entry.getKey().replace(MetastoreConstants.TIMEDIM_TO_PART_MAPPING_PFX, "");
         return timeDim;
       }
