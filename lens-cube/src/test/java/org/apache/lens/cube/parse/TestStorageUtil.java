@@ -31,11 +31,6 @@ import org.testng.annotations.Test;
 
 public class TestStorageUtil {
 
-  @BeforeTest
-  public void setup() {
-    CubeTestSetup.init();
-  }
-
   @Test
   public void testMinimalAnsweringTables() {
     Set<String> s1 = new HashSet<String>();

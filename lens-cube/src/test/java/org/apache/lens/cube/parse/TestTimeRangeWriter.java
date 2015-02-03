@@ -47,11 +47,6 @@ public abstract class TestTimeRangeWriter {
 
   public static DateFormat dbFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
-  @BeforeTest
-  public void setup() {
-    CubeTestSetup.init();
-  }
-
   @Test
   public void testDisjointParts() {
     Set<FactPartition> answeringParts = new LinkedHashSet<FactPartition>();

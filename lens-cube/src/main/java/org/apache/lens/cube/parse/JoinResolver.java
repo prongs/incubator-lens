@@ -868,7 +868,7 @@ class JoinResolver implements ContextRewriter {
       minCostClause.initChainColumns();
       // prune candidate dims of joiningOptionalTables wrt joinging columns
       for (Dimension dim : joiningOptionalTables) {
-        for (Iterator<CandidateDim> i = cubeql.getCandidateDimTables().get(dim).iterator(); i.hasNext(); ) {
+        for (Iterator<CandidateDim> i = cubeql.getCandidateDimTables().get(dim).iterator(); i.hasNext();) {
           CandidateDim cdim = i.next();
           CubeDimensionTable dimtable = cdim.dimtable;
           if (!cdim.getColumns().containsAll(minCostClause.chainColumns.get(dim))) {

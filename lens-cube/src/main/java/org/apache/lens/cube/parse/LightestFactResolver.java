@@ -48,7 +48,7 @@ public class LightestFactResolver implements ContextRewriter {
 
       double minWeight = Collections.min(factWeightMap.values());
 
-      for (Iterator<Set<CandidateFact>> i = cubeql.getCandidateFactSets().iterator(); i.hasNext(); ) {
+      for (Iterator<Set<CandidateFact>> i = cubeql.getCandidateFactSets().iterator(); i.hasNext();) {
         Set<CandidateFact> facts = i.next();
         if (factWeightMap.get(facts) > minWeight) {
           LOG.info("Not considering facts:" + facts + " from candidate fact tables as it has more fact weight:"
