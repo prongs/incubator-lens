@@ -51,10 +51,8 @@ import lombok.NoArgsConstructor;
 
 @JsonWriteNullProperties(false)
 @Data
+@NoArgsConstructor
 public class CandidateTablePruneCause {
-  private CandidateTablePruneCause() {
-
-  }
 
   public enum CandidateTablePruneCode {
     // invalid cube table
@@ -123,7 +121,7 @@ public class CandidateTablePruneCause {
         }
         return new String[]{missingPartitions.toString()};
       }
-    },;
+    };
 
 
     String errorFormat;

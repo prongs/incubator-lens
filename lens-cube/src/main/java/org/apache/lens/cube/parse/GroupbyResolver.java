@@ -234,8 +234,8 @@ class GroupbyResolver implements ContextRewriter {
    * when selectASTNode is not a Select AST Node. Empty list is returned when there are no non measure and non aggregate
    * children nodes present in select AST.
    */
-  private List<ASTNode> filterNonMsrNonAggSelectASTChildren(final ASTNode selectASTNode, CubeQueryContext cubeQueryCtx) {
-
+  private List<ASTNode> filterNonMsrNonAggSelectASTChildren(final ASTNode selectASTNode,
+    CubeQueryContext cubeQueryCtx) {
     List<ASTNode> nonMsrNonAggSelASTChildren = new LinkedList<ASTNode>();
 
     if (!HQLParser.isSelectASTNode(selectASTNode)) {

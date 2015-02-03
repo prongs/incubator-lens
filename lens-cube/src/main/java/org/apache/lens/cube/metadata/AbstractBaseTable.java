@@ -34,19 +34,19 @@ import lombok.Getter;
  */
 public abstract class AbstractBaseTable extends AbstractCubeTable {
   private final Set<ExprColumn> expressions;
-  private static final List<FieldSchema> columns = new ArrayList<FieldSchema>();
+  private static final List<FieldSchema> COLUMNS = new ArrayList<FieldSchema>();
   private final Map<String, ExprColumn> exprMap;
   @Getter
   private final Set<JoinChain> joinChains;
   private final Map<String, JoinChain> chainMap;
 
   static {
-    columns.add(new FieldSchema("dummy", "string", "dummy column"));
+    COLUMNS.add(new FieldSchema("dummy", "string", "dummy column"));
   }
 
   public AbstractBaseTable(String name, Set<ExprColumn> exprs, Set<JoinChain> joinChains, Map<String, String>
     properties, double weight) {
-    super(name, columns, properties, weight);
+    super(name, COLUMNS, properties, weight);
 
     exprMap = new HashMap<String, ExprColumn>();
     if (exprs == null) {

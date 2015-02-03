@@ -30,7 +30,6 @@ import org.apache.hadoop.hive.ql.ErrorMsg;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
 
 import org.testng.Assert;
-import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 public abstract class TestTimeRangeWriter {
@@ -45,7 +44,7 @@ public abstract class TestTimeRangeWriter {
 
   public abstract void validateSingle(String whereClause, DateFormat object);
 
-  public static DateFormat dbFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+  public static final DateFormat DB_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
   @Test
   public void testDisjointParts() {
@@ -74,9 +73,9 @@ public abstract class TestTimeRangeWriter {
 
     // test with format
     answeringParts = new LinkedHashSet<FactPartition>();
-    answeringParts.add(new FactPartition("dt", CubeTestSetup.TWO_MONTHS_BACK, UpdatePeriod.MONTHLY, null, dbFormat));
-    answeringParts.add(new FactPartition("dt", CubeTestSetup.TWODAYS_BACK, UpdatePeriod.DAILY, null, dbFormat));
-    answeringParts.add(new FactPartition("dt", CubeTestSetup.NOW, UpdatePeriod.HOURLY, null, dbFormat));
+    answeringParts.add(new FactPartition("dt", CubeTestSetup.TWO_MONTHS_BACK, UpdatePeriod.MONTHLY, null, DB_FORMAT));
+    answeringParts.add(new FactPartition("dt", CubeTestSetup.TWODAYS_BACK, UpdatePeriod.DAILY, null, DB_FORMAT));
+    answeringParts.add(new FactPartition("dt", CubeTestSetup.NOW, UpdatePeriod.HOURLY, null, DB_FORMAT));
 
     th = null;
     try {
@@ -89,7 +88,7 @@ public abstract class TestTimeRangeWriter {
       Assert.assertNotNull(th);
     } else {
       Assert.assertNull(th);
-      validateDisjoint(whereClause, dbFormat);
+      validateDisjoint(whereClause, DB_FORMAT);
     }
 
   }
@@ -105,12 +104,12 @@ public abstract class TestTimeRangeWriter {
     validateConsecutive(whereClause, null);
 
     answeringParts = new LinkedHashSet<FactPartition>();
-    answeringParts.add(new FactPartition("dt", CubeTestSetup.ONE_DAY_BACK, UpdatePeriod.DAILY, null, dbFormat));
-    answeringParts.add(new FactPartition("dt", CubeTestSetup.TWODAYS_BACK, UpdatePeriod.DAILY, null, dbFormat));
-    answeringParts.add(new FactPartition("dt", CubeTestSetup.NOW, UpdatePeriod.DAILY, null, dbFormat));
+    answeringParts.add(new FactPartition("dt", CubeTestSetup.ONE_DAY_BACK, UpdatePeriod.DAILY, null, DB_FORMAT));
+    answeringParts.add(new FactPartition("dt", CubeTestSetup.TWODAYS_BACK, UpdatePeriod.DAILY, null, DB_FORMAT));
+    answeringParts.add(new FactPartition("dt", CubeTestSetup.NOW, UpdatePeriod.DAILY, null, DB_FORMAT));
 
     whereClause = getTimerangeWriter().getTimeRangeWhereClause(null, "test", answeringParts);
-    validateConsecutive(whereClause, dbFormat);
+    validateConsecutive(whereClause, DB_FORMAT);
   }
 
   @Test
@@ -121,9 +120,9 @@ public abstract class TestTimeRangeWriter {
     validateSingle(whereClause, null);
 
     answeringParts = new LinkedHashSet<FactPartition>();
-    answeringParts.add(new FactPartition("dt", CubeTestSetup.ONE_DAY_BACK, UpdatePeriod.DAILY, null, dbFormat));
+    answeringParts.add(new FactPartition("dt", CubeTestSetup.ONE_DAY_BACK, UpdatePeriod.DAILY, null, DB_FORMAT));
     whereClause = getTimerangeWriter().getTimeRangeWhereClause(null, "test", answeringParts);
-    validateSingle(whereClause, dbFormat);
+    validateSingle(whereClause, DB_FORMAT);
 
   }
 }

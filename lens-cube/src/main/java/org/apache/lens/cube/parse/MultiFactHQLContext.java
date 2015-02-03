@@ -37,7 +37,7 @@ import org.apache.hadoop.hive.ql.parse.SemanticException;
  */
 class MultiFactHQLContext extends SimpleHQLContext {
 
-  public static Log LOG = LogFactory.getLog(MultiFactHQLContext.class.getName());
+  public static final Log LOG = LogFactory.getLog(MultiFactHQLContext.class.getName());
 
   private Map<Dimension, CandidateDim> dimsToQuery;
   private Set<CandidateFact> facts;

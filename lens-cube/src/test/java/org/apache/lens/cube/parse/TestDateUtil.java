@@ -36,20 +36,23 @@ import org.testng.annotations.Test;
  * Unit tests for cube DateUtil class TestDateUtil.
  */
 public class TestDateUtil {
-  public static final String[] testpairs = {"2013-Jan-01", "2013-Jan-31", "2013-Jan-01", "2013-May-31", "2013-Jan-01",
-    "2013-Dec-31", "2013-Feb-01", "2013-Apr-25", "2012-Feb-01", "2013-Feb-01", "2011-Feb-01", "2013-Feb-01",
-    "2013-Jan-02", "2013-Feb-02", "2013-Jan-02", "2013-Mar-02",};
+  public static final String[] TEST_PAIRS = {
+    "2013-Jan-01", "2013-Jan-31", "2013-Jan-01", "2013-May-31",
+    "2013-Jan-01", "2013-Dec-31", "2013-Feb-01", "2013-Apr-25",
+    "2012-Feb-01", "2013-Feb-01", "2011-Feb-01", "2013-Feb-01",
+    "2013-Jan-02", "2013-Feb-02", "2013-Jan-02", "2013-Mar-02",
+  };
 
   public static final SimpleDateFormat DATE_FMT = new SimpleDateFormat("yyyy-MMM-dd");
 
-  private Date pairs[];
+  private Date[] pairs;
 
   @BeforeTest
   public void setUp() {
-    pairs = new Date[testpairs.length];
-    for (int i = 0; i < testpairs.length; i++) {
+    pairs = new Date[TEST_PAIRS.length];
+    for (int i = 0; i < TEST_PAIRS.length; i++) {
       try {
-        pairs[i] = DATE_FMT.parse(testpairs[i]);
+        pairs[i] = DATE_FMT.parse(TEST_PAIRS[i]);
       } catch (ParseException e) {
         e.printStackTrace();
       }

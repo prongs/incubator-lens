@@ -34,7 +34,7 @@ import org.apache.hadoop.hive.ql.parse.SemanticException;
  */
 public abstract class SimpleHQLContext implements HQLContextInterface {
 
-  public static Log LOG = LogFactory.getLog(SimpleHQLContext.class.getName());
+  public static final Log LOG = LogFactory.getLog(SimpleHQLContext.class.getName());
 
   private String select;
   private String from;

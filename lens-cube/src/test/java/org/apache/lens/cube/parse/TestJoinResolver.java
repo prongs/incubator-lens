@@ -252,8 +252,8 @@ public class TestJoinResolver extends TestQueryRewrite {
     String hql = ctx.toHQL();
     String joinClause = getAutoResolvedFromString(ctx);
     System.out.println("@Resolved join clause " + joinClause);
-    Assert.assertEquals(getDbName() + "c1_testfact2_raw testcube join " + getDbName() + "c1_citytable citydim on " +
-      "testcube.cityid = citydim.id and (citydim.dt = 'latest')", joinClause.trim());
+    Assert.assertEquals(getDbName() + "c1_testfact2_raw testcube join " + getDbName() + "c1_citytable citydim on "
+      + "testcube.cityid = citydim.id and (citydim.dt = 'latest')", joinClause.trim());
   }
 
   @Test
@@ -381,8 +381,8 @@ public class TestJoinResolver extends TestQueryRewrite {
     query = "select citystate.name, sum(msr2) from basecube where " + TWO_DAYS_RANGE + " group by citystate.name";
     hqlQuery = rewrite(query, hconf);
     expected = getExpectedQuery("basecube", "select citystate.name, sum(basecube.msr2) FROM ",
-      " join " + getDbName() + "c1_citytable citydim ON baseCube.cityid = citydim.id and citydim.dt = 'latest'" +
-        " join " + getDbName() + "c1_statetable cityState ON citydim.stateid=cityState.id and cityState.dt= 'latest'",
+      " join " + getDbName() + "c1_citytable citydim ON baseCube.cityid = citydim.id and citydim.dt = 'latest'"
+        + " join " + getDbName() + "c1_statetable cityState ON citydim.stateid=cityState.id and cityState.dt= 'latest'",
       null, "group by citystate.name",
       null, getWhereForDailyAndHourly2days("basecube", "c1_testfact1_base"));
     TestCubeRewriter.compareQueries(expected, hqlQuery);
@@ -391,8 +391,8 @@ public class TestJoinResolver extends TestQueryRewrite {
     query = "select cityStateCapital, sum(msr2) from basecube where " + TWO_DAYS_RANGE;
     hqlQuery = rewrite(query, hconf);
     expected = getExpectedQuery("basecube", "select citystate.capital, sum(basecube.msr2) FROM ",
-      " join " + getDbName() + "c1_citytable citydim ON baseCube.cityid = citydim.id and citydim.dt = 'latest'" +
-        " join " + getDbName() + "c1_statetable cityState ON citydim.stateid=cityState.id and cityState.dt= 'latest'",
+      " join " + getDbName() + "c1_citytable citydim ON baseCube.cityid = citydim.id and citydim.dt = 'latest'"
+        + " join " + getDbName() + "c1_statetable cityState ON citydim.stateid=cityState.id and cityState.dt= 'latest'",
       null, "group by citystate.capital",
       null, getWhereForDailyAndHourly2days("basecube", "c1_testfact1_base"));
     TestCubeRewriter.compareQueries(expected, hqlQuery);
@@ -406,8 +406,8 @@ public class TestJoinResolver extends TestQueryRewrite {
     query = "select cityStateCapital, sum(msr2) from basecube where " + TWO_DAYS_RANGE + " order by cityStateCapital";
     hqlQuery = rewrite(query, hconf);
     expected = getExpectedQuery("basecube", "select citystate.capital, sum(basecube.msr2) FROM ",
-      " join " + getDbName() + "c1_citytable citydim ON baseCube.cityid = citydim.id and citydim.dt = 'latest'" +
-        " join " + getDbName() + "c1_statetable cityState ON citydim.stateid=cityState.id and cityState.dt= 'latest'",
+      " join " + getDbName() + "c1_citytable citydim ON baseCube.cityid = citydim.id and citydim.dt = 'latest'"
+        + " join " + getDbName() + "c1_statetable cityState ON citydim.stateid=cityState.id and cityState.dt= 'latest'",
       null, "group by citystate.capital order by citystate.capital asc",
       null, getWhereForDailyAndHourly2days("basecube", "c1_testfact1_base"));
     TestCubeRewriter.compareQueries(expected, hqlQuery);
@@ -416,8 +416,8 @@ public class TestJoinResolver extends TestQueryRewrite {
     query = "select citystate.name, cityStateCapital, sum(msr2) from basecube where " + TWO_DAYS_RANGE;
     hqlQuery = rewrite(query, hconf);
     expected = getExpectedQuery("basecube", "select citystate.name, citystate.capital, sum(basecube.msr2) FROM ",
-      " join " + getDbName() + "c1_citytable citydim ON baseCube.cityid = citydim.id and citydim.dt = 'latest'" +
-        " join " + getDbName() + "c1_statetable cityState ON citydim.stateid=cityState.id and cityState.dt= 'latest'",
+      " join " + getDbName() + "c1_citytable citydim ON baseCube.cityid = citydim.id and citydim.dt = 'latest'"
+        + " join " + getDbName() + "c1_statetable cityState ON citydim.stateid=cityState.id and cityState.dt= 'latest'",
       null, "group by citystate.name, citystate.capital",
       null, getWhereForDailyAndHourly2days("basecube", "c1_testfact1_base"));
     TestCubeRewriter.compareQueries(expected, hqlQuery);
@@ -440,9 +440,9 @@ public class TestJoinResolver extends TestQueryRewrite {
     expected = getExpectedQuery("basecube", "select citystate.name, cubestate.name, sum(basecube.msr2) FROM ",
       " join " + getDbName() + "c1_citytable citydim on basecube.cityid = citydim.id and "
         + "citydim.dt = 'latest'"
-        + " join " + getDbName() + "c1_statetable citystate on citydim.stateid = citystate.id and " +
-        "citystate.dt = 'latest'" +
-        " join " + getDbName() + "c1_statetable cubestate on basecube.stateid = cubestate.id and cubestate.dt = 'latest'"
+        + " join " + getDbName() + "c1_statetable citystate on citydim.stateid = citystate.id and "
+        + "citystate.dt = 'latest'"
+        + " join " + getDbName() + "c1_statetable cubestate on basecube.stateid=cubestate.id and cubestate.dt='latest'"
       , null, "group by citystate.name,cubestate.name", null,
       getWhereForDailyAndHourly2days("basecube", "c1_testfact1_base")
     );
@@ -453,10 +453,10 @@ public class TestJoinResolver extends TestQueryRewrite {
     hqlQuery = rewrite(query, hconf);
     expected = getExpectedQuery("basecube",
       "select citystate.name, citydim.name, sum(basecube.msr2) FROM ",
-      " join " + getDbName() + "c1_citytable citydim on basecube.cityid = citydim.id and " +
-        "citydim.dt = 'latest'" +
-        " join " + getDbName() + "c1_statetable citystate on citydim.stateid = citystate.id and " +
-        "citystate.dt = 'latest'", null, "group by citystate.name,citydim.name", null,
+      " join " + getDbName() + "c1_citytable citydim on basecube.cityid = citydim.id and "
+        + "citydim.dt = 'latest'"
+        + " join " + getDbName() + "c1_statetable citystate on citydim.stateid = citystate.id and "
+        + "citystate.dt = 'latest'", null, "group by citystate.name,citydim.name", null,
       getWhereForDailyAndHourly2days("basecube", "c1_testfact1_base")
     );
     TestCubeRewriter.compareQueries(expected, hqlQuery);
@@ -466,11 +466,11 @@ public class TestJoinResolver extends TestQueryRewrite {
     hqlQuery = rewrite(query, hconf);
     expected = getExpectedQuery("basecube",
       "select citystate.name, cubestate.name, citydim.name, sum(basecube.msr2) FROM ",
-      " join " + getDbName() + "c1_citytable citydim on basecube.cityid = citydim.id and " +
-        "citydim.dt = 'latest'" +
-        " join " + getDbName() + "c1_statetable citystate on citydim.stateid = citystate.id and " +
-        "citystate.dt = 'latest'" +
-        " join " + getDbName() + "c1_statetable cubestate on basecube.stateid = cubestate.id and cubestate.dt = 'latest'"
+      " join " + getDbName() + "c1_citytable citydim on basecube.cityid = citydim.id and "
+        + "citydim.dt = 'latest'"
+        + " join " + getDbName() + "c1_statetable citystate on citydim.stateid = citystate.id and "
+        + "citystate.dt = 'latest'"
+        + " join " + getDbName() + "c1_statetable cubestate on basecube.stateid=cubestate.id and cubestate.dt='latest'"
       , null, "group by citystate.name,cubestate.name,citydim.name", null,
       getWhereForDailyAndHourly2days("basecube", "c1_testfact1_base")
     );
@@ -481,11 +481,11 @@ public class TestJoinResolver extends TestQueryRewrite {
     hqlQuery = rewrite(query, hconf);
     expected = getExpectedQuery("basecube",
       "select cubestate.name, citystate.capital, sum(basecube.msr2) FROM ",
-      "" +
-        " join " + getDbName() + "c1_statetable cubestate on basecube.stateid = cubestate.id and cubestate.dt = 'latest'" +
-        " join " + getDbName() + "c1_citytable citydim on basecube.cityid = citydim.id and citydim.dt = 'latest'" +
-        " join " + getDbName() + "c1_statetable citystate on citydim.stateid = citystate.id and citystate.dt = 'latest'" +
-        ""
+      ""
+        + " join " + getDbName() + "c1_statetable cubestate on basecube.stateid=cubestate.id and cubestate.dt='latest'"
+        + " join " + getDbName() + "c1_citytable citydim on basecube.cityid = citydim.id and citydim.dt = 'latest'"
+        + " join " + getDbName() + "c1_statetable citystate on citydim.stateid=citystate.id and citystate.dt='latest'"
+        + ""
       , null, "group by cubestate.name, citystate.capital", null,
       getWhereForDailyAndHourly2days("basecube", "c1_testfact1_base")
     );
@@ -496,12 +496,12 @@ public class TestJoinResolver extends TestQueryRewrite {
     hqlQuery = rewrite(query, hconf);
     expected = getExpectedQuery("basecube",
       "select citystate.name, cityzip.f1, sum(basecube.msr2) FROM ",
-      " join " + getDbName() + "c1_citytable citydim on basecube.cityid = citydim.id and " +
-        "citydim.dt = 'latest'" +
-        " join " + getDbName() + "c1_statetable citystate on citydim.stateid = citystate.id and " +
-        "citystate.dt = 'latest'" +
-        " join " + getDbName() + "c1_ziptable cityzip on citydim.zipcode = cityzip.code and " +
-        "cityzip.dt = 'latest'"
+      " join " + getDbName() + "c1_citytable citydim on basecube.cityid = citydim.id and "
+        + "citydim.dt = 'latest'"
+        + " join " + getDbName() + "c1_statetable citystate on citydim.stateid = citystate.id and "
+        + "citystate.dt = 'latest'"
+        + " join " + getDbName() + "c1_ziptable cityzip on citydim.zipcode = cityzip.code and "
+        + "cityzip.dt = 'latest'"
       , null, "group by citystate.name,cityzip.f1", null,
       getWhereForDailyAndHourly2days("basecube", "c1_testfact1_base")
     );
@@ -514,7 +514,7 @@ public class TestJoinResolver extends TestQueryRewrite {
     expected = getExpectedQuery("basecube",
       "select cubestatecountry.name, cubecitystatecountry.name, sum(basecube.msr2) FROM ",
       ""
-        + " join TestQueryRewrite.c1_statetable statedim_0 on basecube.stateid = statedim_0.id and statedim_0.dt = 'latest' "
+        + " join TestQueryRewrite.c1_statetable statedim_0 on basecube.stateid=statedim_0.id and statedim_0.dt='latest'"
         + " join TestQueryRewrite.c1_countrytable cubestatecountry on statedim_0.countryid = cubestatecountry.id "
         + " join TestQueryRewrite.c1_citytable citydim on basecube.cityid = citydim.id and citydim.dt = 'latest' "
         + " join TestQueryRewrite.c1_statetable statedim on citydim.stateid = statedim.id and statedim.dt = 'latest' "
@@ -529,9 +529,9 @@ public class TestJoinResolver extends TestQueryRewrite {
     query = "select cityState.name, cubeState.name, statedim.name, sum(msr2) from basecube where " + TWO_DAYS_RANGE;
     try {
       rewrite(query, hconf);
-      Assert.fail("Should have failed. " +
-        "It's not possible to resolve which statedim is being asked for when cityState and cubeState both end at" +
-        " statedim table.");
+      Assert.fail("Should have failed. "
+        + "It's not possible to resolve which statedim is being asked for when cityState and cubeState both end at"
+        + " statedim table.");
     } catch (SemanticException e) {
       Assert.assertNotNull(e.getCause());
       Assert.assertEquals(
@@ -543,8 +543,8 @@ public class TestJoinResolver extends TestQueryRewrite {
     query = "select cubeState.name, statedim.name, sum(msr2) from basecube where " + TWO_DAYS_RANGE;
     try {
       rewrite(query, hconf);
-      Assert.fail("Should have failed. " +
-        "The table statedim is getting accessed as both cubeState and statedim ");
+      Assert.fail("Should have failed. "
+        + "The table statedim is getting accessed as both cubeState and statedim ");
     } catch (SemanticException e) {
       Assert.assertNotNull(e.getCause());
       Assert.assertEquals(e.getCause().getMessage().toLowerCase(),
@@ -554,8 +554,8 @@ public class TestJoinResolver extends TestQueryRewrite {
     query = "select cityStateCapital, statedim.name, sum(msr2) from basecube where " + TWO_DAYS_RANGE;
     try {
       rewrite(query, hconf);
-      Assert.fail("Should have failed. " +
-        "The table statedim is getting accessed as both cubeState and statedim ");
+      Assert.fail("Should have failed. "
+        + "The table statedim is getting accessed as both cubeState and statedim ");
     } catch (SemanticException e) {
       Assert.assertNotNull(e.getCause());
       Assert.assertEquals(e.getCause().getMessage().toLowerCase(),
@@ -635,7 +635,7 @@ public class TestJoinResolver extends TestQueryRewrite {
     query = "select testdim3.name, sum(msr2) from testcube where " + TWO_DAYS_RANGE;
     hqlQuery = rewrite(query, hconf);
     expected = getExpectedQuery("testcube", "select testdim3.name, sum(testcube.msr2) FROM ",
-      " join " + getDbName() + "c1_testdim3tbl testdim3 ON testcube.testdim3id = testdim3.id and testdim3.dt = 'latest'",
+      " join " + getDbName() + "c1_testdim3tbl testdim3 ON testcube.testdim3id=testdim3.id and testdim3.dt='latest'",
       null, "group by testdim3.name",
       null, getWhereForDailyAndHourly2days("testcube", "c1_summary1"));
     TestCubeRewriter.compareQueries(expected, hqlQuery);
@@ -644,8 +644,9 @@ public class TestJoinResolver extends TestQueryRewrite {
     query = "select testdim3.name, avg(msr2) from testcube where " + TWO_DAYS_RANGE;
     hqlQuery = rewrite(query, hconf);
     expected = getExpectedQuery("testcube", "select testdim3.name, avg(testcube.msr2) FROM ",
-      " join " + getDbName() + "c1_testdim2tbl testdim2 ON testcube.dim2 = testdim2.id and testdim2.dt = 'latest'" +
-        " join " + getDbName() + "c1_testdim3tbl testdim3 ON testdim2.testdim3id = testdim3.id and testdim3.dt = 'latest'",
+      " join " + getDbName() + "c1_testdim2tbl testdim2 ON testcube.dim2 = testdim2.id and testdim2.dt = 'latest'"
+        + " join " + getDbName() + "c1_testdim3tbl testdim3 "
+        + "ON testdim2.testdim3id = testdim3.id and testdim3.dt = 'latest'",
       null, "group by testdim3.name",
       null, getWhereForHourly2days("testcube", "c1_testfact2_raw"));
     TestCubeRewriter.compareQueries(expected, hqlQuery);
@@ -654,8 +655,9 @@ public class TestJoinResolver extends TestQueryRewrite {
     query = "select testdim3id, avg(msr2) from testcube where " + TWO_DAYS_RANGE;
     hqlQuery = rewrite(query, hconf);
     expected = getExpectedQuery("testcube", "select testdim3.id, avg(testcube.msr2) FROM ",
-      " join " + getDbName() + "c1_testdim2tbl testdim2 ON testcube.dim2 = testdim2.id and testdim2.dt = 'latest'" +
-        " join " + getDbName() + "c1_testdim3tbl testdim3 ON testdim2.testdim3id = testdim3.id and testdim3.dt = 'latest'",
+      " join " + getDbName() + "c1_testdim2tbl testdim2 ON testcube.dim2 = testdim2.id and testdim2.dt = 'latest'"
+        + " join " + getDbName() + "c1_testdim3tbl testdim3 "
+        + "ON testdim2.testdim3id = testdim3.id and testdim3.dt = 'latest'",
       null, "group by testdim3.id",
       null, getWhereForHourly2days("testcube", "c1_testfact2_raw"));
     TestCubeRewriter.compareQueries(expected, hqlQuery);
@@ -664,21 +666,21 @@ public class TestJoinResolver extends TestQueryRewrite {
     query = "select testdim4.name, testdim3id, avg(msr2) from testcube where " + TWO_DAYS_RANGE;
     hqlQuery = rewrite(query, hconf);
     expected = getExpectedQuery("testcube", "select testdim4.name, testdim3.id, avg(testcube.msr2) FROM ",
-      " join " + getDbName() + "c1_testdim2tbl testdim2 ON testcube.dim2 = testdim2.id and testdim2.dt = 'latest'" +
-        " join " + getDbName() + "c1_testdim3tbl testdim3 ON testdim2.testdim3id = testdim3.id and testdim3.dt = 'latest'"
-        + " join " + getDbName() + "c1_testdim4tbl testdim4 ON testdim3.testDim4id = testdim4.id and" +
-        " testdim4.dt = 'latest'", null, "group by testdim4.name, testdim3.id", null,
+      " join " + getDbName() + "c1_testdim2tbl testdim2 ON testcube.dim2 = testdim2.id and testdim2.dt = 'latest'"
+        + " join " + getDbName() + "c1_testdim3tbl testdim3 ON testdim2.testdim3id=testdim3.id and testdim3.dt='latest'"
+        + " join " + getDbName() + "c1_testdim4tbl testdim4 ON testdim3.testDim4id = testdim4.id and"
+        + " testdim4.dt = 'latest'", null, "group by testdim4.name, testdim3.id", null,
       getWhereForHourly2days("testcube", "c1_testfact2_raw"));
     TestCubeRewriter.compareQueries(expected, hqlQuery);
 
     query = "select citydim.name, testdim4.name, testdim3id, avg(msr2) from testcube where " + TWO_DAYS_RANGE;
     hqlQuery = rewrite(query, hconf);
     expected = getExpectedQuery("testcube", "select citydim.name, testdim4.name, testdim3.id, avg(testcube.msr2) FROM ",
-      " join " + getDbName() + "c1_testdim2tbl testdim2 ON testcube.dim2 = testdim2.id and testdim2.dt = 'latest'" +
-        " join " + getDbName() + "c1_testdim3tbl testdim3 ON testdim2.testdim3id = testdim3.id and testdim3.dt = 'latest'"
-        + " join " + getDbName() + "c1_testdim4tbl testdim4 ON testdim3.testDim4id = testdim4.id and" +
-        " testdim4.dt = 'latest'" +
-        " join " + getDbName() + "c1_citytable citydim ON testcube.cityid = citydim.id and citydim.dt = 'latest'"
+      " join " + getDbName() + "c1_testdim2tbl testdim2 ON testcube.dim2 = testdim2.id and testdim2.dt = 'latest'"
+        + " join " + getDbName() + "c1_testdim3tbl testdim3 ON testdim2.testdim3id=testdim3.id and testdim3.dt='latest'"
+        + " join " + getDbName() + "c1_testdim4tbl testdim4 ON testdim3.testDim4id = testdim4.id and"
+        + " testdim4.dt = 'latest'"
+        + " join " + getDbName() + "c1_citytable citydim ON testcube.cityid = citydim.id and citydim.dt = 'latest'"
       , null, "group by citydim.name, testdim4.name, testdim3.id", null,
       getWhereForHourly2days("testcube", "c1_testfact2_raw"));
     TestCubeRewriter.compareQueries(expected, hqlQuery);
@@ -687,10 +689,10 @@ public class TestJoinResolver extends TestQueryRewrite {
     query = "select testdim4.name, avg(msr2) from testcube where " + TWO_DAYS_RANGE;
     hqlQuery = rewrite(query, hconf);
     expected = getExpectedQuery("testcube", "select testdim4.name, avg(testcube.msr2) FROM ",
-      " join " + getDbName() + "c1_testdim2tbl testdim2 ON testcube.dim2 = testdim2.id and testdim2.dt = 'latest'" +
-        " join " + getDbName() + "c1_testdim3tbl testdim3 ON testdim2.testdim3id = testdim3.id and testdim3.dt = 'latest'"
-        + " join " + getDbName() + "c1_testdim4tbl testdim4 ON testdim3.testDim4id = testdim4.id and" +
-        " testdim4.dt = 'latest'", null, "group by testdim4.name", null,
+      " join " + getDbName() + "c1_testdim2tbl testdim2 ON testcube.dim2 = testdim2.id and testdim2.dt = 'latest'"
+        + " join " + getDbName() + "c1_testdim3tbl testdim3 ON testdim2.testdim3id=testdim3.id and testdim3.dt='latest'"
+        + " join " + getDbName() + "c1_testdim4tbl testdim4 ON testdim3.testDim4id = testdim4.id and"
+        + " testdim4.dt = 'latest'", null, "group by testdim4.name", null,
       getWhereForHourly2days("testcube", "c1_testfact2_raw"));
     TestCubeRewriter.compareQueries(expected, hqlQuery);
 
@@ -698,8 +700,8 @@ public class TestJoinResolver extends TestQueryRewrite {
     hqlQuery = rewrite(query, hconf);
     expected = getExpectedQuery("testcube", "select testdim4.name, sum(testcube.msr2) FROM ",
       " join " + getDbName() + "c1_testdim3tbl testdim3 ON testcube.testdim3id = testdim3.id and testdim3.dt = 'latest'"
-        + " join " + getDbName() + "c1_testdim4tbl testdim4 ON testdim3.testDim4id = testdim4.id and" +
-        " testdim4.dt = 'latest'", null, "group by testdim4.name", null,
+        + " join " + getDbName() + "c1_testdim4tbl testdim4 ON testdim3.testDim4id = testdim4.id and"
+        + " testdim4.dt = 'latest'", null, "group by testdim4.name", null,
       getWhereForDailyAndHourly2days("testcube", "c1_summary1"));
     TestCubeRewriter.compareQueries(expected, hqlQuery);
   }

@@ -57,12 +57,14 @@ public class TestExpressionResolver extends TestQueryRewrite {
     Assert.assertEquals(th.getCanonicalErrorMsg().getErrorCode(), ErrorMsg.COLUMN_NOT_FOUND.getErrorCode());
     Assert.assertTrue(th.getMessage().contains("nonexist"));
 
-    th = getSemanticExceptionInRewrite("select invalidexpr, SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE, conf);
+    th = getSemanticExceptionInRewrite("select invalidexpr, SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE,
+      conf);
     Assert.assertEquals(th.getCanonicalErrorMsg().getErrorCode(), ErrorMsg.COLUMN_NOT_FOUND.getErrorCode());
     Assert.assertTrue(th.getMessage().contains("invalidexpr"));
 
     // Query with column life not in the range
-    th = getSemanticExceptionInRewrite("cube select newexpr, SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE, conf);
+    th = getSemanticExceptionInRewrite("cube select newexpr, SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE,
+      conf);
     Assert.assertEquals(th.getCanonicalErrorMsg().getErrorCode(), ErrorMsg.NOT_AVAILABLE_IN_RANGE.getErrorCode());
   }
 
@@ -135,7 +137,8 @@ public class TestExpressionResolver extends TestQueryRewrite {
     TestCubeRewriter.compareQueries(expected, hqlQuery);
 
     hqlQuery =
-      rewrite("select booleancut, avgmsr from testCube" + " where " + TWO_DAYS_RANGE + " and substrexpr != 'XYZ'", conf);
+      rewrite("select booleancut, avgmsr from testCube" + " where " + TWO_DAYS_RANGE + " and substrexpr != 'XYZ'",
+        conf);
     expected =
       getExpectedQuery(cubeName, "select testCube.dim1 != 'x' AND testCube.dim2 != 10 ,"
         + " avg(testCube.msr1 + testCube.msr2) FROM ", null, " and substr(testCube.dim1, 3) != 'XYZ' "
@@ -180,8 +183,8 @@ public class TestExpressionResolver extends TestQueryRewrite {
         + TWO_DAYS_RANGE, conf);
 
     joinExpr =
-      "join" + getDbName() + "c1_statetable statedim on" + " testcube.stateid = statedim.id" +
-        " inner join " + getDbName() + "c1_citytable citydim" + " on testcube.cityid = citydim.id "
+      "join" + getDbName() + "c1_statetable statedim on" + " testcube.stateid = statedim.id"
+        + " inner join " + getDbName() + "c1_citytable citydim" + " on testcube.cityid = citydim.id "
         + " and substr(testcube.dim1, 3) != 'XYZ' and (citydim.dt = 'latest') ";
     expected =
       getExpectedQuery(cubeName, "select concat(citydim.name, \":\", statedim.name),"
@@ -253,11 +256,11 @@ public class TestExpressionResolver extends TestQueryRewrite {
     hqlQuery = rewrite("select ct.name, ct.cityaddress from" + " citydim ct", conf);
 
     joinExpr =
-      "" +
-        " join " + getDbName() + ".c1_statetable statedim on " + "ct.stateid = statedim.id and (statedim.dt = 'latest')" +
-        " join " + getDbName() + ".c1_countrytable countrydim on " + "statedim.countryid = countrydim.id" +
-        " join " + getDbName() + ".c1_ziptable zipdim on " + "ct.zipcode = zipdim.code and (zipdim.dt = 'latest')" +
-        "";
+      ""
+        + " join " + getDbName() + ".c1_statetable statedim on ct.stateid = statedim.id and (statedim.dt = 'latest')"
+        + " join " + getDbName() + ".c1_countrytable countrydim on statedim.countryid = countrydim.id"
+        + " join " + getDbName() + ".c1_ziptable zipdim on ct.zipcode = zipdim.code and (zipdim.dt = 'latest')"
+        + "";
 
     expected =
       getExpectedQuery("ct", "SELECT ct.name, concat((ct.name), \":\", (statedim.name ),"

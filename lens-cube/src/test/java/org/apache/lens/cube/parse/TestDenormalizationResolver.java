@@ -63,7 +63,8 @@ public class TestDenormalizationResolver extends TestQueryRewrite {
         getNotLatestConditions(cubeName, "it", "C2_summary4"));
     TestCubeRewriter.compareQueries(expecteddim2big1, hqlQuery);
     // with another table
-    hqlQuery = rewrite("select dim2big1, citydim.name, max(msr3)," + " msr2 from testCube" + " where " + twoDaysITRange, conf);
+    hqlQuery = rewrite("select dim2big1, citydim.name, max(msr3)," + " msr2 from testCube" + " where " + twoDaysITRange,
+      conf);
     String expecteddim2big1WithAnotherTable = getExpectedQuery(cubeName,
       "select testcube.dim2big1, citydim.name, max(testcube.msr3), sum(testcube.msr2) FROM ", " JOIN "
         + getDbName() + "c1_citytable citydim " + "on testcube.cityid = citydim.id and citydim.dt = 'latest' ", null,
@@ -107,7 +108,8 @@ public class TestDenormalizationResolver extends TestQueryRewrite {
     // all following queries use joins to get denorm fields
     Configuration tconf = new Configuration(this.conf);
     tconf.set(CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "C1");
-    String hqlQuery = rewrite("select dim2big1, max(msr3)," + " msr2 from testCube" + " where " + TWO_DAYS_RANGE, tconf);
+    String hqlQuery = rewrite("select dim2big1, max(msr3)," + " msr2 from testCube" + " where " + TWO_DAYS_RANGE,
+      tconf);
     System.out.println("HQL query:" + hqlQuery);
     String expected =
       getExpectedQuery(cubeName, "select testdim2.bigid1, max(testcube.msr3), sum(testcube.msr2) FROM ", " JOIN "

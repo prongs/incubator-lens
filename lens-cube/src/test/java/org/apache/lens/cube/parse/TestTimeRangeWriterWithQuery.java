@@ -132,7 +132,7 @@ public class TestTimeRangeWriterWithQuery extends TestQueryRewrite {
     whereClauses = new HashMap<String, String>();
     whereClauses.put(CubeTestSetup.getDbName() + "c1_testfact2", TestBetweenTimeRangeWriter.getBetweenClause(cubeName,
       "dt", getUptoHour(CubeTestSetup.TWODAYS_BACK),
-      getUptoHour(getOneLess(CubeTestSetup.NOW, UpdatePeriod.HOURLY.calendarField())), TestTimeRangeWriter.dbFormat));
+      getUptoHour(getOneLess(CubeTestSetup.NOW, UpdatePeriod.HOURLY.calendarField())), TestTimeRangeWriter.DB_FORMAT));
     expected = getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null, null, whereClauses);
     System.out.println("HQL:" + hqlQuery);
     TestCubeRewriter.compareQueries(expected, hqlQuery);
@@ -154,7 +154,7 @@ public class TestTimeRangeWriterWithQuery extends TestQueryRewrite {
     Map<String, String> whereClauses = new HashMap<String, String>();
     whereClauses.put(CubeTestSetup.getDbName() + "c4_testfact", TestBetweenTimeRangeWriter.getBetweenClause("hourdim",
       "full_hour", getUptoHour(CubeTestSetup.TWODAYS_BACK),
-      getUptoHour(getOneLess(CubeTestSetup.NOW, UpdatePeriod.HOURLY.calendarField())), TestTimeRangeWriter.dbFormat));
+      getUptoHour(getOneLess(CubeTestSetup.NOW, UpdatePeriod.HOURLY.calendarField())), TestTimeRangeWriter.DB_FORMAT));
     System.out.println("HQL:" + hqlQuery);
     String expected =
       getExpectedQuery(cubeName, "select hourdim.full_hour, sum(testcube.msr2) FROM ", " join " + getDbName()
@@ -201,11 +201,11 @@ public class TestTimeRangeWriterWithQuery extends TestQueryRewrite {
       CubeTestSetup.getDbName() + "c4_testfact",
       TestBetweenTimeRangeWriter.getBetweenClause("hourdim", "full_hour", getUptoHour(CubeTestSetup.TWODAYS_BACK),
         getUptoHour(getOneLess(CubeTestSetup.NOW, UpdatePeriod.HOURLY.calendarField())),
-        TestTimeRangeWriter.dbFormat)
+        TestTimeRangeWriter.DB_FORMAT)
         + " OR "
         + TestBetweenTimeRangeWriter.getBetweenClause("hourdim", "full_hour", getUptoHour(BEFORE_4_DAYS_START),
         getUptoHour(getOneLess(BEFORE_4_DAYS_END, UpdatePeriod.HOURLY.calendarField())),
-        TestTimeRangeWriter.dbFormat));
+        TestTimeRangeWriter.DB_FORMAT));
     expected =
       getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", " join " + getDbName()
         + "c4_hourDimTbl hourdim on testcube.test_time_dim_hour_id  = hourdim.id", null, null, null, whereClauses);
@@ -244,7 +244,7 @@ public class TestTimeRangeWriterWithQuery extends TestQueryRewrite {
     Map<String, String> whereClauses = new HashMap<String, String>();
     whereClauses.put(CubeTestSetup.getDbName() + "c4_testfact", TestBetweenTimeRangeWriter.getBetweenClause("timechain",
       "full_hour", getUptoHour(CubeTestSetup.TWODAYS_BACK),
-      getUptoHour(getOneLess(CubeTestSetup.NOW, UpdatePeriod.HOURLY.calendarField())), TestTimeRangeWriter.dbFormat));
+      getUptoHour(getOneLess(CubeTestSetup.NOW, UpdatePeriod.HOURLY.calendarField())), TestTimeRangeWriter.DB_FORMAT));
     System.out.println("HQL:" + hqlQuery);
     String expected =
       getExpectedQuery(cubeName, "select timechain.full_hour, sum(testcube.msr2) FROM ", " join " + getDbName()
@@ -291,11 +291,11 @@ public class TestTimeRangeWriterWithQuery extends TestQueryRewrite {
       CubeTestSetup.getDbName() + "c4_testfact",
       TestBetweenTimeRangeWriter.getBetweenClause("timechain", "full_hour", getUptoHour(CubeTestSetup.TWODAYS_BACK),
         getUptoHour(getOneLess(CubeTestSetup.NOW, UpdatePeriod.HOURLY.calendarField())),
-        TestTimeRangeWriter.dbFormat)
+        TestTimeRangeWriter.DB_FORMAT)
         + " OR "
         + TestBetweenTimeRangeWriter.getBetweenClause("timechain", "full_hour", getUptoHour(BEFORE_4_DAYS_START),
         getUptoHour(getOneLess(BEFORE_4_DAYS_END, UpdatePeriod.HOURLY.calendarField())),
-        TestTimeRangeWriter.dbFormat));
+        TestTimeRangeWriter.DB_FORMAT));
     expected =
       getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", " join " + getDbName()
         + "c4_hourDimTbl timechain on testcube.test_time_dim_hour_id2  = timechain.id", null, null, null, whereClauses);

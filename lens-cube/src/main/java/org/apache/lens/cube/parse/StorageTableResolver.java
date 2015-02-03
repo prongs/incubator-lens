@@ -42,7 +42,7 @@ import org.apache.hadoop.util.ReflectionUtils;
  * partitions.
  */
 class StorageTableResolver implements ContextRewriter {
-  private static Log LOG = LogFactory.getLog(StorageTableResolver.class.getName());
+  public static final Log LOG = LogFactory.getLog(StorageTableResolver.class.getName());
 
   private final Configuration conf;
   private final List<String> supportedStorages;
@@ -116,8 +116,7 @@ class StorageTableResolver implements ContextRewriter {
   }
 
   public boolean isStorageSupported(String storage) {
-    return allStoragesSupported ||
-      supportedStorages.contains(storage);
+    return allStoragesSupported || supportedStorages.contains(storage);
   }
 
   Map<String, List<String>> storagePartMap = new HashMap<String, List<String>>();
@@ -278,9 +277,9 @@ class StorageTableResolver implements ContextRewriter {
           skipStorageCauses.put(storage, new SkipStorageCause(SkipStorageCode.UNSUPPORTED));
           continue;
         }
-        String tableName;
+        String tableName = getStorageTableName(fact, storage, validFactStorageTables);
         // skip the update period if the storage is not valid
-        if ((tableName = getStorageTableName(fact, storage, validFactStorageTables)) == null) {
+        if (tableName == null) {
           skipStorageCauses.put(storage, new SkipStorageCause(SkipStorageCode.INVALID));
           continue;
         }
@@ -599,9 +598,10 @@ class StorageTableResolver implements ContextRewriter {
       i++;
     }
     if (containingPart == null) {
-      return (getPartitions(fact, fromDate, ceilFromDate, partCol, null, partitions, updatePeriods,
-        addNonExistingParts, skipStorageCauses, nonExistingParts) && getPartitions(fact, floorToDate, toDate,
-        partCol, null, partitions, updatePeriods, addNonExistingParts, skipStorageCauses, nonExistingParts));
+      return getPartitions(fact, fromDate, ceilFromDate, partCol, null, partitions,
+        updatePeriods, addNonExistingParts, skipStorageCauses, nonExistingParts)
+        && getPartitions(fact, floorToDate, toDate, partCol, null, partitions,
+        updatePeriods, addNonExistingParts, skipStorageCauses, nonExistingParts);
     } else {
       return true;
     }

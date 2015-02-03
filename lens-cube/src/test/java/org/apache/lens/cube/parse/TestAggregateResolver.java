@@ -60,7 +60,8 @@ public class TestAggregateResolver extends TestQueryRewrite {
     String q3 = "SELECT cityid, sum(testCube.msr2) from testCube where " + TWO_DAYS_RANGE;
 
     // pass
-    String q4 = "SELECT cityid, sum(testCube.msr2) from testCube where " + TWO_DAYS_RANGE + " having testCube.msr2 > 100";
+    String q4 = "SELECT cityid, sum(testCube.msr2) from testCube where " + TWO_DAYS_RANGE
+      + " having testCube.msr2 > 100";
 
     // pass
     String q5 =
@@ -123,10 +124,14 @@ public class TestAggregateResolver extends TestQueryRewrite {
       getExpectedQuery(cubeName, "SELECT testcube.cityid," + " round(sum(testCube.msr2)) from ", null,
         "group by testcube.cityid", getWhereForDailyAndHourly2days(cubeName, "C2_testfact"));
 
-    String tests[] = {q1, q2, q3, q4, q5, q6, q7, q8, q9, q10};
-    String expected[] =
-      {expectedq1, expectedq2, expectedq3, expectedq4, expectedq5, expectedq6, expectedq7, expectedq8, expectedq9,
-        expectedq10};
+    String[] tests = {
+      q1, q2, q3, q4, q5, q6, q7, q8, q9, q10,
+    };
+    String[] expected =
+      {
+        expectedq1, expectedq2, expectedq3, expectedq4, expectedq5,
+        expectedq6, expectedq7, expectedq8, expectedq9, expectedq10,
+      };
 
     for (int i = 0; i < tests.length; i++) {
       String hql = rewrite(tests[i], conf);

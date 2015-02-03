@@ -219,7 +219,8 @@ public class TestHQLParser {
 
   @Test
   public void testInnerJoin() throws Exception {
-    String query = "select tab1.a, tab2.b from table1 tab1 inner join table tab2 on tab1.id = tab2.id where tab1.a > 123";
+    String query
+      = "select tab1.a, tab2.b from table1 tab1 inner join table tab2 on tab1.id = tab2.id where tab1.a > 123";
     ASTNode node = HQLParser.parseHQL(query);
     ASTNode temp = HQLParser.findNodeByPath(node, TOK_FROM, TOK_JOIN);
     String expected = " table1  tab1  table  tab2 (( tab1 . id ) = ( tab2 . id ))";

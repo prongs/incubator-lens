@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lens.cube.metadata.AbstractCubeTable;
+import org.apache.lens.cube.parse.CandidateTablePruneCause.CandidateTablePruneCode;
 
 import org.apache.commons.lang.StringUtils;
 
@@ -74,7 +75,7 @@ public class PruneCauses<T extends AbstractCubeTable> extends HashMap<T, List<Ca
   }
 
   public String getBriefCause() {
-    CandidateTablePruneCause.CandidateTablePruneCode maxCause = CandidateTablePruneCause.CandidateTablePruneCode.values()[0];
+    CandidateTablePruneCode maxCause = CandidateTablePruneCode.values()[0];
     for (CandidateTablePruneCause cause : getReversed().keySet()) {
       if (cause.getCause().compareTo(maxCause) > 0) {
         maxCause = cause.getCause();
@@ -98,7 +99,7 @@ public class PruneCauses<T extends AbstractCubeTable> extends HashMap<T, List<Ca
   @AllArgsConstructor
   @NoArgsConstructor
   public static final class BriefAndDetailedError {
-    public String brief;
-    public HashMap<String, List<CandidateTablePruneCause>> details;
+    private String brief;
+    private HashMap<String, List<CandidateTablePruneCause>> details;
   }
 }

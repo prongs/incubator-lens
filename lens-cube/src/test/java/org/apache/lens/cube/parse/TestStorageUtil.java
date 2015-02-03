@@ -26,7 +26,6 @@ import org.apache.lens.cube.metadata.UpdatePeriod;
 import org.apache.hadoop.conf.Configuration;
 
 import org.testng.Assert;
-import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 public class TestStorageUtil {

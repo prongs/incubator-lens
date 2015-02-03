@@ -149,8 +149,9 @@ class JoinResolver implements ContextRewriter {
           current.setAlias(entry.getKey().getAlias());
         }
       }
-      if (root.subtrees.size() > 0) {
-        root.setAlias(cubeql.getAliasForTabName(root.subtrees.keySet().iterator().next().getFromTable().getName()));
+      if (root.getSubtrees().size() > 0) {
+        root.setAlias(cubeql.getAliasForTabName(
+          root.getSubtrees().keySet().iterator().next().getFromTable().getName()));
       }
       return root;
     }
@@ -166,7 +167,7 @@ class JoinResolver implements ContextRewriter {
     TableRelationship parentRelationship;
     // Alias for the join clause
     String alias;
-    public Map<TableRelationship, JoinTree> subtrees = new LinkedHashMap<TableRelationship, JoinTree>();
+    private Map<TableRelationship, JoinTree> subtrees = new LinkedHashMap<TableRelationship, JoinTree>();
     // Number of nodes from root to this node. depth of root is 0. Unused for now.
     private int depthFromRoot;
     // join type of the current table.
@@ -183,9 +184,9 @@ class JoinResolver implements ContextRewriter {
       this.depthFromRoot = depthFromRoot;
     }
 
-    public JoinTree addChild
-      (TableRelationship tableRelationship, CubeQueryContext cubeql, Map<String, Integer> aliasUsage) {
-      if (subtrees.get(tableRelationship) == null) {
+    public JoinTree addChild(TableRelationship tableRelationship,
+      CubeQueryContext cubeql, Map<String, Integer> aliasUsage) {
+      if (getSubtrees().get(tableRelationship) == null) {
         JoinTree current = new JoinTree(this, tableRelationship,
           this.depthFromRoot + 1);
         // Set alias. Need to compute only when new node is being created.
@@ -201,15 +202,15 @@ class JoinResolver implements ContextRewriter {
           aliasUsage.put(current.getAlias(), aliasUsage.get(current.getAlias()) + 1);
           current.setAlias(current.getAlias() + "_" + (aliasUsage.get(current.getAlias()) - 1));
         }
-        subtrees.put(tableRelationship, current);
+        getSubtrees().put(tableRelationship, current);
       }
-      return subtrees.get(tableRelationship);
+      return getSubtrees().get(tableRelationship);
     }
 
     // Recursive computation of number of edges.
     public int getNumEdges() {
       int ret = 0;
-      for (JoinTree tree : subtrees.values()) {
+      for (JoinTree tree : getSubtrees().values()) {
         ret += 1;
         ret += tree.getNumEdges();
       }
@@ -217,7 +218,7 @@ class JoinResolver implements ContextRewriter {
     }
 
     public boolean isLeaf() {
-      return this.subtrees.isEmpty();
+      return getSubtrees().isEmpty();
     }
 
     // Breadth First Traversal. Unused currently.
@@ -225,7 +226,7 @@ class JoinResolver implements ContextRewriter {
       return new Iterator<JoinTree>() {
         List<JoinTree> remaining = new ArrayList<JoinTree>() {
           {
-            addAll(subtrees.values());
+            addAll(getSubtrees().values());
           }
         };
 
@@ -237,7 +238,7 @@ class JoinResolver implements ContextRewriter {
         @Override
         public JoinTree next() {
           JoinTree retval = remaining.remove(0);
-          remaining.addAll(retval.subtrees.values());
+          remaining.addAll(retval.getSubtrees().values());
           return retval;
         }
 
@@ -253,7 +254,7 @@ class JoinResolver implements ContextRewriter {
       return new Iterator<JoinTree>() {
         Stack<JoinTree> joinTreeStack = new Stack<JoinTree>() {
           {
-            addAll(subtrees.values());
+            addAll(getSubtrees().values());
           }
         };
 
@@ -265,7 +266,7 @@ class JoinResolver implements ContextRewriter {
         @Override
         public JoinTree next() {
           JoinTree retval = joinTreeStack.pop();
-          joinTreeStack.addAll(retval.subtrees.values());
+          joinTreeStack.addAll(retval.getSubtrees().values());
           return retval;
         }
 
@@ -553,8 +554,8 @@ class JoinResolver implements ContextRewriter {
       return StringUtils.join(clauses, "");
     }
 
-    public Set<Dimension> getDimsOnPath
-      (Map<Aliased<Dimension>, List<TableRelationship>> joinChain, Set<Dimension> qdims) {
+    public Set<Dimension> getDimsOnPath(Map<Aliased<Dimension>, List<TableRelationship>> joinChain,
+      Set<Dimension> qdims) {
       Set<Dimension> dimsOnPath = new HashSet<Dimension>();
       for (Map.Entry<Aliased<Dimension>, List<TableRelationship>> entry : joinChain.entrySet()) {
         List<TableRelationship> chain = entry.getValue();
@@ -688,9 +689,10 @@ class JoinResolver implements ContextRewriter {
       }
     }
 
-    private Map<Aliased<Dimension>, List<SchemaGraph.JoinPath>> pruneFactPaths
-      (CubeInterface cube, final CandidateFact cfact) {
-      Map<Aliased<Dimension>, List<SchemaGraph.JoinPath>> prunedPaths = new HashMap<Aliased<Dimension>, List<SchemaGraph.JoinPath>>();
+    private Map<Aliased<Dimension>, List<SchemaGraph.JoinPath>> pruneFactPaths(CubeInterface cube,
+      final CandidateFact cfact) {
+      Map<Aliased<Dimension>, List<SchemaGraph.JoinPath>> prunedPaths
+        = new HashMap<Aliased<Dimension>, List<SchemaGraph.JoinPath>>();
       // Remove join paths which cannot be satisfied by the candidate fact
       for (Map.Entry<Aliased<Dimension>, List<SchemaGraph.JoinPath>> ppaths : allPaths.entrySet()) {
         prunedPaths.put(ppaths.getKey(), new ArrayList<SchemaGraph.JoinPath>(ppaths.getValue()));
@@ -757,7 +759,7 @@ class JoinResolver implements ContextRewriter {
       pruneAllPathsWithQueriedDims(allPaths, qdims);
 
       // Number of paths in each path set
-      final int groupSizes[] = new int[allPaths.values().size()];
+      final int[] groupSizes = new int[allPaths.values().size()];
       // Total number of elements in the cartesian product
       int numSamples = 1;
       // All path sets
@@ -775,7 +777,7 @@ class JoinResolver implements ContextRewriter {
         i++;
       }
 
-      final int selection[] = new int[groupSizes.length];
+      final int[] selection = new int[groupSizes.length];
       final int MAX_SAMPLE_COUNT = numSamples;
 
       // Return a lazy iterator over all possible join chains
@@ -789,7 +791,8 @@ class JoinResolver implements ContextRewriter {
 
         @Override
         public JoinClause next() {
-          Map<Aliased<Dimension>, List<TableRelationship>> chain = new LinkedHashMap<Aliased<Dimension>, List<TableRelationship>>();
+          Map<Aliased<Dimension>, List<TableRelationship>> chain
+            = new LinkedHashMap<Aliased<Dimension>, List<TableRelationship>>();
           //generate next permutation.
           for (int i = groupSizes.length - 1, base = sample; i >= 0; base /= groupSizes[i], i--) {
             selection[i] = base % groupSizes[i];
@@ -820,8 +823,8 @@ class JoinResolver implements ContextRewriter {
      * @param allPaths
      * @param qdims
      */
-    private void pruneAllPathsWithQueriedDims
-    (Map<Aliased<Dimension>, List<SchemaGraph.JoinPath>> allPaths, Set<Dimension> qdims) {
+    private void pruneAllPathsWithQueriedDims(Map<Aliased<Dimension>, List<SchemaGraph.JoinPath>> allPaths,
+      Set<Dimension> qdims) {
       Iterator<Map.Entry<Aliased<Dimension>, List<SchemaGraph.JoinPath>>> iter = allPaths.entrySet().iterator();
       while (iter.hasNext()) {
         Map.Entry<Aliased<Dimension>, List<SchemaGraph.JoinPath>> cur = iter.next();
@@ -1244,7 +1247,7 @@ class JoinResolver implements ContextRewriter {
       joinTree.setJoinSrc(leftTree);
 
       String[] leftChildAliases = leftTree.getLeftAliases();
-      String leftAliases[] = new String[leftChildAliases.length + 1];
+      String[] leftAliases = new String[leftChildAliases.length + 1];
       for (int i = 0; i < leftChildAliases.length; i++) {
         leftAliases[i] = leftChildAliases[i];
       }
@@ -1270,7 +1273,7 @@ class JoinResolver implements ContextRewriter {
       children[1] = alias;
       joinTree.setBaseSrc(children);
       // remember rhs table for semijoin
-      if (joinTree.getNoSemiJoin() == false) {
+      if (!joinTree.getNoSemiJoin()) {
         joinTree.addRHSSemijoin(alias);
       }
     } else {

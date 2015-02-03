@@ -576,7 +576,8 @@ public class TestCubeMetastoreClient {
     Assert.assertNotNull(cube2.getDimAttributeByName("location"));
     Assert.assertFalse(cube2.allFieldsQueriable());
 
-    client.createDerivedCube(CUBE_NAME_WITH_PROPS, DERIVED_CUBE_NAME_WITH_PROPS, measures, dimensions, CUBE_PROPERTIES, 0L);
+    client.createDerivedCube(CUBE_NAME_WITH_PROPS, DERIVED_CUBE_NAME_WITH_PROPS, measures, dimensions,
+      CUBE_PROPERTIES, 0L);
     Assert.assertTrue(client.tableExists(DERIVED_CUBE_NAME_WITH_PROPS));
     derivedTbl = client.getHiveTable(DERIVED_CUBE_NAME_WITH_PROPS);
     Assert.assertTrue(client.isCube(derivedTbl));
