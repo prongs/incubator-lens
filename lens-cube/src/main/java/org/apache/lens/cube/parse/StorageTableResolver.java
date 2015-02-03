@@ -599,9 +599,9 @@ class StorageTableResolver implements ContextRewriter {
     }
     if (containingPart == null) {
       return getPartitions(fact, fromDate, ceilFromDate, partCol, null, partitions,
-        updatePeriods, addNonExistingParts, skipStorageCauses, nonExistingParts)
+          updatePeriods, addNonExistingParts, skipStorageCauses, nonExistingParts)
         && getPartitions(fact, floorToDate, toDate, partCol, null, partitions,
-        updatePeriods, addNonExistingParts, skipStorageCauses, nonExistingParts);
+          updatePeriods, addNonExistingParts, skipStorageCauses, nonExistingParts);
     } else {
       return true;
     }

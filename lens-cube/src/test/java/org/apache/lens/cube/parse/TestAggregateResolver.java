@@ -127,11 +127,10 @@ public class TestAggregateResolver extends TestQueryRewrite {
     String[] tests = {
       q1, q2, q3, q4, q5, q6, q7, q8, q9, q10,
     };
-    String[] expected =
-      {
-        expectedq1, expectedq2, expectedq3, expectedq4, expectedq5,
-        expectedq6, expectedq7, expectedq8, expectedq9, expectedq10,
-      };
+    String[] expected = {
+      expectedq1, expectedq2, expectedq3, expectedq4, expectedq5,
+      expectedq6, expectedq7, expectedq8, expectedq9, expectedq10,
+    };
 
     for (int i = 0; i < tests.length; i++) {
       String hql = rewrite(tests[i], conf);

@@ -181,18 +181,19 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
     TestCubeRewriter.compareContains(expected1, hqlQuery);
     TestCubeRewriter.compareContains(expected2, hqlQuery);
     TestCubeRewriter.compareContains(expected3, hqlQuery);
-    Assert.assertTrue(hqlQuery.toLowerCase().startsWith(
-      "select mq1.dim1 dim1, mq1.msr12 msr12," + " mq2.msr2 msr2, mq3.msr13 msr13, mq2.msr3 msr3 from ")
+    Assert.assertTrue(
+      hqlQuery.toLowerCase().startsWith(
+        "select mq1.dim1 dim1, mq1.msr12 msr12," + " mq2.msr2 msr2, mq3.msr13 msr13, mq2.msr3 msr3 from ")
       || hqlQuery.toLowerCase().startsWith(
-      "select mq1.dim1 dim1, mq1.msr12 msr12," + " mq3.msr2 msr2, mq2.msr13 msr13, mq3.msr3 msr3 from ")
+        "select mq1.dim1 dim1, mq1.msr12 msr12," + " mq3.msr2 msr2, mq2.msr13 msr13, mq3.msr3 msr3 from ")
       || hqlQuery.toLowerCase().startsWith(
-      "select mq1.dim1 dim1, mq2.msr12 msr12," + " mq1.msr2 msr2, mq3.msr13 msr13, mq1.msr3 msr3 from ")
+        "select mq1.dim1 dim1, mq2.msr12 msr12," + " mq1.msr2 msr2, mq3.msr13 msr13, mq1.msr3 msr3 from ")
       || hqlQuery.toLowerCase().startsWith(
-      "select mq1.dim1 dim1, mq2.msr12 msr12," + " mq3.msr2 msr2, mq1.msr13 msr13, mq3.msr3 msr3 from ")
+        "select mq1.dim1 dim1, mq2.msr12 msr12," + " mq3.msr2 msr2, mq1.msr13 msr13, mq3.msr3 msr3 from ")
       || hqlQuery.toLowerCase().startsWith(
-      "select mq1.dim1 dim1, mq3.msr12 msr12," + " mq1.msr2 msr2, mq2.msr13 msr13, mq1.msr3 msr3 from ")
+        "select mq1.dim1 dim1, mq3.msr12 msr12," + " mq1.msr2 msr2, mq2.msr13 msr13, mq1.msr3 msr3 from ")
       || hqlQuery.toLowerCase().startsWith(
-      "select mq1.dim1 dim1, mq3.msr12 msr12," + " mq2.msr2 msr2, mq1.msr13 msr13, mq2.msr3 msr3 from "));
+        "select mq1.dim1 dim1, mq3.msr12 msr12," + " mq2.msr2 msr2, mq1.msr13 msr13, mq2.msr3 msr3 from "));
     Assert.assertTrue(hqlQuery.contains("mq1 full outer join ") && hqlQuery.contains("mq2 full outer join ")
       && hqlQuery.endsWith("mq3 on mq1.dim1 = mq2.dim1 AND mq1.dim1 = mq3.dim1"));
 
@@ -210,7 +211,7 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
     Assert.assertTrue(hqlQuery.toLowerCase().startsWith(
       "select mq1.dim1 dim1, mq1.dim11 dim11," + " mq1.msr12 msr12, mq2.msr2 msr2 from ")
       || hqlQuery.toLowerCase().startsWith(
-      "select mq1.dim1 dim1, mq1.dim11 dim11," + " mq2.msr12 msr12, mq1.msr2 msr2 from "));
+        "select mq1.dim1 dim1, mq1.dim11 dim11," + " mq2.msr12 msr12, mq1.msr2 msr2 from "));
 
     Assert.assertTrue(hqlQuery.contains("mq1 full outer join ")
       && hqlQuery.endsWith("mq2 on mq1.dim1 = mq2.dim1 AND mq1.dim11 = mq2.dim11"));
