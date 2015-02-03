@@ -27,5 +27,5 @@ interface ContextRewriter {
    * @param cubeql CubeQueryContext
    * @throws SemanticException
    */
-  public void rewriteContext(CubeQueryContext cubeql) throws SemanticException;
+  void rewriteContext(CubeQueryContext cubeql) throws SemanticException;
 }

@@ -19,12 +19,17 @@
 
 package org.apache.lens.cube.metadata;
 
+import static org.apache.lens.cube.metadata.MetastoreConstants.*;
+
 import java.util.*;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
 
-public class MetastoreUtil implements MetastoreConstants {
+public class MetastoreUtil {
+  private MetastoreUtil() {
+
+  }
 
   public static final String getFactStorageTableName(String factName, String storageName) {
     return getStorageTableName(factName, Storage.getPrefix(storageName));
@@ -117,7 +122,7 @@ public class MetastoreUtil implements MetastoreConstants {
   }
 
   public static final String getReferencesString(List<TableReference> references) {
-    String toks[] = new String[references.size()];
+    String[] toks = new String[references.size()];
 
     for (int i = 0; i < references.size(); i++) {
       TableReference reference = references.get(i);
@@ -387,7 +392,8 @@ public class MetastoreUtil implements MetastoreConstants {
     addNameStrings(props, key, set, maxParamLength);
   }
 
-  static <E extends Named> void addNameStrings(Map<String, String> props, String key, Collection<E> set, int maxLength) {
+  static <E extends Named> void addNameStrings(Map<String, String> props, String key,
+    Collection<E> set, int maxLength) {
     List<String> namedStrings = getNamedStrs(set, maxLength);
     props.put(key + ".size", String.valueOf(namedStrings.size()));
     for (int i = 0; i < namedStrings.size(); i++) {

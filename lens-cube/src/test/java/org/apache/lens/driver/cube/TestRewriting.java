@@ -67,14 +67,14 @@ public class TestRewriting {
    */
   @ObjectFactory
   public IObjectFactory getObjectFactory() {
-    return new org.powermock.modules.testng.PowerMockObjectFactory();
+    return new PowerMockObjectFactory();
   }
 
   static int i = 0;
   // number of successful queries through mock rewriter
   // we use this number to mock failures after successful queries
   // change the number, if more tests for success needs to be added
-  static int NUM_SUCCESS = 36;
+  static final int NUM_SUCCESS = 36;
 
   private CubeQueryRewriter getMockedRewriter() throws SemanticException, ParseException {
     CubeQueryRewriter mockwriter = Mockito.mock(CubeQueryRewriter.class);
@@ -285,7 +285,8 @@ public class TestRewriting {
     Assert.assertEquals(cubeQueries.get(0).query, "cube select name from table");
     Assert.assertEquals(cubeQueries.get(1).query, "cube select name2 from table2");
 
-    q2 = "insert overwrite directory '/tmp/rewrite' select * from (cube select name from table union all cube select name2 from table2) u";
+    q2 = "insert overwrite directory '/tmp/rewrite' "
+      + "select * from (cube select name from table union all cube select name2 from table2) u";
     Assert.assertTrue(RewriteUtil.isCubeQuery(q2));
     cubeQueries = RewriteUtil.findCubePositions(q2);
     ctx = new QueryContext(q2, null, lensConf, conf, drivers);
@@ -368,7 +369,8 @@ public class TestRewriting {
     Assert.assertEquals(cubeQueries.get(0).query, "cube select name from table");
     Assert.assertEquals(cubeQueries.get(1).query, "cube select name2 from table2");
 
-    q2 = "create table temp1 as cube select name from table where time_range_in('dt', '2014-06-24-23', '2014-06-25-00')";
+    q2 = "create table temp1 as cube select name from table where"
+      + " time_range_in('dt', '2014-06-24-23', '2014-06-25-00')";
     Assert.assertTrue(RewriteUtil.isCubeQuery(q2));
     cubeQueries = RewriteUtil.findCubePositions(q2);
     ctx = new QueryContext(q2, null, lensConf, conf, drivers);
@@ -396,6 +398,7 @@ public class TestRewriting {
       th = e;
     }
     Assert.assertNotNull(th);
-    Assert.assertTrue(th.getMessage().contains("Rewriting failed, cause :No driver accepted the query, because Mock fail"));
+    Assert.assertTrue(
+      th.getMessage().contains("Rewriting failed, cause :No driver accepted the query, because Mock fail"));
   }
 }

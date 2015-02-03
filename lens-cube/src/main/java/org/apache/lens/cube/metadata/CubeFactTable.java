@@ -132,8 +132,7 @@ public final class CubeFactTable extends AbstractCubeTable {
   }
 
   /**
-   * Get partition value strings for given range, for the specified
-   * updateInterval
+   * Get partition value strings for given range, for the specified updateInterval
    *
    * @param fromDate
    * @param toDate

@@ -53,55 +53,55 @@ public class TestExpressionResolver extends TestQueryRewrite {
   @Test
   public void testColumnErrors() throws Exception {
     SemanticException th;
-    th = getSemanticExceptionInRewrite("select nocolexpr, SUM(msr2) from testCube" + " where " + twoDaysRange, conf);
+    th = getSemanticExceptionInRewrite("select nocolexpr, SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE, conf);
     Assert.assertEquals(th.getCanonicalErrorMsg().getErrorCode(), ErrorMsg.COLUMN_NOT_FOUND.getErrorCode());
     Assert.assertTrue(th.getMessage().contains("nonexist"));
 
-    th = getSemanticExceptionInRewrite("select invalidexpr, SUM(msr2) from testCube" + " where " + twoDaysRange, conf);
+    th = getSemanticExceptionInRewrite("select invalidexpr, SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE, conf);
     Assert.assertEquals(th.getCanonicalErrorMsg().getErrorCode(), ErrorMsg.COLUMN_NOT_FOUND.getErrorCode());
     Assert.assertTrue(th.getMessage().contains("invalidexpr"));
 
     // Query with column life not in the range
-    th = getSemanticExceptionInRewrite("cube select newexpr, SUM(msr2) from testCube" + " where " + twoDaysRange, conf);
+    th = getSemanticExceptionInRewrite("cube select newexpr, SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE, conf);
     Assert.assertEquals(th.getCanonicalErrorMsg().getErrorCode(), ErrorMsg.NOT_AVAILABLE_IN_RANGE.getErrorCode());
   }
 
   @Test
   public void testCubeQuery() throws Exception {
     // select with expression
-    String hqlQuery = rewrite("cube select" + " avgmsr from testCube where " + twoDaysRange, conf);
+    String hqlQuery = rewrite("cube select" + " avgmsr from testCube where " + TWO_DAYS_RANGE, conf);
     String expected =
       getExpectedQuery(cubeName, "select avg(testCube.msr1 + testCube.msr2) FROM ", null, null,
         getWhereForHourly2days("C1_testfact2_raw"));
     TestCubeRewriter.compareQueries(expected, hqlQuery);
 
-    hqlQuery = rewrite("select dim1, roundedmsr2 from testCube" + " where " + twoDaysRange, conf);
+    hqlQuery = rewrite("select dim1, roundedmsr2 from testCube" + " where " + TWO_DAYS_RANGE, conf);
     expected =
       getExpectedQuery(cubeName, "select testcube.dim1, round(sum(testcube.msr2)/1000) FROM ", null,
         " group by testcube.dim1", getWhereForDailyAndHourly2days(cubeName, "c1_summary1"));
     TestCubeRewriter.compareQueries(expected, hqlQuery);
 
     // where with expression
-    hqlQuery = rewrite("select msr2 from testCube" + " where " + twoDaysRange + " and substrexpr != 'XYZ'", conf);
+    hqlQuery = rewrite("select msr2 from testCube" + " where " + TWO_DAYS_RANGE + " and substrexpr != 'XYZ'", conf);
     expected =
       getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null, " and substr(testCube.dim1, 3) != 'XYZ'",
         getWhereForDailyAndHourly2days(cubeName, "c1_summary1"));
     TestCubeRewriter.compareQueries(expected, hqlQuery);
 
-    hqlQuery = rewrite("select SUM(msr2) from testCube" + " where substrexpr != 'XYZ' and " + twoDaysRange, conf);
+    hqlQuery = rewrite("select SUM(msr2) from testCube" + " where substrexpr != 'XYZ' and " + TWO_DAYS_RANGE, conf);
     expected =
       getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", "substr(testCube.dim1, 3) != 'XYZ'", null,
         getWhereForDailyAndHourly2days(cubeName, "c1_summary1"));
     TestCubeRewriter.compareQueries(expected, hqlQuery);
 
     // expression in select and where
-    hqlQuery = rewrite("select avgmsr from testCube" + " where " + twoDaysRange + " and substrexpr != 'XYZ'", conf);
+    hqlQuery = rewrite("select avgmsr from testCube" + " where " + TWO_DAYS_RANGE + " and substrexpr != 'XYZ'", conf);
     expected =
       getExpectedQuery(cubeName, "select avg(testCube.msr1 + testCube.msr2) FROM ", null,
         " and substr(testCube.dim1, 3) != 'XYZ'", getWhereForHourly2days("C1_testfact2_raw"));
     TestCubeRewriter.compareQueries(expected, hqlQuery);
 
-    hqlQuery = rewrite("select avgmsr from testCube" + " where " + twoDaysRange + " and indiasubstr = true", conf);
+    hqlQuery = rewrite("select avgmsr from testCube" + " where " + TWO_DAYS_RANGE + " and indiasubstr = true", conf);
     expected =
       getExpectedQuery(cubeName, "select avg(testCube.msr1 + testCube.msr2) FROM ", null,
         " and (substr(testCube.dim1, 3) = 'INDIA') = true", getWhereForHourly2days("C1_testfact2_raw"));
@@ -109,7 +109,7 @@ public class TestExpressionResolver extends TestQueryRewrite {
 
     // expression with alias
     hqlQuery =
-      rewrite("select TC.avgmsr from testCube TC" + " where " + twoDaysRange + " and TC.substrexpr != 'XYZ'", conf);
+      rewrite("select TC.avgmsr from testCube TC" + " where " + TWO_DAYS_RANGE + " and TC.substrexpr != 'XYZ'", conf);
     expected =
       getExpectedQuery("tc", "select avg(tc.msr1 + tc.msr2) FROM ", null, " and substr(tc.dim1, 3) != 'XYZ'",
         getWhereForHourly2days("tc", "C1_testfact2_raw"));
@@ -117,7 +117,7 @@ public class TestExpressionResolver extends TestQueryRewrite {
 
     // expression with column alias
     hqlQuery =
-      rewrite("select TC.substrexpr as subdim1, TC.avgmsr from testCube TC" + " where " + twoDaysRange
+      rewrite("select TC.substrexpr as subdim1, TC.avgmsr from testCube TC" + " where " + TWO_DAYS_RANGE
         + " and subdim1 != 'XYZ'", conf);
     expected =
       getExpectedQuery("tc", "select substr(tc.dim1, 3) subdim1, avg(tc.msr1 + tc.msr2) FROM ", null,
@@ -126,7 +126,7 @@ public class TestExpressionResolver extends TestQueryRewrite {
 
     // expression with groupby
     hqlQuery =
-      rewrite("select avgmsr from testCube" + " where " + twoDaysRange
+      rewrite("select avgmsr from testCube" + " where " + TWO_DAYS_RANGE
         + " and substrexpr != 'XYZ' group by booleancut", conf);
     expected =
       getExpectedQuery(cubeName, "select testCube.dim1 != 'x' AND testCube.dim2 != 10 ,"
@@ -135,7 +135,7 @@ public class TestExpressionResolver extends TestQueryRewrite {
     TestCubeRewriter.compareQueries(expected, hqlQuery);
 
     hqlQuery =
-      rewrite("select booleancut, avgmsr from testCube" + " where " + twoDaysRange + " and substrexpr != 'XYZ'", conf);
+      rewrite("select booleancut, avgmsr from testCube" + " where " + TWO_DAYS_RANGE + " and substrexpr != 'XYZ'", conf);
     expected =
       getExpectedQuery(cubeName, "select testCube.dim1 != 'x' AND testCube.dim2 != 10 ,"
         + " avg(testCube.msr1 + testCube.msr2) FROM ", null, " and substr(testCube.dim1, 3) != 'XYZ' "
@@ -144,7 +144,7 @@ public class TestExpressionResolver extends TestQueryRewrite {
 
     // expression which results in join
     hqlQuery =
-      rewrite("select cityAndState, avgmsr from testCube" + " where " + twoDaysRange + " and substrexpr != 'XYZ'",
+      rewrite("select cityAndState, avgmsr from testCube" + " where " + TWO_DAYS_RANGE + " and substrexpr != 'XYZ'",
         conf);
 
     String join1 =
@@ -162,7 +162,7 @@ public class TestExpressionResolver extends TestQueryRewrite {
 
     hqlQuery =
       rewrite("select cityAndState, avgmsr from testCube tc" + " join citydim cd join statedim sd " + " where "
-        + twoDaysRange + " and substrexpr != 'XYZ'", conf);
+        + TWO_DAYS_RANGE + " and substrexpr != 'XYZ'", conf);
 
     join1 = " inner join " + getDbName() + "c1_citytable cd" + " on tc.cityid = cd.id and (cd.dt = 'latest')";
     join2 = " inner join" + getDbName() + "c1_statetable sd on" + " tc.stateid = sd.id and (sd.dt = 'latest')";
@@ -177,7 +177,7 @@ public class TestExpressionResolver extends TestQueryRewrite {
     joinWhereConds.add(StorageUtil.getWherePartClause("dt", "statedim", StorageConstants.getPartitionsForLatest()));
     hqlQuery =
       rewrite("select cityAndState, avgmsr from testCube " + " join citydim on substrexpr != 'XYZ' where "
-        + twoDaysRange, conf);
+        + TWO_DAYS_RANGE, conf);
 
     joinExpr =
       "join" + getDbName() + "c1_statetable statedim on" + " testcube.stateid = statedim.id" +
@@ -192,7 +192,7 @@ public class TestExpressionResolver extends TestQueryRewrite {
 
     // expression with having clause
     hqlQuery =
-      rewrite("cube select booleancut, avgmsr from testCube" + " where " + twoDaysRange + " and substrexpr != 'XYZ'"
+      rewrite("cube select booleancut, avgmsr from testCube" + " where " + TWO_DAYS_RANGE + " and substrexpr != 'XYZ'"
         + " having msr6 > 100.0", conf);
     expected =
       getExpectedQuery(cubeName, "select testCube.dim1 != 'x' AND testCube.dim2 != 10 ,"
@@ -204,7 +204,7 @@ public class TestExpressionResolver extends TestQueryRewrite {
 
     // expression with orderby clause
     hqlQuery =
-      rewrite("cube select avgmsr from testCube " + " where " + twoDaysRange + " and substrexpr != 'XYZ'"
+      rewrite("cube select avgmsr from testCube " + " where " + TWO_DAYS_RANGE + " and substrexpr != 'XYZ'"
         + " group by booleancut having msr6 > 100.0 order by booleancut", conf);
     expected =
       getExpectedQuery(cubeName, "select testCube.dim1 != 'x' AND testCube.dim2 != 10 ,"
@@ -215,7 +215,7 @@ public class TestExpressionResolver extends TestQueryRewrite {
     TestCubeRewriter.compareQueries(expected, hqlQuery);
 
     hqlQuery =
-      rewrite("cube select booleancut bc, msr2 from testCube" + " where " + twoDaysRange + " and substrexpr != 'XYZ'"
+      rewrite("cube select booleancut bc, msr2 from testCube" + " where " + TWO_DAYS_RANGE + " and substrexpr != 'XYZ'"
         + " having msr6 > 100.0 order by bc", conf);
     expected =
       getExpectedQuery(cubeName, "select testCube.dim1 != 'x' AND testCube.dim2 != 10 bc,"
@@ -229,7 +229,7 @@ public class TestExpressionResolver extends TestQueryRewrite {
   @Test
   public void testDerivedCube() throws SemanticException, ParseException {
     SemanticException th =
-      getSemanticExceptionInRewrite("select avgmsr from derivedCube" + " where " + twoDaysRange, conf);
+      getSemanticExceptionInRewrite("select avgmsr from derivedCube" + " where " + TWO_DAYS_RANGE, conf);
     Assert.assertEquals(th.getCanonicalErrorMsg().getErrorCode(), ErrorMsg.COLUMN_NOT_FOUND.getErrorCode());
   }
 

@@ -51,7 +51,8 @@ public class CubeSemanticAnalyzer extends SemanticAnalyzer {
     QB qb = new QB(null, null, false);
     // do not allow create table/view commands
     // TODO Move this to a validation rule
-    if (ast.getToken().getType() == HiveParser.TOK_CREATETABLE || ast.getToken().getType() == HiveParser.TOK_CREATEVIEW) {
+    if (ast.getToken().getType() == HiveParser.TOK_CREATETABLE
+      || ast.getToken().getType() == HiveParser.TOK_CREATEVIEW) {
       throw new SemanticException(ErrorMsg.CREATE_NOT_ALLOWED);
     }
 

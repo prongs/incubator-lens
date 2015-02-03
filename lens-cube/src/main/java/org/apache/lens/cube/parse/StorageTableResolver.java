@@ -38,8 +38,8 @@ import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.util.ReflectionUtils;
 
 /**
- * Resolve storages and partitions of all candidate tables and prunes candidate
- * tables with missing storages or partitions.
+ * Resolve storages and partitions of all candidate tables and prunes candidate tables with missing storages or
+ * partitions.
  */
 class StorageTableResolver implements ContextRewriter {
   private static Log LOG = LogFactory.getLog(StorageTableResolver.class.getName());

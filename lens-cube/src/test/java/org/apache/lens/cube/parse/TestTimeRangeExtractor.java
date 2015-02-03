@@ -42,8 +42,8 @@ public class TestTimeRangeExtractor extends TestQueryRewrite {
   @BeforeTest
   public void setupInstance() throws Exception {
     driver = new CubeQueryRewriter(new HiveConf());
-    dateTwoDaysBack = getDateUptoHours(twodaysBack);
-    dateNow = getDateUptoHours(now);
+    dateTwoDaysBack = getDateUptoHours(TWODAYS_BACK);
+    dateNow = getDateUptoHours(NOW);
 
   }
 
@@ -105,8 +105,8 @@ public class TestTimeRangeExtractor extends TestQueryRewrite {
   @Test
   public void testTimeRangeWithinTimeRange() throws Exception {
     System.out.println("###");
-    String dateTwoDaysBack = getDateUptoHours(twodaysBack);
-    String dateNow = getDateUptoHours(now);
+    String dateTwoDaysBack = getDateUptoHours(TWODAYS_BACK);
+    String dateNow = getDateUptoHours(NOW);
     // time range within time range
     String q3 =
       "SELECT cityid, testCube.msr3 FROM testCube where cityid=1 AND" + "  (time_range_in(dt, '" + dateTwoDaysBack

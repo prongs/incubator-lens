@@ -50,9 +50,9 @@ public class TestBetweenTimeRangeWriter extends TestTimeRangeWriter {
     String expected = null;
     if (format == null) {
       expected =
-        getBetweenClause("test", "dt", CubeTestSetup.twodaysBack, CubeTestSetup.now, UpdatePeriod.DAILY.format());
+        getBetweenClause("test", "dt", CubeTestSetup.TWODAYS_BACK, CubeTestSetup.NOW, UpdatePeriod.DAILY.format());
     } else {
-      expected = getBetweenClause("test", "dt", CubeTestSetup.twodaysBack, CubeTestSetup.now, format);
+      expected = getBetweenClause("test", "dt", CubeTestSetup.TWODAYS_BACK, CubeTestSetup.NOW, format);
     }
     Assert.assertEquals(expected, whereClause);
   }
@@ -67,9 +67,9 @@ public class TestBetweenTimeRangeWriter extends TestTimeRangeWriter {
   public void validateSingle(String whereClause, DateFormat format) {
     List<String> parts = new ArrayList<String>();
     if (format == null) {
-      parts.add(UpdatePeriod.DAILY.format().format(CubeTestSetup.oneDayBack));
+      parts.add(UpdatePeriod.DAILY.format().format(CubeTestSetup.ONE_DAY_BACK));
     } else {
-      parts.add(format.format(CubeTestSetup.oneDayBack));
+      parts.add(format.format(CubeTestSetup.ONE_DAY_BACK));
     }
 
     System.out.println("Expected :" + StorageUtil.getWherePartClause("dt", "test", parts));

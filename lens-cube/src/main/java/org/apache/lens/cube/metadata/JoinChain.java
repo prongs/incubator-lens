@@ -117,7 +117,7 @@ public class JoinChain implements Named {
       } else {
         refListStr = props.get(MetastoreUtil.getDimensionJoinChainFullChainKey(getName(), i));
       }
-      String refListDims[] = StringUtils.split(refListStr, ",");
+      String[] refListDims = StringUtils.split(refListStr, ",");
       TableReference from = null;
       for (String refDimRaw : refListDims) {
         if (from == null) {

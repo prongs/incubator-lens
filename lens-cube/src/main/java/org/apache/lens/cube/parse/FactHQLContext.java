@@ -28,12 +28,11 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
 
 /**
- * HQL context class which passes all query strings from the fact and works with
- * required dimensions for the fact.
+ * HQL context class which passes all query strings from the fact and works with required dimensions for the fact.
  */
 public class FactHQLContext extends DimHQLContext {
 
-  public static Log LOG = LogFactory.getLog(FactHQLContext.class.getName());
+  public static final Log LOG = LogFactory.getLog(FactHQLContext.class.getName());
 
   private final CandidateFact fact;
   private final Set<Dimension> factDims;

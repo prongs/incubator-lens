@@ -38,8 +38,7 @@ import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.plan.PlanUtils;
 
 /**
- * Finds all timeranges in the query and does validation wrt the queried field's
- * life and the range queried
+ * Finds all timeranges in the query and does validation wrt the queried field's life and the range queried
  */
 class TimerangeResolver implements ContextRewriter {
   private static Log LOG = LogFactory.getLog(TimerangeResolver.class.getName());

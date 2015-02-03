@@ -55,7 +55,8 @@ class JoinResolver implements ContextRewriter {
     private final JoinTree joinTree;
     transient Map<AbstractCubeTable, Set<String>> chainColumns = new HashMap<AbstractCubeTable, Set<String>>();
 
-    public JoinClause(CubeQueryContext cubeql, Map<Aliased<Dimension>, List<TableRelationship>> chain, Set<Dimension> dimsInPath) {
+    public JoinClause(CubeQueryContext cubeql, Map<Aliased<Dimension>,
+      List<TableRelationship>> chain, Set<Dimension> dimsInPath) {
       this.cubeql = cubeql;
       this.chain = chain;
       this.joinTree = mergeJoinChains(chain);
@@ -93,37 +94,36 @@ class JoinResolver implements ContextRewriter {
     }
 
     /**
-     * Takes chains and merges them in the form of a tree. If two chains have some common path
-     * till some table and bifurcate from there, then in the chain, both paths will have the common
-     * path but the resultant tree will have single path from root(cube) to that table and paths
-     * will bifurcate from there.
+     * Takes chains and merges them in the form of a tree. If two chains have some common path till some table and
+     * bifurcate from there, then in the chain, both paths will have the common path but the resultant tree will have
+     * single path from root(cube) to that table and paths will bifurcate from there.
      * <p/>
-     * For example, citystate = [basecube.cityid=citydim.id], [citydim.stateid=statedim.id]
-     * cityzip   = [basecube.cityid=citydim.id], [citydim.zipcode=zipdim.code]
+     * For example, citystate   =   [basecube.cityid=citydim.id], [citydim.stateid=statedim.id]
+     *              cityzip     =   [basecube.cityid=citydim.id], [citydim.zipcode=zipdim.code]
      * <p/>
      * Without merging, the behaviour is like this:
      * <p/>
      * <p/>
-     * (basecube.cityid=citydim.id)          (citydim.stateid=statedim.id)
-     * ____________________________citydim-------------------------------------statedim
-     * |
-     * basecube-----
-     * |____________________________citydim-------------------------------------zipdim
-     * (basecube.cityid=citydim.id)         (citydim.zipcode=zipdim.code)
-     * <p/>
-     * <p/>
+     *                  (basecube.cityid=citydim.id)          (citydim.stateid=statedim.id)
+     *                  _____________________________citydim____________________________________statedim
+     *                 |
+     *   basecube------|
+     *                 |_____________________________citydim____________________________________zipdim
+     *
+     *                  (basecube.cityid=citydim.id)          (citydim.zipcode=zipdim.code)
+     *
      * <p/>
      * Merging will result in a tree like following
+     * <p/>                                                  (citydim.stateid=statedim.id)
+     * <p/>                                                ________________________________ statedim
+     *             (basecube.cityid=citydim.id)           |
+     * basecube-------------------------------citydim---- |
+     *                                                    |________________________________  zipdim
+     *
+     *                                                       (citydim.zipcode=zipdim.code)
+     *
      * <p/>
-     * <p/>
-     * (citydim.stateid=statedim.id)
-     * ________________________________ statedim
-     * (basecube.cityid=citydim.id)            |
-     * basecube-------------------------------citydim----
-     * |________________________________  zipdim
-     * (citydim.zipcode=zipdim.code)
-     * <p/>
-     * Doing this will reduce the number of joins whereever possible.
+     * Doing this will reduce the number of joins wherever possible.
      *
      * @param chain Joins in Linear format.
      * @return Joins in Tree format
@@ -738,9 +738,8 @@ class JoinResolver implements ContextRewriter {
     }
 
     /**
-     * There can be multiple join paths between a dimension and the target. Set
-     * of all possible join clauses is the cartesian product of join paths of
-     * all dimensions
+     * There can be multiple join paths between a dimension and the target. Set of all possible join clauses is the
+     * cartesian product of join paths of all dimensions
      */
     private Iterator<JoinClause> getJoinClausesForAllPaths(final CandidateFact fact,
       final Set<Dimension> qdims, final CubeQueryContext cubeql) {
@@ -816,8 +815,7 @@ class JoinResolver implements ContextRewriter {
     }
 
     /**
-     * Given allPaths, it will remove entries where key is a non-join chain dimension and not contained
-     * in qdims
+     * Given allPaths, it will remove entries where key is a non-join chain dimension and not contained in qdims
      *
      * @param allPaths
      * @param qdims
@@ -1075,10 +1073,10 @@ class JoinResolver implements ContextRewriter {
           }
         }
       } else if (dimensionInJoinChain.get(joinee).size() > 1) {
-        throw new SemanticException("Table " + joinee.getName() + " has " +
-          dimensionInJoinChain.get(joinee).size() + " different paths through joinchains " +
-          "(" + dimensionInJoinChain.get(joinee) + ")" +
-          " used in query. Couldn't determine which one to use");
+        throw new SemanticException("Table " + joinee.getName() + " has "
+          +dimensionInJoinChain.get(joinee).size() + " different paths through joinchains "
+          +"(" + dimensionInJoinChain.get(joinee) + ")"
+          +" used in query. Couldn't determine which one to use");
       } else {
         // the case when dimension is used only once in all joinchains.
         if (isJoinchainDestination(cubeql, joinee)) {

@@ -29,7 +29,11 @@ import org.apache.hadoop.conf.Configuration;
 /**
  * Contains all configurations of cube query rewriting.
  */
-public class CubeQueryConfUtil {
+public final class CubeQueryConfUtil {
+  private CubeQueryConfUtil() {
+
+  }
+
   public static final String STORAGE_TABLES_SFX = ".storagetables";
   public static final String UPDATE_PERIODS_SFX = ".updateperiods";
   public static final String FACT_TABLES_SFX = ".facttables";

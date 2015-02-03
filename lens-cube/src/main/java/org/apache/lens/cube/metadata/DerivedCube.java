@@ -27,10 +27,10 @@ import org.apache.hadoop.hive.ql.metadata.Table;
 
 public class DerivedCube extends AbstractCubeTable implements CubeInterface {
 
-  private static final List<FieldSchema> columns = new ArrayList<FieldSchema>();
+  private static final List<FieldSchema> COLUMNS = new ArrayList<FieldSchema>();
 
   static {
-    columns.add(new FieldSchema("dummy", "string", "dummy column"));
+    COLUMNS.add(new FieldSchema("dummy", "string", "dummy column"));
   }
 
   private final Cube parent;
@@ -43,7 +43,7 @@ public class DerivedCube extends AbstractCubeTable implements CubeInterface {
 
   public DerivedCube(String name, Set<String> measures, Set<String> dimensions, Map<String, String> properties,
     double weight, Cube parent) {
-    super(name, columns, properties, weight);
+    super(name, COLUMNS, properties, weight);
     for (String msr : measures) {
       this.measures.add(msr.toLowerCase());
     }

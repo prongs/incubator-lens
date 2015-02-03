@@ -40,20 +40,10 @@ import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.antlr.runtime.CommonToken;
 
 /**
- * <p>
- * Replace select and having columns with default aggregate functions on them,
- * if default aggregate is defined and if there isn't already an aggregate
- * function specified on the columns.
- * </p>
- * <p/>
- * <p>
- * Expressions which already contain aggregate sub-expressions will not be
- * changed.
- * </p>
- * <p/>
- * <p>
- * At this point it's assumed that aliases have been added to all columns.
- * </p>
+ * <p> Replace select and having columns with default aggregate functions on them, if default aggregate is defined and
+ * if there isn't already an aggregate function specified on the columns. </p> <p/> <p> Expressions which already
+ * contain aggregate sub-expressions will not be changed. </p> <p/> <p> At this point it's assumed that aliases have
+ * been added to all columns. </p>
  */
 class AggregateResolver implements ContextRewriter {
   public static final Log LOG = LogFactory.getLog(AggregateResolver.class.getName());
@@ -264,8 +254,9 @@ class AggregateResolver implements ContextRewriter {
       }
     }
     for (int i = 0; i < node.getChildCount(); i++) {
-      if (isDistinctClauseUsed((ASTNode) node.getChild(i)))
+      if (isDistinctClauseUsed((ASTNode) node.getChild(i))) {
         return true;
+      }
     }
     return false;
   }

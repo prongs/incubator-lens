@@ -51,41 +51,41 @@ public class TestAggregateResolver extends TestQueryRewrite {
     conf.setBoolean(CubeQueryConfUtil.DISABLE_AGGREGATE_RESOLVER, false);
 
     // pass
-    String q1 = "SELECT cityid, testCube.msr2 from testCube where " + twoDaysRange;
+    String q1 = "SELECT cityid, testCube.msr2 from testCube where " + TWO_DAYS_RANGE;
 
     // pass
-    String q2 = "SELECT cityid, testCube.msr2 * testCube.msr3 from testCube where " + twoDaysRange;
+    String q2 = "SELECT cityid, testCube.msr2 * testCube.msr3 from testCube where " + TWO_DAYS_RANGE;
 
     // pass
-    String q3 = "SELECT cityid, sum(testCube.msr2) from testCube where " + twoDaysRange;
+    String q3 = "SELECT cityid, sum(testCube.msr2) from testCube where " + TWO_DAYS_RANGE;
 
     // pass
-    String q4 = "SELECT cityid, sum(testCube.msr2) from testCube where " + twoDaysRange + " having testCube.msr2 > 100";
+    String q4 = "SELECT cityid, sum(testCube.msr2) from testCube where " + TWO_DAYS_RANGE + " having testCube.msr2 > 100";
 
     // pass
     String q5 =
-      "SELECT cityid, testCube.msr2 from testCube where " + twoDaysRange
+      "SELECT cityid, testCube.msr2 from testCube where " + TWO_DAYS_RANGE
         + " having testCube.msr2 + testCube.msr3 > 100";
 
     // pass
     String q6 =
-      "SELECT cityid, testCube.msr2 from testCube where " + twoDaysRange
+      "SELECT cityid, testCube.msr2 from testCube where " + TWO_DAYS_RANGE
         + " having testCube.msr2 > 100 AND testCube.msr2 < 1000";
 
     // pass
     String q7 =
-      "SELECT cityid, sum(testCube.msr2) from testCube where " + twoDaysRange
+      "SELECT cityid, sum(testCube.msr2) from testCube where " + TWO_DAYS_RANGE
         + " having (testCube.msr2 > 100) OR (testcube.msr2 < 100" + " AND max(testcube.msr3) > 1000)";
 
     // pass
-    String q8 = "SELECT cityid, sum(testCube.msr2) * max(testCube.msr3) from" + " testCube where " + twoDaysRange;
+    String q8 = "SELECT cityid, sum(testCube.msr2) * max(testCube.msr3) from" + " testCube where " + TWO_DAYS_RANGE;
 
     // pass
     String q9 =
-      "SELECT cityid c1, max(msr3) m3 from testCube where " + "c1 > 100 and " + twoDaysRange + " having (msr2 < 100"
+      "SELECT cityid c1, max(msr3) m3 from testCube where " + "c1 > 100 and " + TWO_DAYS_RANGE + " having (msr2 < 100"
         + " AND m3 > 1000)";
 
-    String q10 = "SELECT cityid, round(testCube.msr2) from testCube where " + twoDaysRange;
+    String q10 = "SELECT cityid, round(testCube.msr2) from testCube where " + TWO_DAYS_RANGE;
 
     String expectedq1 =
       getExpectedQuery(cubeName, "SELECT testcube.cityid," + " sum(testCube.msr2) from ", null,
@@ -143,7 +143,7 @@ public class TestAggregateResolver extends TestQueryRewrite {
     conf.setBoolean(CubeQueryConfUtil.DISABLE_AGGREGATE_RESOLVER, false);
 
     //Add distinct
-    String query1 = "SELECT testcube.cityid,testcube.zipcode,testcube.stateid from testCube where " + twoDaysRange;
+    String query1 = "SELECT testcube.cityid,testcube.zipcode,testcube.stateid from testCube where " + TWO_DAYS_RANGE;
     String hQL1 = rewrite(query1, conf);
     String expectedQL1 =
       getExpectedQuery(cubeName, "SELECT distinct testcube.cityid, testcube.zipcode, testcube.stateid" + " from ", null,
@@ -151,7 +151,7 @@ public class TestAggregateResolver extends TestQueryRewrite {
     compareQueries(expectedQL1, hQL1);
 
     //Don't add distinct
-    String query2 = "SELECT count (distinct testcube.cityid) from testcube where " + twoDaysRange;
+    String query2 = "SELECT count (distinct testcube.cityid) from testcube where " + TWO_DAYS_RANGE;
     String hQL2 = rewrite(query2, conf);
     String expectedQL2 =
       getExpectedQuery(cubeName, "SELECT count (distinct testcube.cityid)" + " from ", null, null,
@@ -159,7 +159,7 @@ public class TestAggregateResolver extends TestQueryRewrite {
     compareQueries(expectedQL2, hQL2);
 
     //Don't add distinct
-    String query3 = "SELECT  testcube.cityid, count(distinct testcube.stateid) from testcube where " + twoDaysRange;
+    String query3 = "SELECT  testcube.cityid, count(distinct testcube.stateid) from testcube where " + TWO_DAYS_RANGE;
     String hQL3 = rewrite(query3, conf);
     String expectedQL3 =
       getExpectedQuery(cubeName, "SELECT testcube.cityid, count(distinct testcube.stateid)" + " from ", null,
@@ -167,7 +167,7 @@ public class TestAggregateResolver extends TestQueryRewrite {
     compareQueries(expectedQL3, hQL3);
 
     //Don't add distinct
-    String query4 = "SELECT  count(testcube.stateid) from testcube where " + twoDaysRange;
+    String query4 = "SELECT  count(testcube.stateid) from testcube where " + TWO_DAYS_RANGE;
     String hQL4 = rewrite(query4, conf);
     String expectedQL4 =
       getExpectedQuery(cubeName, "SELECT count(testcube.stateid)" + " from ", null,
@@ -176,7 +176,7 @@ public class TestAggregateResolver extends TestQueryRewrite {
 
     //Don't add distinct, by setting the flag false
     conf.setBoolean(CubeQueryConfUtil.ENABLE_ATTRFIELDS_ADD_DISTINCT, false);
-    String query5 = "SELECT  testcube.stateid from testcube where " + twoDaysRange;
+    String query5 = "SELECT  testcube.stateid from testcube where " + TWO_DAYS_RANGE;
     String hQL5 = rewrite(query5, conf);
     String expectedQL5 =
       getExpectedQuery(cubeName, "SELECT testcube.stateid" + " from ", null,
@@ -193,7 +193,7 @@ public class TestAggregateResolver extends TestQueryRewrite {
 
     // Test if raw fact is selected for query with no aggregate function on a
     // measure, with aggregate resolver disabled
-    String query = "SELECT cityid, testCube.msr2 FROM testCube WHERE " + twoDaysRange;
+    String query = "SELECT cityid, testCube.msr2 FROM testCube WHERE " + TWO_DAYS_RANGE;
     CubeQueryContext cubeql = rewriteCtx(query, conf2);
     String hQL = cubeql.toHQL();
     Assert.assertEquals(1, cubeql.getCandidateFactTables().size());
@@ -209,7 +209,7 @@ public class TestAggregateResolver extends TestQueryRewrite {
   }
 
   private void aggregateFactSelectionTests(Configuration conf) throws SemanticException, ParseException {
-    String query = "SELECT count(distinct cityid) from testcube where " + twoDaysRange;
+    String query = "SELECT count(distinct cityid) from testcube where " + TWO_DAYS_RANGE;
     CubeQueryContext cubeql = rewriteCtx(query, conf);
     String hQL = cubeql.toHQL();
     String expectedQL =
@@ -217,7 +217,7 @@ public class TestAggregateResolver extends TestQueryRewrite {
         getWhereForDailyAndHourly2days(cubeName, "C2_testfact"));
     compareQueries(expectedQL, hQL);
 
-    query = "SELECT distinct cityid from testcube where " + twoDaysRange;
+    query = "SELECT distinct cityid from testcube where " + TWO_DAYS_RANGE;
     hQL = rewrite(query, conf);
     expectedQL =
       getExpectedQuery(cubeName, "SELECT distinct testcube.cityid," + " from ", null, null,
@@ -226,7 +226,7 @@ public class TestAggregateResolver extends TestQueryRewrite {
 
     // with aggregate resolver on/off, msr with its default aggregate around it
     // should pick up aggregated fact
-    query = "SELECT cityid, sum(testCube.msr2) FROM testCube WHERE " + twoDaysRange;
+    query = "SELECT cityid, sum(testCube.msr2) FROM testCube WHERE " + TWO_DAYS_RANGE;
     cubeql = rewriteCtx(query, conf);
     hQL = cubeql.toHQL();
     expectedQL =
@@ -234,7 +234,7 @@ public class TestAggregateResolver extends TestQueryRewrite {
         "group by testcube.cityid", getWhereForDailyAndHourly2days(cubeName, "C2_testfact"));
     compareQueries(expectedQL, hQL);
 
-    query = "SELECT cityid, sum(testCube.msr2) m2 FROM testCube WHERE " + twoDaysRange + " order by m2";
+    query = "SELECT cityid, sum(testCube.msr2) m2 FROM testCube WHERE " + TWO_DAYS_RANGE + " order by m2";
     cubeql = rewriteCtx(query, conf);
     hQL = cubeql.toHQL();
     expectedQL =
@@ -242,7 +242,7 @@ public class TestAggregateResolver extends TestQueryRewrite {
         "group by testcube.cityid order by m2 asc", getWhereForDailyAndHourly2days(cubeName, "C2_testfact"));
     compareQueries(expectedQL, hQL);
 
-    query = "SELECT cityid, sum(testCube.msr2) FROM testCube WHERE " + twoDaysRange + " having max(msr3) > 100";
+    query = "SELECT cityid, sum(testCube.msr2) FROM testCube WHERE " + TWO_DAYS_RANGE + " having max(msr3) > 100";
     cubeql = rewriteCtx(query, conf);
     hQL = cubeql.toHQL();
     expectedQL =
@@ -254,7 +254,7 @@ public class TestAggregateResolver extends TestQueryRewrite {
 
   private void rawFactSelectionTests(Configuration conf) throws SemanticException, ParseException {
     // Check a query with non default aggregate function
-    String query = "SELECT cityid, avg(testCube.msr2) FROM testCube WHERE " + twoDaysRange;
+    String query = "SELECT cityid, avg(testCube.msr2) FROM testCube WHERE " + TWO_DAYS_RANGE;
     CubeQueryContext cubeql = rewriteCtx(query, conf);
     String hQL = cubeql.toHQL();
     Assert.assertEquals(1, cubeql.getCandidateFactTables().size());
@@ -266,7 +266,7 @@ public class TestAggregateResolver extends TestQueryRewrite {
     compareQueries(expectedQL, hQL);
 
     // query with measure in a where clause
-    query = "SELECT cityid, sum(testCube.msr2) FROM testCube WHERE testCube.msr1 < 100 and " + twoDaysRange;
+    query = "SELECT cityid, sum(testCube.msr2) FROM testCube WHERE testCube.msr1 < 100 and " + TWO_DAYS_RANGE;
     cubeql = rewriteCtx(query, conf);
     Assert.assertEquals(1, cubeql.getCandidateFactTables().size());
     candidateFact = cubeql.getCandidateFactTables().iterator().next();
@@ -277,7 +277,7 @@ public class TestAggregateResolver extends TestQueryRewrite {
         "group by testcube.cityid", getWhereForHourly2days("c1_testfact2_raw"));
     compareQueries(expectedQL, hQL);
 
-    query = "SELECT cityid, testCube.msr2 FROM testCube WHERE testCube.msr2 < 100 and " + twoDaysRange;
+    query = "SELECT cityid, testCube.msr2 FROM testCube WHERE testCube.msr2 < 100 and " + TWO_DAYS_RANGE;
     cubeql = rewriteCtx(query, conf);
     Assert.assertEquals(1, cubeql.getCandidateFactTables().size());
     candidateFact = cubeql.getCandidateFactTables().iterator().next();
@@ -288,7 +288,7 @@ public class TestAggregateResolver extends TestQueryRewrite {
         getWhereForHourly2days("c1_testfact2_raw"));
     compareQueries(expectedQL, hQL);
 
-    query = "SELECT cityid, sum(testCube.msr2) FROM testCube WHERE " + twoDaysRange + " group by testCube.msr1";
+    query = "SELECT cityid, sum(testCube.msr2) FROM testCube WHERE " + TWO_DAYS_RANGE + " group by testCube.msr1";
     cubeql = rewriteCtx(query, conf);
     Assert.assertEquals(1, cubeql.getCandidateFactTables().size());
     candidateFact = cubeql.getCandidateFactTables().iterator().next();
@@ -299,7 +299,7 @@ public class TestAggregateResolver extends TestQueryRewrite {
         " group by testCube.msr1, testcube.cityid", getWhereForHourly2days("c1_testfact2_raw"));
     compareQueries(expectedQL, hQL);
 
-    query = "SELECT cityid, sum(testCube.msr2) FROM testCube WHERE " + twoDaysRange + " group by testCube.msr3";
+    query = "SELECT cityid, sum(testCube.msr2) FROM testCube WHERE " + TWO_DAYS_RANGE + " group by testCube.msr3";
     cubeql = rewriteCtx(query, conf);
     Assert.assertEquals(1, cubeql.getCandidateFactTables().size());
     candidateFact = cubeql.getCandidateFactTables().iterator().next();
@@ -310,7 +310,7 @@ public class TestAggregateResolver extends TestQueryRewrite {
         " group by testCube.msr3, testcube.cityid", getWhereForHourly2days("c1_testfact2_raw"));
     compareQueries(expectedQL, hQL);
 
-    query = "SELECT cityid, sum(testCube.msr2) FROM testCube WHERE " + twoDaysRange + " order by testCube.msr1";
+    query = "SELECT cityid, sum(testCube.msr2) FROM testCube WHERE " + TWO_DAYS_RANGE + " order by testCube.msr1";
     cubeql = rewriteCtx(query, conf);
     Assert.assertEquals(1, cubeql.getCandidateFactTables().size());
     candidateFact = cubeql.getCandidateFactTables().iterator().next();
@@ -321,7 +321,7 @@ public class TestAggregateResolver extends TestQueryRewrite {
         " group by testcube.cityid order by testcube.msr1 asc", getWhereForHourly2days("c1_testfact2_raw"));
     compareQueries(expectedQL, hQL);
 
-    query = "SELECT cityid, sum(testCube.msr2) FROM testCube WHERE " + twoDaysRange + " order by testCube.msr3";
+    query = "SELECT cityid, sum(testCube.msr2) FROM testCube WHERE " + TWO_DAYS_RANGE + " order by testCube.msr3";
     cubeql = rewriteCtx(query, conf);
     Assert.assertEquals(1, cubeql.getCandidateFactTables().size());
     candidateFact = cubeql.getCandidateFactTables().iterator().next();
@@ -332,7 +332,7 @@ public class TestAggregateResolver extends TestQueryRewrite {
         " group by testcube.cityid order by testcube.msr3 asc", getWhereForHourly2days("c1_testfact2_raw"));
     compareQueries(expectedQL, hQL);
 
-    query = "SELECT distinct cityid, round(testCube.msr2) from testCube where " + twoDaysRange;
+    query = "SELECT distinct cityid, round(testCube.msr2) from testCube where " + TWO_DAYS_RANGE;
     cubeql = rewriteCtx(query, conf);
     Assert.assertEquals(1, cubeql.getCandidateFactTables().size());
     candidateFact = cubeql.getCandidateFactTables().iterator().next();
@@ -343,7 +343,7 @@ public class TestAggregateResolver extends TestQueryRewrite {
         getWhereForHourly2days("c1_testfact2_raw"));
     compareQueries(expectedQL, hQL);
 
-    query = "SELECT cityid, count(distinct(testCube.msr2)) from testCube where " + twoDaysRange;
+    query = "SELECT cityid, count(distinct(testCube.msr2)) from testCube where " + TWO_DAYS_RANGE;
     cubeql = rewriteCtx(query, conf);
     Assert.assertEquals(1, cubeql.getCandidateFactTables().size());
     candidateFact = cubeql.getCandidateFactTables().iterator().next();
@@ -355,7 +355,7 @@ public class TestAggregateResolver extends TestQueryRewrite {
     compareQueries(expectedQL, hQL);
 
     // query with no default aggregate measure
-    query = "SELECT cityid, round(testCube.msr1) from testCube where " + twoDaysRange;
+    query = "SELECT cityid, round(testCube.msr1) from testCube where " + TWO_DAYS_RANGE;
     cubeql = rewriteCtx(query, conf);
     Assert.assertEquals(1, cubeql.getCandidateFactTables().size());
     candidateFact = cubeql.getCandidateFactTables().iterator().next();
@@ -366,7 +366,7 @@ public class TestAggregateResolver extends TestQueryRewrite {
         getWhereForHourly2days("c1_testfact2_raw"));
     compareQueries(expectedQL, hQL);
 
-    query = "SELECT distinct cityid, round(testCube.msr1) from testCube where " + twoDaysRange;
+    query = "SELECT distinct cityid, round(testCube.msr1) from testCube where " + TWO_DAYS_RANGE;
     cubeql = rewriteCtx(query, conf);
     Assert.assertEquals(1, cubeql.getCandidateFactTables().size());
     candidateFact = cubeql.getCandidateFactTables().iterator().next();
@@ -377,7 +377,7 @@ public class TestAggregateResolver extends TestQueryRewrite {
         getWhereForHourly2days("c1_testfact2_raw"));
     compareQueries(expectedQL, hQL);
 
-    query = "SELECT cityid, count(distinct(testCube.msr1)) from testCube where " + twoDaysRange;
+    query = "SELECT cityid, count(distinct(testCube.msr1)) from testCube where " + TWO_DAYS_RANGE;
     cubeql = rewriteCtx(query, conf);
     Assert.assertEquals(1, cubeql.getCandidateFactTables().size());
     candidateFact = cubeql.getCandidateFactTables().iterator().next();
@@ -388,7 +388,7 @@ public class TestAggregateResolver extends TestQueryRewrite {
         "group by testcube.cityid", getWhereForHourly2days("c1_testfact2_raw"));
     compareQueries(expectedQL, hQL);
 
-    query = "SELECT cityid, sum(testCube.msr1) from testCube where " + twoDaysRange;
+    query = "SELECT cityid, sum(testCube.msr1) from testCube where " + TWO_DAYS_RANGE;
     cubeql = rewriteCtx(query, conf);
     Assert.assertEquals(1, cubeql.getCandidateFactTables().size());
     candidateFact = cubeql.getCandidateFactTables().iterator().next();
@@ -398,7 +398,7 @@ public class TestAggregateResolver extends TestQueryRewrite {
       getExpectedQuery(cubeName, "SELECT testcube.cityid," + " sum(testCube.msr1)) from ", null,
         "group by testcube.cityid", getWhereForHourly2days("c1_testfact2_raw"));
 
-    query = "SELECT cityid, sum(testCube.msr2) FROM testCube WHERE " + twoDaysRange + " having max(msr1) > 100";
+    query = "SELECT cityid, sum(testCube.msr2) FROM testCube WHERE " + TWO_DAYS_RANGE + " having max(msr1) > 100";
     cubeql = rewriteCtx(query, conf);
     hQL = cubeql.toHQL();
     expectedQL =

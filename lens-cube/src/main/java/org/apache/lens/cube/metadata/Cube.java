@@ -36,7 +36,8 @@ public class Cube extends AbstractBaseTable implements CubeInterface {
     this(name, measures, dimensions, new HashMap<String, String>());
   }
 
-  public Cube(String name, Set<CubeMeasure> measures, Set<CubeDimAttribute> dimensions, Map<String, String> properties) {
+  public Cube(String name, Set<CubeMeasure> measures, Set<CubeDimAttribute> dimensions,
+    Map<String, String> properties) {
     this(name, measures, dimensions, properties, 0L);
   }
 
@@ -251,8 +252,7 @@ public class Cube extends AbstractBaseTable implements CubeInterface {
   }
 
   /**
-   * Alters the dimension if already existing or just adds if it is new
-   * dimension
+   * Alters the dimension if already existing or just adds if it is new dimension
    *
    * @param dimension
    * @throws HiveException

@@ -46,14 +46,15 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Contains the cause why a candidate table is not picked for answering the
- * query
+ * Contains the cause why a candidate table is not picked for answering the query
  */
 
 @JsonWriteNullProperties(false)
 @Data
-@NoArgsConstructor
 public class CandidateTablePruneCause {
+  private CandidateTablePruneCause() {
+
+  }
 
   public enum CandidateTablePruneCode {
     // invalid cube table
@@ -66,7 +67,7 @@ public class CandidateTablePruneCause {
         if (causes.size() == 1) {
           return new String[]{
             "Columns " + causes.iterator().next().getMissingColumns(),
-            "present in any table"
+            "present in any table",
           };
         } else {
           List<List<String>> columnSets = new ArrayList<List<String>>();
@@ -75,7 +76,7 @@ public class CandidateTablePruneCause {
           }
           return new String[]{
             "Column Sets: " + columnSets,
-            "queriable together"
+            "queriable together",
           };
         }
       }

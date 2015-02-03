@@ -28,18 +28,19 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
 
 /**
- * HQL context class which passes all query strings from
- * {@link CubeQueryContext} and works with all dimensions to be queried.
+ * HQL context class which passes all query strings from {@link CubeQueryContext} and works with all dimensions to be
+ * queried.
  * <p/>
  * Updates from string with join clause expanded
  */
 class DimOnlyHQLContext extends DimHQLContext {
 
-  public static Log LOG = LogFactory.getLog(DimOnlyHQLContext.class.getName());
+  public static final Log LOG = LogFactory.getLog(DimOnlyHQLContext.class.getName());
 
   DimOnlyHQLContext(Map<Dimension, CandidateDim> dimsToQuery, CubeQueryContext query) throws SemanticException {
-    super(query, dimsToQuery, dimsToQuery.keySet(), query.getSelectTree(), query.getWhereTree(), query.getGroupByTree(), query
-      .getOrderByTree(), query.getHavingTree(), query.getLimitValue());
+    super(query, dimsToQuery, dimsToQuery.keySet(), query.getSelectTree(),
+      query.getWhereTree(), query.getGroupByTree(), query.getOrderByTree(),
+      query.getHavingTree(), query.getLimitValue());
   }
 
   public String toHQL() throws SemanticException {

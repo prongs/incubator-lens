@@ -47,7 +47,7 @@ public class CubeQueryContext {
   public static final String TIME_RANGE_FUNC = "time_range_in";
   public static final String NOW = "now";
   public static final String DEFAULT_TABLE = "_default_";
-  public static Log LOG = LogFactory.getLog(CubeQueryContext.class.getName());
+  public static final Log LOG = LogFactory.getLog(CubeQueryContext.class.getName());
   private final ASTNode ast;
   @Getter
   private final QB qb;
@@ -257,16 +257,15 @@ public class CubeQueryContext {
   }
 
   /**
-   * destination table  : a table whose columns are getting queried
-   * intermediate table : a table which is only used as a link between cube and destination table
+   * destination table  : a table whose columns are getting queried intermediate table : a table which is only used as a
+   * link between cube and destination table
    *
    * @param alias
    * @param tblName
-   * @param isOptional         pass false when it's a destination table
-   *                           pass true when it's an intermediate table
-   *                           when join chain destination is being added, this will be false.
-   * @param isChainedDimension pass true when you're adding the dimension as a joinchain destination,
-   *                           pass false when this table is mentioned by name in the user query
+   * @param isOptional         pass false when it's a destination table pass true when it's an intermediate table when
+   *                           join chain destination is being added, this will be false.
+   * @param isChainedDimension pass true when you're adding the dimension as a joinchain destination, pass false when
+   *                           this table is mentioned by name in the user query
    * @return true if added
    * @throws SemanticException
    */
@@ -1055,7 +1054,7 @@ public class CubeQueryContext {
    */
   public void pruneCandidateFactSet(CandidateTablePruneCode pruneCause) {
     // remove candidate fact sets that have missing facts
-    for (Iterator<Set<CandidateFact>> i = candidateFactSets.iterator(); i.hasNext(); ) {
+    for (Iterator<Set<CandidateFact>> i = candidateFactSets.iterator(); i.hasNext();) {
       Set<CandidateFact> cfacts = i.next();
       if (!candidateFacts.containsAll(cfacts)) {
         LOG.info("Not considering fact table set:" + cfacts
@@ -1068,8 +1067,7 @@ public class CubeQueryContext {
   /**
    * Prune candidate fact with respect to available candidate fact sets.
    * <p/>
-   * If candidate fact is not present in any of the candidate fact sets, remove
-   * it.
+   * If candidate fact is not present in any of the candidate fact sets, remove it.
    *
    * @param pruneCause
    */
@@ -1079,7 +1077,7 @@ public class CubeQueryContext {
     for (Set<CandidateFact> set : candidateFactSets) {
       allCoveringFacts.addAll(set);
     }
-    for (Iterator<CandidateFact> i = candidateFacts.iterator(); i.hasNext(); ) {
+    for (Iterator<CandidateFact> i = candidateFacts.iterator(); i.hasNext();) {
       CandidateFact cfact = i.next();
       if (!allCoveringFacts.contains(cfact)) {
         LOG.info("Not considering fact table:" + cfact + " as " + pruneCause);

@@ -41,7 +41,10 @@ import org.apache.log4j.Logger;
 /**
  * The Class RewriteUtil.
  */
-public class RewriteUtil {
+public final class RewriteUtil {
+  private RewriteUtil() {
+
+  }
   public static final Logger LOG = Logger.getLogger(RewriteUtil.class);
 
   /** The cube pattern. */
@@ -98,7 +101,7 @@ public class RewriteUtil {
    */
   private static void findCubePositions(ASTNode ast, List<CubeQueryInfo> cubeQueries, String originalQuery)
     throws SemanticException {
-    int child_count = ast.getChildCount();
+    int childCount = ast.getChildCount();
     if (ast.getToken() != null) {
       if (ast.getChild(0) != null) {
         LOG.debug("First child:" + ast.getChild(0) + " Type:"
@@ -142,8 +145,8 @@ public class RewriteUtil {
         LOG.debug("Adding cqi " + cqi + " query:" + originalQuery.substring(cqi.startPos, cqi.endPos));
         cubeQueries.add(cqi);
       } else {
-        for (int child_pos = 0; child_pos < child_count; ++child_pos) {
-          findCubePositions((ASTNode) ast.getChild(child_pos), cubeQueries, originalQuery);
+        for (int childPos = 0; childPos < childCount; ++childPos) {
+          findCubePositions((ASTNode) ast.getChild(childPos), cubeQueries, originalQuery);
         }
       }
     } else {

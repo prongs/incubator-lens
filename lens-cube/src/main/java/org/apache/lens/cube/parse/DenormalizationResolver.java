@@ -41,9 +41,8 @@ import lombok.ToString;
 /**
  * This class resolves all the reference columns that are queried.
  * <p/>
- * Keeps track of the context that if any candidate needs to use columns through
- * tables referenced and replaces the columns from referenced tables in all the
- * ASTs
+ * Keeps track of the context that if any candidate needs to use columns through tables referenced and replaces the
+ * columns from referenced tables in all the ASTs
  */
 public class DenormalizationResolver implements ContextRewriter {
 
@@ -316,9 +315,8 @@ public class DenormalizationResolver implements ContextRewriter {
   }
 
   /**
-   * Find all de-normalized columns, if these columns are not directly available
-   * in candidate tables, query will be replaced with the corresponding table
-   * reference
+   * Find all de-normalized columns, if these columns are not directly available in candidate tables, query will be
+   * replaced with the corresponding table reference
    */
   @Override
   public void rewriteContext(CubeQueryContext cubeql) throws SemanticException {
@@ -356,7 +354,7 @@ public class DenormalizationResolver implements ContextRewriter {
       // candidate tables which require denorm fields and the refernces are no
       // more valid will be pruned
       if (cubeql.getCube() != null && !cubeql.getCandidateFactTables().isEmpty()) {
-        for (Iterator<CandidateFact> i = cubeql.getCandidateFactTables().iterator(); i.hasNext(); ) {
+        for (Iterator<CandidateFact> i = cubeql.getCandidateFactTables().iterator(); i.hasNext();) {
           CandidateFact cfact = i.next();
           if (denormCtx.tableToRefCols.containsKey(cfact.getName())) {
             for (ReferencedQueriedColumn refcol : denormCtx.tableToRefCols.get(cfact.getName())) {
@@ -376,13 +374,14 @@ public class DenormalizationResolver implements ContextRewriter {
       }
       if (cubeql.getDimensions() != null && !cubeql.getDimensions().isEmpty()) {
         for (Dimension dim : cubeql.getDimensions()) {
-          for (Iterator<CandidateDim> i = cubeql.getCandidateDimTables().get(dim).iterator(); i.hasNext(); ) {
+          for (Iterator<CandidateDim> i = cubeql.getCandidateDimTables().get(dim).iterator(); i.hasNext();) {
             CandidateDim cdim = i.next();
             if (denormCtx.tableToRefCols.containsKey(cdim.getName())) {
               for (ReferencedQueriedColumn refcol : denormCtx.tableToRefCols.get(cdim.getName())) {
                 if (denormCtx.getReferencedCols().get(refcol.col.getName()).isEmpty()) {
                   LOG.info("Not considering dim table:" + cdim + " as column " + refcol.col + " is not available");
-                  cubeql.addDimPruningMsgs(dim, cdim.dimtable, CandidateTablePruneCause.columnNotFound(refcol.col.getName()));
+                  cubeql.addDimPruningMsgs(dim, cdim.dimtable,
+                    CandidateTablePruneCause.columnNotFound(refcol.col.getName()));
                   i.remove();
                 }
               }

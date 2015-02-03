@@ -65,14 +65,13 @@ public class CubeMetastoreClient {
   private final Map<String, Storage> allStorages = new HashMap<String, Storage>();
 
   // dbname to client mapping
-  private static final Map<String, CubeMetastoreClient> clientMapping =
+  private static final Map<String, CubeMetastoreClient> CLIENT_MAPPING =
     new HashMap<String, CubeMetastoreClient>();
 
   private SchemaGraph schemaGraph;
 
   /**
-   * Get the instance of {@link CubeMetastoreClient} corresponding to
-   * {@link HiveConf}
+   * Get the instance of {@link CubeMetastoreClient} corresponding to {@link HiveConf}
    *
    * @param conf
    * @return CubeMetastoreClient
@@ -80,10 +79,10 @@ public class CubeMetastoreClient {
    */
   public static CubeMetastoreClient getInstance(HiveConf conf) throws HiveException {
     String currentdb = SessionState.get().getCurrentDatabase();
-    if (clientMapping.get(currentdb) == null) {
-      clientMapping.put(currentdb, new CubeMetastoreClient(conf));
+    if (CLIENT_MAPPING.get(currentdb) == null) {
+      CLIENT_MAPPING.put(currentdb, new CubeMetastoreClient(conf));
     }
-    return clientMapping.get(currentdb);
+    return CLIENT_MAPPING.get(currentdb);
   }
 
   private Hive getClient() throws HiveException {
@@ -124,8 +123,7 @@ public class CubeMetastoreClient {
   }
 
   /**
-   * Create cube in metastore defined by {@link Cube} or {@link DerivedCube}
-   * object
+   * Create cube in metastore defined by {@link Cube} or {@link DerivedCube} object
    *
    * @param cube the {@link Cube} object.
    * @throws HiveException
@@ -142,7 +140,8 @@ public class CubeMetastoreClient {
    * @param dimensions Dimensions of the cube
    * @throws HiveException
    */
-  public void createCube(String name, Set<CubeMeasure> measures, Set<CubeDimAttribute> dimensions) throws HiveException {
+  public void createCube(String name, Set<CubeMeasure> measures, Set<CubeDimAttribute> dimensions)
+    throws HiveException {
     Cube cube = new Cube(name, measures, dimensions);
     createCube(cube);
   }
@@ -285,8 +284,7 @@ public class CubeMetastoreClient {
    * @param columns             Columns of the dimension table
    * @param weight              Weight of the dimension table
    * @param dimensionReferences References to other dimensions
-   * @param dumpPeriods         Storage names and their dump periods on which dimension is
-   *                            available
+   * @param dumpPeriods         Storage names and their dump periods on which dimension is available
    * @param properties          properties of dimension table
    * @param storageTableDescs   Map of storage to its storage table description
    * @throws HiveException
@@ -353,8 +351,7 @@ public class CubeMetastoreClient {
   }
 
   /**
-   * Add a partition specified by the storage partition desc on the storage
-   * passed.
+   * Add a partition specified by the storage partition desc on the storage passed.
    *
    * @param partSpec The storage partition description
    * @param storage  The storage object
@@ -480,8 +477,7 @@ public class CubeMetastoreClient {
   }
 
   /**
-   * Add a partition specified by the storage partition desc on the storage
-   * passed.
+   * Add a partition specified by the storage partition desc on the storage passed.
    *
    * @param partSpec The storage partition description
    * @param storage  The storage object
@@ -799,8 +795,7 @@ public class CubeMetastoreClient {
    * Get {@link CubeFactTable} object corresponding to the name
    *
    * @param tableName The cube fact name
-   * @return Returns CubeFactTable if table name passed is a fact table, null
-   * otherwise
+   * @return Returns CubeFactTable if table name passed is a fact table, null otherwise
    * @throws HiveException
    */
 
@@ -810,19 +805,14 @@ public class CubeMetastoreClient {
   }
 
   private CubeFactTable getFactTable(Table tbl) throws HiveException {
-    if (isFactTable(tbl)) {
-      return new CubeFactTable(tbl);
-    } else {
-    }
-    return null;
+    return isFactTable(tbl) ? new CubeFactTable(tbl) : null;
   }
 
   /**
    * Get {@link CubeDimensionTable} object corresponding to the name
    *
    * @param tableName The cube dimension name
-   * @return Returns CubeDimensionTable if table name passed is a dimension
-   * table, null otherwise
+   * @return Returns CubeDimensionTable if table name passed is a dimension table, null otherwise
    * @throws HiveException
    */
   public CubeDimensionTable getDimensionTable(String tableName) throws HiveException {

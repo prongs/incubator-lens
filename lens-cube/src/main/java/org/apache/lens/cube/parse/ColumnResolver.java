@@ -151,7 +151,7 @@ class ColumnResolver implements ContextRewriter {
   // ** If alias has spaces, select alias is constructed as 'expr' + index of
   // the expression
   // and user given alias is the final alias of the expression.
-  private static String SELECT_ALIAS_PREFIX = "expr";
+  private static final String SELECT_ALIAS_PREFIX = "expr";
 
   private void getColsForSelectTree(final CubeQueryContext cubeql) throws SemanticException {
     int exprInd = 1;

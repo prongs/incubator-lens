@@ -120,7 +120,7 @@ public class ReferencedDimAtrribute extends BaseDimAttribute {
       this.isJoinKey = false;
     } else {
       String refListStr = props.get(MetastoreUtil.getDimensionSrcReferenceKey(getName()));
-      String refListDims[] = StringUtils.split(refListStr, ",");
+      String[] refListDims = StringUtils.split(refListStr, ",");
       for (String refDimRaw : refListDims) {
         references.add(new TableReference(refDimRaw));
       }

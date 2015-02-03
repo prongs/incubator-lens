@@ -35,19 +35,16 @@ import org.apache.hadoop.hive.ql.parse.SemanticException;
 /**
  * This resolver prunes the candidate tables for following cases
  * <p/>
- * 1. If queried dim attributes are not present. Also Figures out if queried
- * column is not part of candidate table, but is a denormalized field which can
- * reached through a reference 2. Finds all the candidate fact sets containing
- * queried measures. Prunes facts which do not contain any of the queried
- * measures. 3. Required join columns are not part of candidate tables 4.
- * Required source columns(join columns) for reaching a denormalized field, are
- * not part of candidate tables 5. Required denormalized fields are not part of
- * refered tables, there by all the candidates which are using denormalized
- * fields.
+ * 1. If queried dim attributes are not present. Also Figures out if queried column is not part of candidate table, but
+ * is a denormalized field which can reached through a reference 2. Finds all the candidate fact sets containing queried
+ * measures. Prunes facts which do not contain any of the queried measures. 3. Required join columns are not part of
+ * candidate tables 4. Required source columns(join columns) for reaching a denormalized field, are not part of
+ * candidate tables 5. Required denormalized fields are not part of refered tables, there by all the candidates which
+ * are using denormalized fields.
  */
 class CandidateTableResolver implements ContextRewriter {
 
-  private static Log LOG = LogFactory.getLog(CandidateTableResolver.class.getName());
+  private static final Log LOG = LogFactory.getLog(CandidateTableResolver.class.getName());
   private boolean qlEnabledMultiTableSelect;
   private boolean checkForQueriedColumns = true;
 
@@ -157,8 +154,8 @@ class CandidateTableResolver implements ContextRewriter {
       while (iter.hasNext()) {
         CandidateTable candidate = iter.next();
         if (!allCandidates.contains(candidate)) {
-          LOG.info("Removing candidate " + candidate + " from requiredForCandidates of " + dim + ", as it is no more" +
-            " candidate");
+          LOG.info("Removing candidate " + candidate + " from requiredForCandidates of " + dim + ", as it is no more"
+            + " candidate");
           iter.remove();
           removedCandidates.add(candidate);
         }
@@ -210,7 +207,7 @@ class CandidateTableResolver implements ContextRewriter {
       Set<String> queriedMsrs = cubeql.getQueriedMsrs();
 
       // Remove fact tables based on columns in the query
-      for (Iterator<CandidateFact> i = cubeql.getCandidateFactTables().iterator(); i.hasNext(); ) {
+      for (Iterator<CandidateFact> i = cubeql.getCandidateFactTables().iterator(); i.hasNext();) {
         CandidateFact cfact = i.next();
 
         if (validFactTables != null) {
@@ -286,7 +283,7 @@ class CandidateTableResolver implements ContextRewriter {
   static Set<Set<CandidateFact>> findCoveringSets(List<CandidateFact> cfactsPassed, Set<String> msrs) {
     Set<Set<CandidateFact>> cfactset = new HashSet<Set<CandidateFact>>();
     List<CandidateFact> cfacts = new ArrayList<CandidateFact>(cfactsPassed);
-    for (Iterator<CandidateFact> i = cfacts.iterator(); i.hasNext(); ) {
+    for (Iterator<CandidateFact> i = cfacts.iterator(); i.hasNext();) {
       CandidateFact cfact = i.next();
       i.remove();
       if (!checkForColumnExists(cfact, msrs)) {
@@ -324,7 +321,7 @@ class CandidateTableResolver implements ContextRewriter {
     allDims.addAll(cubeql.getOptionalDimensions());
     for (Dimension dim : allDims) {
       if (cubeql.getCandidateDimTables().get(dim) != null && !cubeql.getCandidateDimTables().get(dim).isEmpty()) {
-        for (Iterator<CandidateDim> i = cubeql.getCandidateDimTables().get(dim).iterator(); i.hasNext(); ) {
+        for (Iterator<CandidateDim> i = cubeql.getCandidateDimTables().get(dim).iterator(); i.hasNext();) {
           CandidateDim cdim = i.next();
           CubeDimensionTable dimtable = cdim.dimtable;
           // go over the join columns accessed in the query and find out which tables
@@ -406,7 +403,7 @@ class CandidateTableResolver implements ContextRewriter {
     }
     Collection<String> colSet = null;
     if (cubeql.getCube() != null && !cubeql.getCandidateFactTables().isEmpty()) {
-      for (Iterator<CandidateFact> i = cubeql.getCandidateFactTables().iterator(); i.hasNext(); ) {
+      for (Iterator<CandidateFact> i = cubeql.getCandidateFactTables().iterator(); i.hasNext();) {
         CandidateFact cfact = i.next();
         CubeFactTable fact = cfact.fact;
 
@@ -436,9 +433,8 @@ class CandidateTableResolver implements ContextRewriter {
   }
 
   /**
-   * This method checks if the source columns(resolved through automatic join
-   * resolver) for reaching the references are available in candidate tables
-   * that want to use references
+   * This method checks if the source columns(resolved through automatic join resolver) for reaching the references are
+   * available in candidate tables that want to use references
    */
   private void checkForSourceReachabilityForDenormCandidates(CubeQueryContext cubeql) {
     if (cubeql.getOptionalDimensionMap().isEmpty()) {
@@ -507,7 +503,7 @@ class CandidateTableResolver implements ContextRewriter {
       for (Dimension dim : cubeql.getDimensions()) {
         // go over the columns accessed in the query and find out which tables
         // can answer the query
-        for (Iterator<CandidateDim> i = cubeql.getCandidateDimTables().get(dim).iterator(); i.hasNext(); ) {
+        for (Iterator<CandidateDim> i = cubeql.getCandidateDimTables().get(dim).iterator(); i.hasNext();) {
           CandidateDim cdim = i.next();
           if (cubeql.getColumnsQueried(dim.getName()) != null) {
             for (String col : cubeql.getColumnsQueried(dim.getName())) {

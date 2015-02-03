@@ -40,7 +40,7 @@ import org.antlr.runtime.tree.Tree;
  * Promotes groupby to select and select to groupby.
  */
 class GroupbyResolver implements ContextRewriter {
-  private static Log LOG = LogFactory.getLog(GroupbyResolver.class.getName());
+  private static final Log LOG = LogFactory.getLog(GroupbyResolver.class.getName());
 
   private final boolean selectPromotionEnabled;
   private final boolean groupbyPromotionEnabled;
@@ -100,18 +100,7 @@ class GroupbyResolver implements ContextRewriter {
    * Check if constants projected
    */
   private boolean isConstantsUsed(ASTNode node) {
-    if (node == null) {
-      return false;
-    }
-    if (node.getToken() != null) {
-      if (hasTableOrColumn(node)) {
-        return false;
-      } else {
-        return true;
-      }
-    } else {
-      return false;
-    }
+    return node != null && node.getToken() != null && !hasTableOrColumn(node);
   }
 
 
@@ -125,8 +114,9 @@ class GroupbyResolver implements ContextRewriter {
       }
     }
     for (int i = 0; i < node.getChildCount(); i++) {
-      if (hasTableOrColumn((ASTNode) node.getChild(i)))
+      if (hasTableOrColumn((ASTNode) node.getChild(i))) {
         return true;
+      }
     }
     return false;
   }
@@ -168,8 +158,8 @@ class GroupbyResolver implements ContextRewriter {
 
     // move all the children from last upto index
     for (int i = count - 2; i >= index; i--) {
-      Tree child_i = parent.getChild(i);
-      parent.setChild(i + 1, child_i);
+      Tree ch = parent.getChild(i);
+      parent.setChild(i + 1, ch);
     }
     parent.setChild(index, child);
     child.setParent(parent);
@@ -240,9 +230,9 @@ class GroupbyResolver implements ContextRewriter {
   /**
    * @param selectASTNode a select ASTNode
    * @param cubeQueryCtx
-   * @return list of selectASTNode Children which does not contain a measure or an aggregate.
-   * Empty list is returned when selectASTNode is not a Select AST Node.
-   * Empty list is returned when there are no non measure and non aggregate children nodes present in select AST.
+   * @return list of selectASTNode Children which does not contain a measure or an aggregate. Empty list is returned
+   * when selectASTNode is not a Select AST Node. Empty list is returned when there are no non measure and non aggregate
+   * children nodes present in select AST.
    */
   private List<ASTNode> filterNonMsrNonAggSelectASTChildren(final ASTNode selectASTNode, CubeQueryContext cubeQueryCtx) {
 

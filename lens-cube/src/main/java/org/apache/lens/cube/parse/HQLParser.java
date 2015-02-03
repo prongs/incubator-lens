@@ -36,11 +36,14 @@ import org.antlr.runtime.tree.Tree;
 
 import com.google.common.base.Optional;
 
-public class HQLParser {
+public final class HQLParser {
+  private HQLParser() {
+
+  }
   public static final Pattern P_WSPACE = Pattern.compile("\\s+");
 
-  public static interface ASTNodeVisitor {
-    public void visit(TreeNode node) throws SemanticException;
+  public interface ASTNodeVisitor {
+    void visit(TreeNode node) throws SemanticException;
   }
 
   public static class TreeNode {
@@ -243,7 +246,6 @@ public class HQLParser {
         copy.addChild(childCopy);
       }
     }
-    ;
     return copy;
   }
 
@@ -630,8 +632,8 @@ public class HQLParser {
 
   /**
    * @param node an ASTNode
-   * @return When node is null or token inside node is null, then Optional.absent is returned.
-   * Otherwise, an integer representing ASTNodeType is returned.
+   * @return When node is null or token inside node is null, then Optional.absent is returned. Otherwise, an integer
+   * representing ASTNodeType is returned.
    */
   private static Optional<Integer> getASTNodeType(final ASTNode node) {
 

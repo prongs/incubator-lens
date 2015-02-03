@@ -38,17 +38,15 @@ import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.antlr.runtime.CommonToken;
 
 /**
- * Finds queried column to table alias. Finds queried dim attributes and queried
- * measures.
+ * Finds queried column to table alias. Finds queried dim attributes and queried measures.
  * <p/>
- * Does queried field validation wrt derived cubes, if all fields of queried
- * cube cannot be queried together.
+ * Does queried field validation wrt derived cubes, if all fields of queried cube cannot be queried together.
  * <p/>
  * Replaces all the columns in all expressions with tablealias.column
  */
 class AliasReplacer implements ContextRewriter {
 
-  private static Log LOG = LogFactory.getLog(AliasReplacer.class.getName());
+  private static final Log LOG = LogFactory.getLog(AliasReplacer.class.getName());
 
   // Mapping of a qualified column name to its table alias
   private Map<String, String> colToTableAlias;

@@ -151,8 +151,7 @@ public abstract class AbstractBaseTable extends AbstractCubeTable {
   }
 
   /**
-   * Alters the expression if already existing or just adds if it is new
-   * expression.
+   * Alters the expression if already existing or just adds if it is new expression.
    *
    * @param expr
    * @throws HiveException

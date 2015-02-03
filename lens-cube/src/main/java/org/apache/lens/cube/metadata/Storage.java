@@ -36,19 +36,18 @@ import org.apache.hadoop.hive.serde.serdeConstants;
 import org.apache.hadoop.mapred.TextInputFormat;
 
 /**
- * Storage is Named Interface which would represent the underlying storage of
- * the data.
+ * Storage is Named Interface which would represent the underlying storage of the data.
  */
 public abstract class Storage extends AbstractCubeTable implements PartitionMetahook {
 
-  private static final List<FieldSchema> columns = new ArrayList<FieldSchema>();
+  private static final List<FieldSchema> COLUMNS = new ArrayList<FieldSchema>();
 
   static {
-    columns.add(new FieldSchema("dummy", "string", "dummy column"));
+    COLUMNS.add(new FieldSchema("dummy", "string", "dummy column"));
   }
 
   protected Storage(String name, Map<String, String> properties) {
-    super(name, columns, properties, 0L);
+    super(name, COLUMNS, properties, 0L);
     addProperties();
   }
 
@@ -230,8 +229,7 @@ public abstract class Storage extends AbstractCubeTable implements PartitionMeta
   }
 
   /**
-   * Add a partition in the underlying hive table and update latest partition
-   * links
+   * Add a partition in the underlying hive table and update latest partition links
    *
    * @param client           The metastore client
    * @param addPartitionDesc add Partition specification
@@ -311,14 +309,12 @@ public abstract class Storage extends AbstractCubeTable implements PartitionMeta
   }
 
   /**
-   * Drop the partition in the underlying hive table and update latest partition
-   * link
+   * Drop the partition in the underlying hive table and update latest partition link
    *
    * @param client           The metastore client
    * @param storageTableName TableName
    * @param partSpec         Partition specification
-   * @param latestInfo       The latest partition info if it needs update, null if latest
-   *                         should not be updated
+   * @param latestInfo       The latest partition info if it needs update, null if latest should not be updated
    * @throws HiveException
    */
   public void dropPartition(Hive client, String storageTableName, List<String> partVals,

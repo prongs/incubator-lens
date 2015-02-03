@@ -32,8 +32,8 @@ import org.apache.hadoop.hive.ql.parse.ASTNode;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
 
 /**
- * Writes a join query with all the facts involved, with where, groupby and
- * having expressions pushed down to the fact queries.
+ * Writes a join query with all the facts involved, with where, groupby and having expressions pushed down to the fact
+ * queries.
  */
 class MultiFactHQLContext extends SimpleHQLContext {
 

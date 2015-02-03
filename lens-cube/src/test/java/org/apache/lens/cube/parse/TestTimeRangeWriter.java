@@ -55,9 +55,9 @@ public abstract class TestTimeRangeWriter {
   @Test
   public void testDisjointParts() {
     Set<FactPartition> answeringParts = new LinkedHashSet<FactPartition>();
-    answeringParts.add(new FactPartition("dt", CubeTestSetup.twoMonthsBack, UpdatePeriod.MONTHLY, null, null));
-    answeringParts.add(new FactPartition("dt", CubeTestSetup.twodaysBack, UpdatePeriod.DAILY, null, null));
-    answeringParts.add(new FactPartition("dt", CubeTestSetup.now, UpdatePeriod.HOURLY, null, null));
+    answeringParts.add(new FactPartition("dt", CubeTestSetup.TWO_MONTHS_BACK, UpdatePeriod.MONTHLY, null, null));
+    answeringParts.add(new FactPartition("dt", CubeTestSetup.TWODAYS_BACK, UpdatePeriod.DAILY, null, null));
+    answeringParts.add(new FactPartition("dt", CubeTestSetup.NOW, UpdatePeriod.HOURLY, null, null));
 
     SemanticException th = null;
     String whereClause = null;
@@ -79,9 +79,9 @@ public abstract class TestTimeRangeWriter {
 
     // test with format
     answeringParts = new LinkedHashSet<FactPartition>();
-    answeringParts.add(new FactPartition("dt", CubeTestSetup.twoMonthsBack, UpdatePeriod.MONTHLY, null, dbFormat));
-    answeringParts.add(new FactPartition("dt", CubeTestSetup.twodaysBack, UpdatePeriod.DAILY, null, dbFormat));
-    answeringParts.add(new FactPartition("dt", CubeTestSetup.now, UpdatePeriod.HOURLY, null, dbFormat));
+    answeringParts.add(new FactPartition("dt", CubeTestSetup.TWO_MONTHS_BACK, UpdatePeriod.MONTHLY, null, dbFormat));
+    answeringParts.add(new FactPartition("dt", CubeTestSetup.TWODAYS_BACK, UpdatePeriod.DAILY, null, dbFormat));
+    answeringParts.add(new FactPartition("dt", CubeTestSetup.NOW, UpdatePeriod.HOURLY, null, dbFormat));
 
     th = null;
     try {
@@ -102,17 +102,17 @@ public abstract class TestTimeRangeWriter {
   @Test
   public void testConsecutiveDayParts() throws SemanticException {
     Set<FactPartition> answeringParts = new LinkedHashSet<FactPartition>();
-    answeringParts.add(new FactPartition("dt", CubeTestSetup.oneDayBack, UpdatePeriod.DAILY, null, null));
-    answeringParts.add(new FactPartition("dt", CubeTestSetup.twodaysBack, UpdatePeriod.DAILY, null, null));
-    answeringParts.add(new FactPartition("dt", CubeTestSetup.now, UpdatePeriod.DAILY, null, null));
+    answeringParts.add(new FactPartition("dt", CubeTestSetup.ONE_DAY_BACK, UpdatePeriod.DAILY, null, null));
+    answeringParts.add(new FactPartition("dt", CubeTestSetup.TWODAYS_BACK, UpdatePeriod.DAILY, null, null));
+    answeringParts.add(new FactPartition("dt", CubeTestSetup.NOW, UpdatePeriod.DAILY, null, null));
 
     String whereClause = getTimerangeWriter().getTimeRangeWhereClause(null, "test", answeringParts);
     validateConsecutive(whereClause, null);
 
     answeringParts = new LinkedHashSet<FactPartition>();
-    answeringParts.add(new FactPartition("dt", CubeTestSetup.oneDayBack, UpdatePeriod.DAILY, null, dbFormat));
-    answeringParts.add(new FactPartition("dt", CubeTestSetup.twodaysBack, UpdatePeriod.DAILY, null, dbFormat));
-    answeringParts.add(new FactPartition("dt", CubeTestSetup.now, UpdatePeriod.DAILY, null, dbFormat));
+    answeringParts.add(new FactPartition("dt", CubeTestSetup.ONE_DAY_BACK, UpdatePeriod.DAILY, null, dbFormat));
+    answeringParts.add(new FactPartition("dt", CubeTestSetup.TWODAYS_BACK, UpdatePeriod.DAILY, null, dbFormat));
+    answeringParts.add(new FactPartition("dt", CubeTestSetup.NOW, UpdatePeriod.DAILY, null, dbFormat));
 
     whereClause = getTimerangeWriter().getTimeRangeWhereClause(null, "test", answeringParts);
     validateConsecutive(whereClause, dbFormat);
@@ -121,12 +121,12 @@ public abstract class TestTimeRangeWriter {
   @Test
   public void testSinglePart() throws SemanticException {
     Set<FactPartition> answeringParts = new LinkedHashSet<FactPartition>();
-    answeringParts.add(new FactPartition("dt", CubeTestSetup.oneDayBack, UpdatePeriod.DAILY, null, null));
+    answeringParts.add(new FactPartition("dt", CubeTestSetup.ONE_DAY_BACK, UpdatePeriod.DAILY, null, null));
     String whereClause = getTimerangeWriter().getTimeRangeWhereClause(null, "test", answeringParts);
     validateSingle(whereClause, null);
 
     answeringParts = new LinkedHashSet<FactPartition>();
-    answeringParts.add(new FactPartition("dt", CubeTestSetup.oneDayBack, UpdatePeriod.DAILY, null, dbFormat));
+    answeringParts.add(new FactPartition("dt", CubeTestSetup.ONE_DAY_BACK, UpdatePeriod.DAILY, null, dbFormat));
     whereClause = getTimerangeWriter().getTimeRangeWhereClause(null, "test", answeringParts);
     validateSingle(whereClause, dbFormat);
 

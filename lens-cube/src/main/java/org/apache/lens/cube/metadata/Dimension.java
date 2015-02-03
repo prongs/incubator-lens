@@ -40,8 +40,8 @@ public class Dimension extends AbstractBaseTable {
     this(name, attributes, null, null, properties, weight);
   }
 
-  public Dimension(String name, Set<CubeDimAttribute> attributes, Set<ExprColumn> expressions, Set<JoinChain> joinChains,
-    Map<String, String> properties, double weight) {
+  public Dimension(String name, Set<CubeDimAttribute> attributes, Set<ExprColumn> expressions,
+    Set<JoinChain> joinChains, Map<String, String> properties, double weight) {
     super(name, expressions, joinChains, properties, weight);
     this.attributes = attributes;
 
@@ -170,8 +170,7 @@ public class Dimension extends AbstractBaseTable {
   }
 
   /**
-   * Alters the attribute if already existing or just adds if it is new
-   * attribute
+   * Alters the attribute if already existing or just adds if it is new attribute
    *
    * @param attribute
    * @throws HiveException

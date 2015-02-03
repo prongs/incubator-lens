@@ -54,26 +54,26 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
   public void testColumnErrors() throws Exception {
     SemanticException e;
 
-    e = getSemanticExceptionInRewrite("select dim2, SUM(msr1) from basecube" + " where " + twoDaysRange, conf);
+    e = getSemanticExceptionInRewrite("select dim2, SUM(msr1) from basecube" + " where " + TWO_DAYS_RANGE, conf);
     Assert.assertEquals(e.getCanonicalErrorMsg().getErrorCode(), ErrorMsg.FIELDS_NOT_QUERYABLE.getErrorCode());
     Assert.assertTrue(e.getMessage().contains("dim2") && e.getMessage().contains("msr1"));
 
-    e = getSemanticExceptionInRewrite("select dim2, cityid, SUM(msr2) from basecube" + " where " + twoDaysRange, conf);
+    e = getSemanticExceptionInRewrite("select dim2, cityid, SUM(msr2) from basecube" + " where " + TWO_DAYS_RANGE, conf);
     Assert.assertEquals(e.getCanonicalErrorMsg().getErrorCode(),
       ErrorMsg.FIELDS_NOT_QUERYABLE.getErrorCode());
     Assert.assertTrue(e.getMessage().contains("dim2") && e.getMessage().contains("cityid"));
 
-    e = getSemanticExceptionInRewrite("select newmeasure from basecube" + " where " + twoDaysRange, conf);
+    e = getSemanticExceptionInRewrite("select newmeasure from basecube" + " where " + TWO_DAYS_RANGE, conf);
     Assert.assertEquals(e.getCanonicalErrorMsg().getErrorCode(),
       ErrorMsg.FIELDS_NOT_QUERYABLE.getErrorCode());
     Assert.assertTrue(e.getMessage().contains("newmeasure"));
 
-    e = getSemanticExceptionInRewrite("select msr11 + msr2 from basecube" + " where " + twoDaysRange, conf);
+    e = getSemanticExceptionInRewrite("select msr11 + msr2 from basecube" + " where " + TWO_DAYS_RANGE, conf);
     Assert.assertEquals(e.getCanonicalErrorMsg().getErrorCode(),
       ErrorMsg.EXPRESSION_NOT_IN_ANY_FACT.getErrorCode());
 
     // no fact has the all the dimensions queried
-    e = getSemanticExceptionInRewrite("select dim1, cityid, msr3, msr13 from basecube" + " where " + twoDaysRange, conf);
+    e = getSemanticExceptionInRewrite("select dim1, cityid, msr3, msr13 from basecube" + " where " + TWO_DAYS_RANGE, conf);
     Assert.assertEquals(e.getCanonicalErrorMsg().getErrorCode(),
       ErrorMsg.NO_CANDIDATE_FACT_AVAILABLE.getErrorCode());
     PruneCauses.BriefAndDetailedError pruneCauses = extractPruneCause(e);
@@ -98,26 +98,26 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
 
   @Test
   public void testCommonDimensions() throws Exception {
-    String hqlQuery = rewrite("select dim1, SUM(msr1) from basecube" + " where " + twoDaysRange, conf);
+    String hqlQuery = rewrite("select dim1, SUM(msr1) from basecube" + " where " + TWO_DAYS_RANGE, conf);
     String expected =
       getExpectedQuery(cubeName, "select basecube.dim1, SUM(basecube.msr1) FROM ", null, " group by basecube.dim1",
         getWhereForHourly2days(cubeName, "C1_testfact1_raw_base"));
     TestCubeRewriter.compareQueries(expected, hqlQuery);
 
-    hqlQuery = rewrite("select dim1, SUM(msr1), msr2 from basecube" + " where " + twoDaysRange, conf);
+    hqlQuery = rewrite("select dim1, SUM(msr1), msr2 from basecube" + " where " + TWO_DAYS_RANGE, conf);
     expected =
       getExpectedQuery(cubeName, "select basecube.dim1, SUM(basecube.msr1), basecube.msr2 FROM ", null,
         " group by basecube.dim1", getWhereForHourly2days(cubeName, "C1_testfact1_raw_base"));
     TestCubeRewriter.compareQueries(expected, hqlQuery);
 
-    hqlQuery = rewrite("select dim1, roundedmsr2 from basecube" + " where " + twoDaysRange, conf);
+    hqlQuery = rewrite("select dim1, roundedmsr2 from basecube" + " where " + TWO_DAYS_RANGE, conf);
     expected =
       getExpectedQuery(cubeName, "select basecube.dim1, round(sum(basecube.msr2)/1000) FROM ", null,
         " group by basecube.dim1", getWhereForDailyAndHourly2days(cubeName, "C1_testFact1_BASE"));
     TestCubeRewriter.compareQueries(expected, hqlQuery);
 
     hqlQuery =
-      rewrite("select booleancut, msr2 from basecube" + " where " + twoDaysRange + " and substrexpr != 'XYZ'", conf);
+      rewrite("select booleancut, msr2 from basecube" + " where " + TWO_DAYS_RANGE + " and substrexpr != 'XYZ'", conf);
     expected =
       getExpectedQuery(cubeName, "select basecube.dim1 != 'x' AND basecube.dim2 != 10 ,"
           + " sum(basecube.msr2) FROM ", null, " and substr(basecube.dim1, 3) != 'XYZ' "
@@ -125,7 +125,7 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
         getWhereForHourly2days(cubeName, "C1_testfact1_raw_base"));
     TestCubeRewriter.compareQueries(expected, hqlQuery);
 
-    hqlQuery = rewrite("select dim1, msr12 from basecube" + " where " + twoDaysRange, conf);
+    hqlQuery = rewrite("select dim1, msr12 from basecube" + " where " + TWO_DAYS_RANGE, conf);
     expected =
       getExpectedQuery(cubeName, "select basecube.dim1, sum(basecube.msr12) FROM ", null, " group by basecube.dim1",
         getWhereForDailyAndHourly2days(cubeName, "C1_testFact2_BASE"));
@@ -134,7 +134,7 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
 
   @Test
   public void testMultipleFacts() throws Exception {
-    String hqlQuery = rewrite("select dim1, roundedmsr2, msr12 from basecube" + " where " + twoDaysRange, conf);
+    String hqlQuery = rewrite("select dim1, roundedmsr2, msr12 from basecube" + " where " + TWO_DAYS_RANGE, conf);
     String expected1 =
       getExpectedQuery(cubeName, "select basecube.dim1 dim1, sum(basecube.msr12) msr12 FROM ", null,
         " group by basecube.dim1", getWhereForDailyAndHourly2days(cubeName, "C1_testFact2_BASE"));
@@ -149,7 +149,7 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
     Assert.assertTrue(hqlQuery.contains("mq1 full outer join ") && hqlQuery.endsWith("mq2 on mq1.dim1 = mq2.dim1"));
 
     // columns in select interchanged
-    hqlQuery = rewrite("select dim1, msr12, roundedmsr2 from basecube" + " where " + twoDaysRange, conf);
+    hqlQuery = rewrite("select dim1, msr12, roundedmsr2 from basecube" + " where " + TWO_DAYS_RANGE, conf);
     expected1 =
       getExpectedQuery(cubeName, "select basecube.dim1 dim1, sum(basecube.msr12) msr12 FROM ", null,
         " group by basecube.dim1", getWhereForDailyAndHourly2days(cubeName, "C1_testFact2_BASE"));
@@ -164,7 +164,7 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
     Assert.assertTrue(hqlQuery.contains("mq1 full outer join ") && hqlQuery.endsWith("mq2 on mq1.dim1 = mq2.dim1"));
 
     // query with 3 fact tables
-    hqlQuery = rewrite("select dim1, msr12, roundedmsr2, msr13, msr3 from basecube" + " where " + twoDaysRange, conf);
+    hqlQuery = rewrite("select dim1, msr12, roundedmsr2, msr13, msr3 from basecube" + " where " + TWO_DAYS_RANGE, conf);
     expected1 =
       getExpectedQuery(cubeName, "select basecube.dim1 dim1, sum(basecube.msr12) msr12 FROM ", null,
         " group by basecube.dim1", getWhereForDailyAndHourly2days(cubeName, "C1_testFact2_BASE"));
@@ -194,7 +194,7 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
       && hqlQuery.endsWith("mq3 on mq1.dim1 = mq2.dim1 AND mq1.dim1 = mq3.dim1"));
 
     // query two dim attributes
-    hqlQuery = rewrite("select dim1, dim11, msr12, roundedmsr2 from basecube" + " where " + twoDaysRange, conf);
+    hqlQuery = rewrite("select dim1, dim11, msr12, roundedmsr2 from basecube" + " where " + TWO_DAYS_RANGE, conf);
     expected1 =
       getExpectedQuery(cubeName, "select basecube.dim1 dim1, basecube.dim11 dim11, sum(basecube.msr12) msr12 FROM ",
         null, " group by basecube.dim1", getWhereForDailyAndHourly2days(cubeName, "C1_testFact2_BASE"));
@@ -213,7 +213,7 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
       && hqlQuery.endsWith("mq2 on mq1.dim1 = mq2.dim1 AND mq1.dim11 = mq2.dim11"));
 
     // no aggregates in the query
-    hqlQuery = rewrite("select dim1, msr11, roundedmsr2 from basecube" + " where " + twoDaysRange, conf);
+    hqlQuery = rewrite("select dim1, msr11, roundedmsr2 from basecube" + " where " + TWO_DAYS_RANGE, conf);
     expected1 =
       getExpectedQuery(cubeName, "select basecube.dim1 dim1, basecube.msr11 msr11 FROM ", null, null,
         getWhereForHourly2days(cubeName, "C1_testfact2_raw_base"));
@@ -229,7 +229,7 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
 
     // query with aliases passed
     hqlQuery =
-      rewrite("select dim1 d1, msr12 `my msr12`, roundedmsr2 m2 from basecube" + " where " + twoDaysRange, conf);
+      rewrite("select dim1 d1, msr12 `my msr12`, roundedmsr2 m2 from basecube" + " where " + TWO_DAYS_RANGE, conf);
     expected1 =
       getExpectedQuery(cubeName, "select basecube.dim1 d1, sum(basecube.msr12) expr2 FROM ", null,
         " group by basecube.dim1", getWhereForDailyAndHourly2days(cubeName, "C1_testFact2_BASE"));
@@ -243,7 +243,7 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
     Assert.assertTrue(hqlQuery.contains("mq1 full outer join ") && hqlQuery.endsWith("mq2 on mq1.d1 = mq2.d1"));
 
     // query with non default aggregate
-    hqlQuery = rewrite("select dim1, avg(msr12), avg(msr2) from basecube" + " where " + twoDaysRange, conf);
+    hqlQuery = rewrite("select dim1, avg(msr12), avg(msr2) from basecube" + " where " + TWO_DAYS_RANGE, conf);
     expected1 =
       getExpectedQuery(cubeName, "select basecube.dim1 dim1, avg(basecube.msr12) msr12 FROM ", null,
         " group by basecube.dim1", getWhereForHourly2days(cubeName, "C1_testfact2_raw_base"));
@@ -258,7 +258,7 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
     Assert.assertTrue(hqlQuery.contains("mq1 full outer join ") && hqlQuery.endsWith("mq2 on mq1.dim1 = mq2.dim1"));
 
     // query with join
-    hqlQuery = rewrite("select testdim2.name, msr12, roundedmsr2 from basecube" + " where " + twoDaysRange, conf);
+    hqlQuery = rewrite("select testdim2.name, msr12, roundedmsr2 from basecube" + " where " + TWO_DAYS_RANGE, conf);
     expected1 =
       getExpectedQuery(cubeName, "select testdim2.name name, sum(basecube.msr12) msr12 FROM ", " JOIN " + getDbName()
           + "c1_testdim2tbl testdim2 ON basecube.dim2 = " + " testdim2.id and (testdim2.dt = 'latest') ", null,
@@ -275,7 +275,7 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
     Assert.assertTrue(hqlQuery.contains("mq1 full outer join ") && hqlQuery.endsWith("mq2 on mq1.name = mq2.name"));
 
     // query with denorm variable
-    hqlQuery = rewrite("select dim2, msr13, roundedmsr2 from basecube" + " where " + twoDaysRange, conf);
+    hqlQuery = rewrite("select dim2, msr13, roundedmsr2 from basecube" + " where " + TWO_DAYS_RANGE, conf);
     expected1 =
       getExpectedQuery(cubeName, "select testdim2.id dim2, max(basecube.msr13) msr13 FROM ", " JOIN " + getDbName()
           + "c1_testdim2tbl testdim2 ON basecube.dim12 = " + " testdim2.id and (testdim2.dt = 'latest') ", null,
@@ -292,7 +292,7 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
     // query with expression
     hqlQuery =
       rewrite(
-        "select booleancut, round(sum(msr2)/1000), avg(msr13 + msr14) from basecube" + " where " + twoDaysRange,
+        "select booleancut, round(sum(msr2)/1000), avg(msr13 + msr14) from basecube" + " where " + TWO_DAYS_RANGE,
         conf);
     expected1 =
       getExpectedQuery(cubeName, "select basecube.dim1 != 'x' AND testdim2.id != 10 expr1,"

@@ -33,12 +33,12 @@ import org.apache.hadoop.hive.ql.parse.SemanticException;
 /**
  * Dimension HQLContext.
  * <p/>
- * Contains all the dimensions queried and their candidate dim tables Update
- * where string with storage filters added dimensions queried.
+ * Contains all the dimensions queried and their candidate dim tables Update where string with storage filters added
+ * dimensions queried.
  */
 abstract class DimHQLContext extends SimpleHQLContext {
 
-  public static Log LOG = LogFactory.getLog(DimHQLContext.class.getName());
+  public static final Log LOG = LogFactory.getLog(DimHQLContext.class.getName());
 
   private final Map<Dimension, CandidateDim> dimsToQuery;
   private final Set<Dimension> queriedDims;
@@ -49,7 +49,8 @@ abstract class DimHQLContext extends SimpleHQLContext {
     return query;
   }
 
-  DimHQLContext(CubeQueryContext query, Map<Dimension, CandidateDim> dimsToQuery, Set<Dimension> queriedDims, String select, String where,
+  DimHQLContext(CubeQueryContext query, Map<Dimension, CandidateDim> dimsToQuery,
+    Set<Dimension> queriedDims, String select, String where,
     String groupby, String orderby, String having, Integer limit) throws SemanticException {
     super(select, groupby, orderby, having, limit);
     this.query = query;
@@ -60,12 +61,14 @@ abstract class DimHQLContext extends SimpleHQLContext {
 
   protected void setMissingExpressions() throws SemanticException {
     setFrom(getFromString());
-    setWhere(joinWithAnd(
-      getQuery().getHiveConf().getBoolean
-        (CubeQueryConfUtil.REPLACE_TIMEDIM_WITH_PART_COL, CubeQueryConfUtil.DEFAULT_REPLACE_TIMEDIM_WITH_PART_COL)
-        ? getPostSelectionWhereClause() : null,
-      genWhereClauseWithDimPartitions(where)
-    ));
+    setWhere(
+      joinWithAnd(
+        getQuery().getHiveConf().getBoolean
+          (CubeQueryConfUtil.REPLACE_TIMEDIM_WITH_PART_COL, CubeQueryConfUtil.DEFAULT_REPLACE_TIMEDIM_WITH_PART_COL)
+          ? getPostSelectionWhereClause() : null,
+        genWhereClauseWithDimPartitions(where)
+      )
+    );
   }
 
   protected abstract String getPostSelectionWhereClause() throws SemanticException;

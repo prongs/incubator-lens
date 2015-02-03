@@ -46,7 +46,7 @@ import org.antlr.runtime.CommonToken;
  * Holds context of a candidate fact table.
  */
 class CandidateFact implements CandidateTable {
-  public static Log LOG = LogFactory.getLog(CandidateFact.class.getName());
+  public static final Log LOG = LogFactory.getLog(CandidateFact.class.getName());
   final CubeFactTable fact;
   Set<String> storageTables;
   // flag to know if querying multiple storage tables is enabled for this fact
@@ -146,8 +146,7 @@ class CandidateFact implements CandidateTable {
   }
 
   /**
-   * Update the ASTs to include only the fields queried from this fact, in all
-   * the expressions
+   * Update the ASTs to include only the fields queried from this fact, in all the expressions
    *
    * @param cubeql
    * @throws SemanticException

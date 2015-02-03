@@ -33,7 +33,11 @@ import org.apache.hadoop.hive.ql.ErrorMsg;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.log4j.Logger;
 
-public class DateUtil {
+public final class DateUtil {
+  private DateUtil() {
+
+  }
+
   public static final Logger LOG = Logger.getLogger(DateUtil.class);
 
   /*
@@ -61,12 +65,12 @@ public class DateUtil {
 
   public static final Pattern RELDATE_VALIDATOR = Pattern.compile(RELDATE_VALIDATOR_STR, Pattern.CASE_INSENSITIVE);
 
-  public static String YEAR_FMT = "[0-9]{4}";
-  public static String MONTH_FMT = YEAR_FMT + "-[0-9]{2}";
-  public static String DAY_FMT = MONTH_FMT + "-[0-9]{2}";
-  public static String HOUR_FMT = DAY_FMT + "-[0-9]{2}";
-  public static String MINUTE_FMT = HOUR_FMT + ":[0-9]{2}";
-  public static String SECOND_FMT = MINUTE_FMT + ":[0-9]{2}";
+  public static final String YEAR_FMT = "[0-9]{4}";
+  public static final String MONTH_FMT = YEAR_FMT + "-[0-9]{2}";
+  public static final String DAY_FMT = MONTH_FMT + "-[0-9]{2}";
+  public static final String HOUR_FMT = DAY_FMT + "-[0-9]{2}";
+  public static final String MINUTE_FMT = HOUR_FMT + ":[0-9]{2}";
+  public static final String SECOND_FMT = MINUTE_FMT + ":[0-9]{2}";
   public static final String ABSDATE_FMT = "yyyy-MM-dd-HH:mm:ss,SSS";
   public static final SimpleDateFormat ABSDATE_PARSER = new SimpleDateFormat(ABSDATE_FMT);
 

@@ -54,8 +54,8 @@ public class TestDenormalizationResolver extends TestQueryRewrite {
   public void testDenormsAsDirectFields() throws SemanticException, ParseException {
     // denorm fields directly available
     String twoDaysITRange =
-      "time_range_in(it, '" + CubeTestSetup.getDateUptoHours(twodaysBack) + "','"
-        + CubeTestSetup.getDateUptoHours(now) + "')";
+      "time_range_in(it, '" + CubeTestSetup.getDateUptoHours(TWODAYS_BACK) + "','"
+        + CubeTestSetup.getDateUptoHours(NOW) + "')";
     String hqlQuery = rewrite("select dim2big1, max(msr3)," + " msr2 from testCube" + " where " + twoDaysITRange, conf);
     String expecteddim2big1 =
       getExpectedQuery(cubeName, "select testcube.dim2big1," + " max(testcube.msr3), sum(testcube.msr2) FROM ", null,
@@ -107,7 +107,7 @@ public class TestDenormalizationResolver extends TestQueryRewrite {
     // all following queries use joins to get denorm fields
     Configuration tconf = new Configuration(this.conf);
     tconf.set(CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "C1");
-    String hqlQuery = rewrite("select dim2big1, max(msr3)," + " msr2 from testCube" + " where " + twoDaysRange, tconf);
+    String hqlQuery = rewrite("select dim2big1, max(msr3)," + " msr2 from testCube" + " where " + TWO_DAYS_RANGE, tconf);
     System.out.println("HQL query:" + hqlQuery);
     String expected =
       getExpectedQuery(cubeName, "select testdim2.bigid1, max(testcube.msr3), sum(testcube.msr2) FROM ", " JOIN "
@@ -117,7 +117,7 @@ public class TestDenormalizationResolver extends TestQueryRewrite {
     TestCubeRewriter.compareQueries(expected, hqlQuery);
 
     hqlQuery =
-      rewrite("select testdim2.name, dim2big1, max(msr3)," + " msr2 from testCube" + " where " + twoDaysRange, tconf);
+      rewrite("select testdim2.name, dim2big1, max(msr3)," + " msr2 from testCube" + " where " + TWO_DAYS_RANGE, tconf);
     System.out.println("HQL query:" + hqlQuery);
     expected =
       getExpectedQuery(cubeName,
@@ -129,7 +129,7 @@ public class TestDenormalizationResolver extends TestQueryRewrite {
 
     hqlQuery =
       rewrite("select testdim2.name, dim2big1, max(msr3)," + " msr2 from testCube left outer join testdim2"
-        + " where " + twoDaysRange, tconf);
+        + " where " + TWO_DAYS_RANGE, tconf);
     System.out.println("HQL query:" + hqlQuery);
     expected =
       getExpectedQuery(cubeName,
@@ -140,7 +140,7 @@ public class TestDenormalizationResolver extends TestQueryRewrite {
     TestCubeRewriter.compareQueries(expected, hqlQuery);
 
     hqlQuery =
-      rewrite("select testdim3.name, dim2big1, max(msr3)," + " msr2 from testCube" + " where " + twoDaysRange, tconf);
+      rewrite("select testdim3.name, dim2big1, max(msr3)," + " msr2 from testCube" + " where " + TWO_DAYS_RANGE, tconf);
     System.out.println("HQL query:" + hqlQuery);
     expected =
       getExpectedQuery(cubeName,
@@ -152,7 +152,7 @@ public class TestDenormalizationResolver extends TestQueryRewrite {
         getWhereForDailyAndHourly2days(cubeName, "c1_summary2"));
     TestCubeRewriter.compareQueries(expected, hqlQuery);
     SemanticException e = getSemanticExceptionInRewrite(
-      "select dim2big2, max(msr3)," + " msr2 from testCube" + " where " + twoDaysRange, tconf);
+      "select dim2big2, max(msr3)," + " msr2 from testCube" + " where " + TWO_DAYS_RANGE, tconf);
     Assert.assertEquals(extractPruneCause(e), new PruneCauses.BriefAndDetailedError(
       CandidateTablePruneCode.NO_CANDIDATE_STORAGES.errorFormat,
       new HashMap<String, List<CandidateTablePruneCause>>() {
