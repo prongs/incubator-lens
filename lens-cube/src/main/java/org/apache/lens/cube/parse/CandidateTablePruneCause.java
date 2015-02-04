@@ -51,11 +51,8 @@ import lombok.NoArgsConstructor;
 
 @JsonWriteNullProperties(false)
 @Data
-
+@NoArgsConstructor // Needed for jackson. SUSPEND CHECKSTYLE CHECK HideUtilityClassConstructorCheck
 public class CandidateTablePruneCause {
-  private CandidateTablePruneCause() throws Exception {
-    throw new Exception("not supported");
-  }
   public enum CandidateTablePruneCode {
     // invalid cube table
     INVALID("Invalid cube Table provided in query"),

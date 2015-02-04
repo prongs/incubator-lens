@@ -27,14 +27,16 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.metadata.Table;
 
 import com.google.common.base.Preconditions;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
 /**
  * Abstract table with expressions
  */
 
-
+@EqualsAndHashCode(callSuper = true, exclude = "COLUMNS,exprMap,chainMap")
 public abstract class AbstractBaseTable extends AbstractCubeTable {
+  @Getter
   private final Set<ExprColumn> expressions;
   private static final List<FieldSchema> COLUMNS = new ArrayList<FieldSchema>();
   private final Map<String, ExprColumn> exprMap;
@@ -120,32 +122,8 @@ public abstract class AbstractBaseTable extends AbstractCubeTable {
     return exprs;
   }
 
-  @Override
-  public boolean equals(Object obj) {
-    if (!super.equals(obj)) {
-      return false;
-    }
-    AbstractBaseTable other = (AbstractBaseTable) obj;
-    if (this.getExpressions() == null) {
-      if (other.getExpressions() != null) {
-        return false;
-      }
-    } else if (!this.getExpressions().equals(other.getExpressions())) {
-      return false;
-    }
-
-    if (this.getJoinChains() == null) {
-      if (other.getJoinChains() != null) {
-        return false;
-      }
-    } else if (!this.getJoinChains().equals(other.getJoinChains())) {
-      return false;
-    }
-    return true;
-  }
-
   public ExprColumn getExpressionByName(String exprName) {
-    return exprMap.get(exprName == null ? exprName : exprName.toLowerCase());
+    return exprMap.get(exprName == null ? null : exprName.toLowerCase());
   }
 
   public CubeColumn getColumnByName(String column) {
@@ -195,13 +173,6 @@ public abstract class AbstractBaseTable extends AbstractCubeTable {
       exprNames.add(f.getName().toLowerCase());
     }
     return exprNames;
-  }
-
-  /**
-   * @return the expressions
-   */
-  public Set<ExprColumn> getExpressions() {
-    return expressions;
   }
 
   public Set<String> getAllFieldNames() {

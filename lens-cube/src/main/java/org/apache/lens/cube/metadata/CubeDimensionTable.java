@@ -24,6 +24,9 @@ import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.metadata.Table;
 
+import lombok.EqualsAndHashCode;
+
+@EqualsAndHashCode(callSuper = true)
 public final class CubeDimensionTable extends AbstractCubeTable {
   private String dimName; // dimension name the dimtabe belongs to
   private final Map<String, UpdatePeriod> snapshotDumpPeriods = new HashMap<String, UpdatePeriod>();
@@ -126,34 +129,6 @@ public final class CubeDimensionTable extends AbstractCubeTable {
       return dumpPeriods;
     }
     return null;
-  }
-
-  @Override
-  public boolean equals(Object obj) {
-    if (!super.equals(obj)) {
-      return false;
-    }
-    CubeDimensionTable other = (CubeDimensionTable) obj;
-
-    if (this.getDimName() == null) {
-      if (other.getDimName() != null) {
-        return false;
-      }
-    } else {
-      if (!this.getDimName().equals(other.getDimName())) {
-        return false;
-      }
-    }
-    if (this.getSnapshotDumpPeriods() == null) {
-      if (other.getSnapshotDumpPeriods() != null) {
-        return false;
-      }
-    } else {
-      if (!this.getSnapshotDumpPeriods().equals(other.getSnapshotDumpPeriods())) {
-        return false;
-      }
-    }
-    return true;
   }
 
   @Override
