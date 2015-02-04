@@ -32,6 +32,8 @@ import lombok.Getter;
 /**
  * Abstract table with expressions
  */
+
+
 public abstract class AbstractBaseTable extends AbstractCubeTable {
   private final Set<ExprColumn> expressions;
   private static final List<FieldSchema> COLUMNS = new ArrayList<FieldSchema>();
@@ -252,7 +254,6 @@ public abstract class AbstractBaseTable extends AbstractCubeTable {
   /**
    * Get join chains from properties
    *
-   * @param props
    * @return
    */
   public Set<JoinChain> getJoinChains() {
