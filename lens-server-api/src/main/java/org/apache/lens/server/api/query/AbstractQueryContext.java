@@ -21,13 +21,16 @@ package org.apache.lens.server.api.query;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
+
 import org.apache.lens.api.LensConf;
 import org.apache.lens.api.LensException;
 import org.apache.lens.server.api.driver.DriverQueryPlan;
 import org.apache.lens.server.api.driver.LensDriver;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+
 import lombok.Getter;
 import lombok.Setter;
 
