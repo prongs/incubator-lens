@@ -135,6 +135,11 @@ public class DerivedCube extends AbstractCubeTable implements CubeInterface {
   }
 
   @Override
+  public int hashCode() {
+    return super.hashCode();
+  }
+
+  @Override
   public boolean equals(Object obj) {
     if (!super.equals(obj)) {
       return false;
