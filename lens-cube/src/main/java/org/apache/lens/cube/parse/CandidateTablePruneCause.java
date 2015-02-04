@@ -48,10 +48,11 @@ import lombok.NoArgsConstructor;
 /**
  * Contains the cause why a candidate table is not picked for answering the query
  */
-
+// no args constructor Needed for jackson. SUSPEND CHECKSTYLE CHECK HideUtilityClassConstructorCheck
 @JsonWriteNullProperties(false)
 @Data
-@NoArgsConstructor // Needed for jackson. SUSPEND CHECKSTYLE CHECK HideUtilityClassConstructorCheck
+@NoArgsConstructor
+
 public class CandidateTablePruneCause {
   public enum CandidateTablePruneCode {
     // invalid cube table

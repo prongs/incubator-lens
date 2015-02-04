@@ -28,9 +28,6 @@ import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.metadata.Table;
 
-import lombok.EqualsAndHashCode;
-
-@EqualsAndHashCode(callSuper = true)
 public final class CubeFactTable extends AbstractCubeTable {
   private String cubeName;
   private final Map<String, Set<UpdatePeriod>> storageUpdatePeriods;
@@ -107,6 +104,27 @@ public final class CubeFactTable extends AbstractCubeTable {
     return storageUpdatePeriods;
   }
 
+  @Override
+  public boolean equals(Object obj) {
+    if (!super.equals(obj)) {
+      return false;
+    }
+
+    CubeFactTable other = (CubeFactTable) obj;
+    if (!this.getCubeName().equals(other.getCubeName())) {
+      return false;
+    }
+    if (this.getUpdatePeriods() == null) {
+      if (other.getUpdatePeriods() != null) {
+        return false;
+      }
+    } else {
+      if (!this.getUpdatePeriods().equals(other.getUpdatePeriods())) {
+        return false;
+      }
+    }
+    return true;
+  }
 
   @Override
   public CubeTableType getTableType() {

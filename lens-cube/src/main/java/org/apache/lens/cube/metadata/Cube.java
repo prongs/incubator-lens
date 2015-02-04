@@ -25,9 +25,6 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.metadata.Table;
 
-import lombok.EqualsAndHashCode;
-
-@EqualsAndHashCode(callSuper = true, exclude = "measureMap,dimMap")
 public class Cube extends AbstractBaseTable implements CubeInterface {
   private final Set<CubeMeasure> measures;
   private final Set<CubeDimAttribute> dimensions;
@@ -174,6 +171,29 @@ public class Cube extends AbstractBaseTable implements CubeInterface {
       dimensions.add(dim);
     }
     return dimensions;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (!super.equals(obj)) {
+      return false;
+    }
+    Cube other = (Cube) obj;
+    if (this.getMeasures() == null) {
+      if (other.getMeasures() != null) {
+        return false;
+      }
+    } else if (!this.getMeasures().equals(other.getMeasures())) {
+      return false;
+    }
+    if (this.getDimAttributes() == null) {
+      if (other.getDimAttributes() != null) {
+        return false;
+      }
+    } else if (!this.getDimAttributes().equals(other.getDimAttributes())) {
+      return false;
+    }
+    return true;
   }
 
   public CubeDimAttribute getDimAttributeByName(String dimension) {
