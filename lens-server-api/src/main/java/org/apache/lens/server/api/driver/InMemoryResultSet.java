@@ -19,6 +19,7 @@
 package org.apache.lens.server.api.driver;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.lens.api.LensException;
 import org.apache.lens.api.query.InMemoryQueryResult;
@@ -29,8 +30,6 @@ import org.apache.lens.api.query.ResultRow;
  * The Class InMemoryResultSet.
  */
 public abstract class InMemoryResultSet extends LensResultSet {
-
-  private ArrayList<ResultRow> rows = null;
 
   /**
    * Whether there is another result row available.
@@ -61,12 +60,11 @@ public abstract class InMemoryResultSet extends LensResultSet {
    * @see org.apache.lens.server.api.driver.LensResultSet#toQueryResult()
    */
   public QueryResult toQueryResult() throws LensException {
-    if (rows == null) {
-      rows = new ArrayList<ResultRow>();
-      while (hasNext()) {
-        rows.add(next());
-      }
+    List<ResultRow> rows = new ArrayList<ResultRow>();
+    while (hasNext()) {
+      rows.add(next());
     }
     return new InMemoryQueryResult(rows);
   }
+
 }

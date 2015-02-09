@@ -18,9 +18,7 @@
  */
 package org.apache.lens.cli;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.net.URL;
 import java.util.UUID;
 
@@ -213,23 +211,10 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
 
     Assert.assertTrue(qCom.getStatus(qh).contains("Status : SUCCESSFUL"));
 
-    // Not redundant. The following assert was failing before LENS-26 and LENS-295
-    Assert.assertEquals(qCom.getQueryResultOrError(qh), qCom.getQueryResultOrError(qh));
-
-    result = qCom.downloadQueryResults(qh, "target");
-    Assert.assertTrue(result.startsWith("Successfully "), "Storing result in file failed");
-    BufferedReader br = new BufferedReader(new FileReader(new File("target" + File.separator + qh + ".csv")));
-    StringBuilder downloadedResult = new StringBuilder();
-    String line;
-    while ((line = br.readLine()) != null) {
-      downloadedResult.append(line).append("\n");
-    }
     result = qCom.getQueryResults(qh);
-    Assert.assertEquals(downloadedResult.toString(), result);
     Assert.assertTrue(result.contains("1\tfirst"));
-
-
     // Kill query is not tested as there is no deterministic way of killing a query
+
     result = qCom.getAllQueries("SUCCESSFUL", "", "all", -1, Long.MAX_VALUE);
     Assert.assertTrue(result.contains(qh), result);
 
