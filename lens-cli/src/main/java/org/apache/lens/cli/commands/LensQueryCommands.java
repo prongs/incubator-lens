@@ -18,6 +18,8 @@
  */
 package org.apache.lens.cli.commands;
 
+import java.io.File;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.UUID;
@@ -210,20 +212,56 @@ public class LensQueryCommands extends BaseLensCommand implements CommandMarker 
   }
 
   /**
-   * Gets the query results.
+   * Return query result as String, if an error comes, return the error message
    *
-   * @param qh the qh
-   * @return the query results
+   * @param qh The query handle
+   * @return Query result if possible or Error message
    */
-  @CliCommand(value = "query results", help = "get results of async query")
-  public String getQueryResults(
-    @CliOption(key = {"", "query"}, mandatory = true, help = "query-handle for fetching result") String qh) {
+  public String getQueryResultOrError(String qh) {
+    LOG.info("getQueryResultsOrError: " + qh);
     try {
       LensClient.LensClientResultSetWithStats result = getClient()
         .getAsyncResults(new QueryHandle(UUID.fromString(qh)));
       return formatResultSet(result);
     } catch (Throwable t) {
       return t.getMessage();
+    }
+  }
+
+  /**
+   * Gets the query results.
+   *
+   * @param qh the qh
+   * @return the query results
+   */
+  @CliCommand(value = "query result show", help = "get results of async query")
+  public String getQueryResults(
+    @CliOption(key = {"", "query"}, mandatory = true, help = "query-handle for fetching result") String qh) {
+    return getQueryResultOrError(qh);
+  }
+
+  /**
+   * Downloads query results. If path is a filepath then downloads to that path otherwise if it's a directory it
+   * downloads the result inside that directory with filename = {queryhandle}.csv
+   *
+   * @param qh   query handle
+   * @param path the file/directory path to download result to It can contain spaces
+   * @return Success message/error message
+   */
+  @CliCommand(value = "query result download", help = "get results of async query to a file")
+  public String downloadQueryResults(
+    @CliOption(key = {"", "query"}, mandatory = true, help = "query-handle for fetching result") String qh,
+    @CliOption(key = {"", "path"}, mandatory = false, unspecifiedDefaultValue = ".",
+      help = "file path for downloading result") String path) {
+    path = path.replaceFirst("^~", System.getProperty("user.home"));
+    if (new File(path).isDirectory()) {
+      path = path + File.separator + qh + ".csv";
+    }
+    try {
+      writeToFile(path, getQueryResultOrError(qh));
+      return "Successfully wrote query results to file: " + path;
+    } catch (IOException e) {
+      return e.getMessage();
     }
   }
 

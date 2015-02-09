@@ -18,6 +18,9 @@
  */
 package org.apache.lens.cli.commands;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 
 import org.apache.lens.client.LensClient;
@@ -114,5 +117,18 @@ public class BaseLensCommand {
   public String formatJson(String json) {
     return json.replaceAll("\\[ \\{", "\n\n ").replaceAll("\\{", "").replaceAll("}", "").replaceAll("\\[", "")
       .replaceAll("]", "\n").replaceAll(",", "").replaceAll("\"", "").replaceAll("\n\n", "\n");
+  }
+
+  /**
+   * Writes data to a file at location filePath
+   *
+   * @param filePath the path of the file to write to
+   * @param data     the data to write in the file
+   * @throws IOException
+   */
+  public void writeToFile(String filePath, String data) throws IOException {
+    BufferedWriter bw = new BufferedWriter(new FileWriter(new File(filePath)));
+    bw.write(data);
+    bw.close();
   }
 }
