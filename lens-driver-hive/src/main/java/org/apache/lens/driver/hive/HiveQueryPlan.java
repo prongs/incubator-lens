@@ -34,10 +34,17 @@ import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.metadata.Table;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import lombok.ToString;
+
 /**
  * The Class HiveQueryPlan.
  */
+@ToString(callSuper = true)
 public class HiveQueryPlan extends DriverQueryPlan {
+  private static final Logger LOG = LoggerFactory.getLogger(HiveQueryPlan.class);
 
   /** The explain output. */
   private String explainOutput;
@@ -106,6 +113,7 @@ public class HiveQueryPlan extends DriverQueryPlan {
     partitions = new LinkedHashMap<String, List<String>>();
     this.explainOutput = StringUtils.join(explainOutput, '\n');
     extractPlanDetails(explainOutput, metastoreConf);
+    LOG.info("toString: " + this);
   }
 
   /**

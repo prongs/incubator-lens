@@ -30,9 +30,12 @@ import org.apache.lens.api.query.QueryHandle;
 import org.apache.lens.api.query.QueryPlan;
 import org.apache.lens.api.query.QueryPrepareHandle;
 
+import lombok.Data;
+
 /**
  * The Class DriverQueryPlan.
  */
+@Data
 public abstract class DriverQueryPlan {
 
   /**
@@ -402,8 +405,8 @@ public abstract class DriverQueryPlan {
    * Set the weight of the table.
    *
    * @param tableName   The name of the table.
-   * @param tableWeight Weight of the table being queried.
-   *                    This should reflect the amount of data being read/scanned from the table, scan cost
+   * @param tableWeight Weight of the table being queried. This should reflect the amount of data being read/scanned
+   *                    from the table, scan cost
    */
   protected void setTableWeight(String tableName, Double tableWeight) {
     this.tableWeights.put(tableName, tableWeight);
