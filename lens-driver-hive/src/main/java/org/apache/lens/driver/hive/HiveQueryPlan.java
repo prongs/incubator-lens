@@ -126,6 +126,7 @@ public class HiveQueryPlan extends DriverQueryPlan {
    */
   private void extractPlanDetails(List<String> explainOutput, HiveConf metastoreConf) throws HiveException {
     LOG.info("explainOutput: " + explainOutput);
+    // Pretty similar to YAML parsing
     ParserState state = ParserState.BEGIN;
     ParserState prevState = state;
     ArrayList<ParserState> states = new ArrayList<ParserState>();
@@ -250,7 +251,6 @@ public class HiveQueryPlan extends DriverQueryPlan {
   /**
    * Next state.
    *
-   * @param tr               the tr
    * @param indentationStack
    * @param state            the state  @return the parser state
    */
