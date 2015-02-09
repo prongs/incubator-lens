@@ -18,10 +18,7 @@
  */
 package org.apache.lens.driver.hive;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import org.apache.lens.api.query.QueryCost;
 import org.apache.lens.api.query.QueryPrepareHandle;
@@ -94,7 +91,11 @@ public class HiveQueryPlan extends DriverQueryPlan {
     PARTITION,
 
     /** CREATE TABLE if destination is a table */
-    CREATE
+    CREATE,
+
+    FILTER,
+
+    HAVING,
   }
 
   /**
@@ -124,17 +125,28 @@ public class HiveQueryPlan extends DriverQueryPlan {
    * @throws HiveException the hive exception
    */
   private void extractPlanDetails(List<String> explainOutput, HiveConf metastoreConf) throws HiveException {
+    LOG.info("explainOutput: " + explainOutput);
     ParserState state = ParserState.BEGIN;
     ParserState prevState = state;
     ArrayList<ParserState> states = new ArrayList<ParserState>();
     Hive metastore = Hive.get(metastoreConf);
     List<String> partList = null;
-
+    Stack<Map.Entry<Integer, String>> indentationStack = new Stack<Map.Entry<Integer, String>>();
+    int curIndentation = -1, oldIndentation = -1;
     for (int i = 0; i < explainOutput.size(); i++) {
+      oldIndentation = curIndentation;
       String line = explainOutput.get(i);
-      String tr = line.trim();
+      String frontTrimmed = line.replaceAll("^\\s+", "");
+      curIndentation = line.length() - frontTrimmed.length();
+      String tr = frontTrimmed.trim();
+      LOG.info("Stack modification with " + tr);
+      while (!indentationStack.isEmpty() && indentationStack.peek().getKey() >= curIndentation) {
+        indentationStack.pop();
+      }
+      indentationStack.push(new HashMap.SimpleEntry<Integer, String>(curIndentation, tr));
+      LOG.info("after modification: " + indentationStack);
       prevState = state;
-      state = nextState(tr, state);
+      state = nextState(indentationStack, prevState);
 
       if (prevState != state) {
         states.add(prevState);
@@ -154,6 +166,12 @@ public class HiveQueryPlan extends DriverQueryPlan {
         if (tr.equals("condition map:")) {
           numJoins++;
         }
+        break;
+      case FILTER:
+        if (tr.startsWith("predicate:")) {numFilters++; }
+        break;
+      case HAVING:
+        if (tr.startsWith("predicate:")) {numHaving++; }
         break;
       case SELECT:
         if (tr.startsWith("expressions:") && states.get(states.size() - 1) == ParserState.TABLE_SCAN) {
@@ -218,8 +236,9 @@ public class HiveQueryPlan extends DriverQueryPlan {
             }
             break;
           }
-          if (explainOutput.get(i).trim().startsWith("Stage: ")) {
-            // stage got changed
+          if (explainOutput.get(i).length() - explainOutput.get(i).replaceAll("^\\s+", "").length()
+            >= indentationStack.peek().getKey()) {
+            // out of partition.
             break;
           }
         }
@@ -231,11 +250,14 @@ public class HiveQueryPlan extends DriverQueryPlan {
   /**
    * Next state.
    *
-   * @param tr    the tr
-   * @param state the state
-   * @return the parser state
+   * @param tr               the tr
+   * @param indentationStack
+   * @param state            the state  @return the parser state
    */
-  private ParserState nextState(String tr, ParserState state) {
+  private ParserState nextState(Stack<Map.Entry<Integer, String>> indentationStack, ParserState state) {
+    LOG.info("Stack status: " + indentationStack);
+    String tr = indentationStack.peek().getValue();
+    LOG.info("tr: " + tr);
     if (tr.equals("File Output Operator")) {
       return ParserState.FILE_OUTPUT_OPERATOR;
     } else if (tr.equals("Map Reduce")) {
@@ -260,6 +282,16 @@ public class HiveQueryPlan extends DriverQueryPlan {
       return ParserState.PARTITION;
     } else if (tr.equals("Create Table Operator")) {
       return ParserState.CREATE;
+    } else if (tr.equals("Filter Operator")) {
+      LOG.info("Filter operator");
+      LOG.info(indentationStack.get(indentationStack.size() - 3).getValue());
+      if (indentationStack.get(indentationStack.size() - 3).getValue().equals("Reduce Operator Tree:")) {
+        LOG.info("having");
+        return ParserState.HAVING;
+      } else if (indentationStack.get(indentationStack.size() - 3).getValue().equals("Map Operator Tree:")) {
+        LOG.info("filter");
+        return ParserState.FILTER;
+      }
     }
     return state;
   }
@@ -281,4 +313,5 @@ public class HiveQueryPlan extends DriverQueryPlan {
   public Map<String, List<String>> getPartitions() {
     return partitions;
   }
+
 }
