@@ -63,7 +63,7 @@ public class CubeMetastoreClient {
   private final Map<String, CubeFactTable> allFactTables = new HashMap<String, CubeFactTable>();
   // map from storage name to storage
   private final Map<String, Storage> allStorages = new HashMap<String, Storage>();
-
+  private PartitionInfo partitionInfo = new PartitionInfo();
   // dbname to client mapping
   private static final Map<String, CubeMetastoreClient> CLIENT_MAPPING =
     new HashMap<String, CubeMetastoreClient>();

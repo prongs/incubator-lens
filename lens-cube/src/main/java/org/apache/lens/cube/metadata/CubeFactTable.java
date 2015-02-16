@@ -28,10 +28,13 @@ import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.metadata.Table;
 
+import lombok.Data;
+
+@Data
 public final class CubeFactTable extends AbstractCubeTable {
   private String cubeName;
   private final Map<String, Set<UpdatePeriod>> storageUpdatePeriods;
-
+  private PartitionInfo partitionInfo = new PartitionInfo();
   public CubeFactTable(Table hiveTable) {
     super(hiveTable);
     this.storageUpdatePeriods = getUpdatePeriods(getName(), getProperties());
@@ -179,7 +182,8 @@ public final class CubeFactTable extends AbstractCubeTable {
     // between the dates
     UpdatePeriodComparator cmp = new UpdatePeriodComparator();
     for (UpdatePeriod i : updatePeriods) {
-      if (UpdatePeriod.YEARLY == i || UpdatePeriod.QUARTERLY == i || UpdatePeriod.MONTHLY == i) {
+      if (UpdatePeriod.YEARLY == i || UpdatePeriod.QUARTERLY == i || UpdatePeriod.MONTHLY == i
+        || UpdatePeriod.WEEKLY == i) {
         int intervals = 0;
         switch (i) {
         case YEARLY:
