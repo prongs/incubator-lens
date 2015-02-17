@@ -347,16 +347,16 @@ public class MetastoreUtil {
   // Utils ///
   // /////////////////////////
   public static <E extends Named> String getNamedStr(Collection<E> set) {
-    if (set == null || set.isEmpty()) {
+    if (set == null) {
       return "";
     }
+    String sep = "";
     StringBuilder valueStr = new StringBuilder();
     Iterator<E> it = set.iterator();
-    for (int i = 0; i < (set.size() - 1); i++) {
-      valueStr.append(it.next().getName());
-      valueStr.append(",");
+    while(it.hasNext()) {
+      valueStr.append(sep).append(it.next().getName());
+      sep = ",";
     }
-    valueStr.append(it.next().getName());
     return valueStr.toString();
   }
 
@@ -456,5 +456,20 @@ public class MetastoreUtil {
     } else {
       cols.add(dim.getName().toLowerCase());
     }
+  }
+  public static String getPartitionInfoKeyPrefix(UpdatePeriod updatePeriod, String partCol) {
+    return STORAGE_PFX + PARTITIONINFO + updatePeriod.getName() + "." + partCol + ".";
+  }
+  public static String getPartitionInfoKeyForFirst(UpdatePeriod updatePeriod, String partCol) {
+    return getPartitionInfoKeyPrefix(updatePeriod, partCol) + "first";
+  }
+  public static String getPartitionInfoKeyForLatest(UpdatePeriod updatePeriod, String partCol) {
+    return getPartitionInfoKeyPrefix(updatePeriod, partCol) + "latest";
+  }
+  public static String getPartitionInfoKeyForHoles(UpdatePeriod updatePeriod, String partCol) {
+    return getPartitionInfoKeyPrefix(updatePeriod, partCol) + "holes";
+  }
+  public static String getPartitionInfoKeyForPresence() {
+    return  STORAGE_PFX + PARTITIONINFO + "present";
   }
 }

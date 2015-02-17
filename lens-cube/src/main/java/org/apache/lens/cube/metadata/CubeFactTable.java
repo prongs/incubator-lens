@@ -30,7 +30,6 @@ import org.apache.hadoop.hive.ql.metadata.Table;
 
 import lombok.Data;
 
-@Data
 public final class CubeFactTable extends AbstractCubeTable {
   private String cubeName;
   private final Map<String, Set<UpdatePeriod>> storageUpdatePeriods;

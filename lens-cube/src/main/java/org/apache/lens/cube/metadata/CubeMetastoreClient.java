@@ -67,7 +67,6 @@ public class CubeMetastoreClient {
   // dbname to client mapping
   private static final Map<String, CubeMetastoreClient> CLIENT_MAPPING =
     new HashMap<String, CubeMetastoreClient>();
-
   private SchemaGraph schemaGraph;
 
   /**
@@ -353,17 +352,101 @@ public class CubeMetastoreClient {
   /**
    * Add a partition specified by the storage partition desc on the storage passed.
    *
-   * @param partSpec The storage partition description
-   * @param storage  The storage object
+   * @param partSpec    The storage partition description
+   * @param storageName The storage name
    * @throws HiveException
    */
   public void addPartition(StoragePartitionDesc partSpec, String storageName) throws HiveException {
-    String storageTableName =
-      MetastoreUtil.getStorageTableName(partSpec.getCubeTableName(), Storage.getPrefix(storageName));
-
     getStorage(storageName).addPartition(getClient(), partSpec,
-      getLatestInfo(storageTableName, partSpec.getTimePartSpec(), partSpec.getUpdatePeriod()));
+//      getLatestInfo(storageTableName, partSpec.getTimePartSpec(), partSpec.getUpdatePeriod())
+      //TODO: remove this argument from Storage
+      null
+    );
+    Map<String, PartitionInfo.PartitionTimeline> x = getPartitionInfoForStorageTable(
+      partSpec.getCubeTableName(), storageName).get(partSpec.getUpdatePeriod());
+    partitionInfo.addPartition(partSpec.getCubeTableName(), storageName, partSpec);
+    // update hive table
+    alterTablePartitionInfo(MetastoreUtil.getStorageTableName(partSpec.getCubeTableName(), Storage.getPrefix(storageName)));
   }
+
+  private TreeMap<UpdatePeriod, Map<String, PartitionInfo.PartitionTimeline>> getPartitionInfoForStorageTable(
+    String fact, String storage) throws HiveException {
+    String storageTableName = MetastoreUtil.getStorageTableName(fact, Storage.getPrefix(storage));
+    if (partitionInfo.get(storageTableName) == null) {
+      Table storageTable = getTable(storageTableName);
+      TreeMap<UpdatePeriod, Map<String, PartitionInfo.PartitionTimeline>> ret
+        = new TreeMap<UpdatePeriod, Map<String, PartitionInfo.PartitionTimeline>>();
+      if (storageTable.getParameters().get(MetastoreUtil.getPartitionInfoKeyForPresence()) == null) {
+        for (Partition partition : getPartitionsByFilter(storageTableName, null)) {
+          UpdatePeriod period = deduceUpdatePeriod(partition);
+          List<FieldSchema> cols = partition.getTable().getPartCols(); //TODO: verify this is correct
+          List<String> values = partition.getValues();
+          for (int i = 0; i < cols.size(); i++) {
+            partitionInfo.registerPartitionExistance(storageTableName, period, cols.get(i).getName(), values.get(i));
+          }
+        }
+        partitionInfo.reduce(storageTableName);
+        // Now make sure all have an entry even if no partitions exist
+        for(UpdatePeriod updatePeriod: getCubeFact(fact).getUpdatePeriods().get(storage)) {
+          for(String partCol: getPartColNames(storageTableName)) {
+            partitionInfo.ensureEntry(storageTableName, updatePeriod, partCol);
+          }
+        }
+        alterTablePartitionInfo(storageTableName);
+      } else {
+        for (UpdatePeriod updatePeriod : getCubeFact(fact).getUpdatePeriods().get(storage)) {
+          ret.put(updatePeriod, new HashMap<String, PartitionInfo.PartitionTimeline>());
+          for (String partCol : getPartColNames(storageTableName)) {
+            ret.get(updatePeriod).put(partCol, readPartitionTimeline(storageTable, updatePeriod, partCol));
+          }
+        }
+        partitionInfo.put(storageTableName, ret);
+      }
+    }
+    return partitionInfo.get(storageTableName);
+  }
+
+  private void alterTablePartitionInfo(String storageTableName) throws HiveException {
+    Table table = getTable(storageTableName);
+    Map<String, String> params = table.getParameters();
+    for(UpdatePeriod updatePeriod: partitionInfo.get(storageTableName).keySet()) {
+      for(Map.Entry<String, PartitionInfo.PartitionTimeline> entry: partitionInfo.get(storageTableName).get(updatePeriod).entrySet()) {
+        params.putAll(entry.getValue().toProperties(updatePeriod, entry.getKey()));
+      }
+    }
+    alterHiveTable(storageTableName, table);
+  }
+
+  private UpdatePeriod deduceUpdatePeriod(Partition partition) {
+    for (UpdatePeriod period : UpdatePeriod.values()) {
+      try {
+        period.format().parse(partition.getValues().iterator().next());
+        return period;
+      } catch (ParseException e) {
+        continue;
+      }
+    }
+    return null;
+  }
+
+
+  private PartitionInfo.PartitionTimeline readPartitionTimeline(
+    Table storageTable, UpdatePeriod updatePeriod, String partCol) {
+    PartitionInfo.PartitionTimeline timeline = new PartitionInfo.PartitionTimeline();
+    String first = storageTable.getParameters().get(MetastoreUtil.getPartitionInfoKeyForFirst(updatePeriod, partCol));
+    String latest = storageTable.getParameters().get(MetastoreUtil.getPartitionInfoKeyForLatest(updatePeriod, partCol));
+    String holes = storageTable.getParameters().get(MetastoreUtil.getPartitionInfoKeyForHoles(updatePeriod, partCol));
+    timeline.setFirst(first);
+    timeline.setLatest(latest);
+    timeline.getHoles().clear();
+    if (holes != null) {
+      for (String s : holes.split("\\s*,\\s*")) {
+        timeline.getHoles().add(s);
+      }
+    }
+    return timeline;
+  }
+
 
   private LatestInfo getLatestInfo(String storageTableName, Map<String, Date> partitionTimestamps,
     UpdatePeriod updatePeriod) throws HiveException {
@@ -800,8 +883,7 @@ public class CubeMetastoreClient {
    */
 
   public CubeFactTable getFactTable(String tableName) throws HiveException {
-    Table tbl = getTable(tableName);
-    return getFactTable(tbl);
+    return getFactTable(getTable(tableName));
   }
 
   private CubeFactTable getFactTable(Table tbl) throws HiveException {
@@ -910,8 +992,7 @@ public class CubeMetastoreClient {
   public CubeFactTable getCubeFact(String tableName) throws HiveException {
     CubeFactTable fact = allFactTables.get(tableName.toLowerCase());
     if (fact == null) {
-      Table tbl = getTable(tableName);
-      fact = getFactTable(tbl);
+      fact = getFactTable(tableName);
       if (enableCaching) {
         allFactTables.put(tableName.toLowerCase(), fact);
       }
@@ -1180,8 +1261,7 @@ public class CubeMetastoreClient {
     return columnsChanged;
   }
 
-  private void alterHiveTable(String table, Table hiveTable, List<FieldSchema> columns) throws HiveException {
-    hiveTable.getTTable().getSd().setCols(columns);
+  private void alterHiveTable(String table, Table hiveTable) throws HiveException {
     try {
       getClient().alterTable(table, hiveTable);
     } catch (InvalidOperationException e) {
@@ -1189,8 +1269,13 @@ public class CubeMetastoreClient {
     }
     if (enableCaching) {
       // refresh the table in cache
+      //TODO: don't need to fetch again. can put table -> hiveTable
       refreshTable(table);
     }
+  }
+  private void alterHiveTable(String table, Table hiveTable, List<FieldSchema> columns) throws HiveException {
+    hiveTable.getTTable().getSd().setCols(columns);
+    alterHiveTable(table, hiveTable);
   }
 
   /**
