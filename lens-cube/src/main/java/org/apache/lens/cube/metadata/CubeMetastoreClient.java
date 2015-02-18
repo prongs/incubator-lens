@@ -419,15 +419,7 @@ public class CubeMetastoreClient {
   }
 
   private UpdatePeriod deduceUpdatePeriod(Partition partition) {
-    for (UpdatePeriod period : UpdatePeriod.values()) {
-      try {
-        period.format().parse(partition.getValues().iterator().next());
-        return period;
-      } catch (ParseException e) {
-        continue;
-      }
-    }
-    return null;
+    return UpdatePeriod.valueOf(partition.getParameters().get(MetastoreConstants.PARTITION_UPDATE_PERIOD));
   }
 
 
