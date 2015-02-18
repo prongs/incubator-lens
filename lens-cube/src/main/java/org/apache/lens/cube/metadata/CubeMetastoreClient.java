@@ -374,8 +374,6 @@ public class CubeMetastoreClient {
     String storageTableName = MetastoreUtil.getStorageTableName(fact, Storage.getPrefix(storage));
     if (partitionInfo.get(storageTableName) == null) {
       Table storageTable = getTable(storageTableName);
-      TreeMap<UpdatePeriod, Map<String, PartitionInfo.PartitionTimeline>> ret
-        = new TreeMap<UpdatePeriod, Map<String, PartitionInfo.PartitionTimeline>>();
       if (storageTable.getParameters().get(MetastoreUtil.getPartitionInfoKeyForPresence()) == null) {
         for (Partition partition : getPartitionsByFilter(storageTableName, null)) {
           UpdatePeriod period = deduceUpdatePeriod(partition);
@@ -392,15 +390,17 @@ public class CubeMetastoreClient {
             partitionInfo.ensureEntry(storageTableName, updatePeriod, partCol);
           }
         }
+        //TODO: set flag
         alterTablePartitionInfo(storageTableName);
       } else {
+        partitionInfo.put(storageTableName, new TreeMap<UpdatePeriod, Map<String, PartitionInfo.PartitionTimeline>>());
         for (UpdatePeriod updatePeriod : getCubeFact(fact).getUpdatePeriods().get(storage)) {
-          ret.put(updatePeriod, new HashMap<String, PartitionInfo.PartitionTimeline>());
+          partitionInfo.get(storageTableName).put(updatePeriod, new HashMap<String, PartitionInfo.PartitionTimeline>());
           for (String partCol : getPartColNames(storageTableName)) {
-            ret.get(updatePeriod).put(partCol, readPartitionTimeline(storageTable, updatePeriod, partCol));
+            partitionInfo.get(storageTableName).get(updatePeriod).put(partCol,
+              readPartitionTimeline(storageTable, updatePeriod, partCol));
           }
         }
-        partitionInfo.put(storageTableName, ret);
       }
     }
     return partitionInfo.get(storageTableName);
@@ -414,6 +414,7 @@ public class CubeMetastoreClient {
         params.putAll(entry.getValue().toProperties(updatePeriod, entry.getKey()));
       }
     }
+    params.put(MetastoreUtil.getPartitionInfoKeyForPresence(), "true");
     alterHiveTable(storageTableName, table);
   }
 
