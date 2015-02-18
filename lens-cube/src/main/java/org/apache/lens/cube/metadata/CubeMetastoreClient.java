@@ -390,7 +390,6 @@ public class CubeMetastoreClient {
             partitionInfo.ensureEntry(storageTableName, updatePeriod, partCol);
           }
         }
-        //TODO: set flag
         alterTablePartitionInfo(storageTableName);
       } else {
         partitionInfo.put(storageTableName, new TreeMap<UpdatePeriod, Map<String, PartitionInfo.PartitionTimeline>>());
