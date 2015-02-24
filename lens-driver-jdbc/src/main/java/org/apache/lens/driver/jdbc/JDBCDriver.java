@@ -27,6 +27,8 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -524,6 +526,7 @@ public class JDBCDriver implements LensDriver {
     return rewrittenQuery;
   }
 
+  private static final QueryCost JDBC_DRIVER_COST = new QueryCost(0, 0);
   /**
    * Dummy JDBC query Plan class to get min cost selector working.
    */
@@ -536,8 +539,14 @@ public class JDBCDriver implements LensDriver {
     @Override
     public QueryCost getCost() {
       // this means that JDBC driver is only selected for tables with just DB storage.
-      return new QueryCost(0, 0);
+      return JDBC_DRIVER_COST;
     }
+  }
+
+  @Override
+  public QueryCost estimate(AbstractQueryContext qctx) throws LensException {
+    validate(qctx);
+    return JDBC_DRIVER_COST;
   }
 
   /**
@@ -549,6 +558,13 @@ public class JDBCDriver implements LensDriver {
    */
   @Override
   public DriverQueryPlan explain(AbstractQueryContext explainCtx) throws LensException {
+    if (explainCtx.getDriverQuery(this) == null) {
+      throw new NullPointerException("Null driver query for " + explainCtx.getUserQuery());
+    }
+    if (explainCtx.getDriverContext().getDriverQueryPlan(this) != null) {
+      // explain called again and again
+      return explainCtx.getDriverContext().getDriverQueryPlan(this);
+    }
     checkConfigured();
     String explainQuery;
     String rewrittenQuery = rewriteQuery(explainCtx.getDriverQuery(this), conf);
@@ -580,46 +596,90 @@ public class JDBCDriver implements LensDriver {
         result.close();
       }
     }
-
-    return new JDBCQueryPlan();
+    JDBCQueryPlan jqp = new JDBCQueryPlan();
+    explainCtx.getDriverContext().setDriverQueryPlan(this, jqp);
+    return jqp;
   }
 
   /**
-   * Prepare the given query.
+   * Validate query using prepare
    *
-   * @param pContext the context
-   * @throws LensException the lens exception
+   * @param pContext
+   * @throws LensException
    */
-  @Override
-  public void prepare(PreparedQueryContext pContext) throws LensException {
+  public void validate(AbstractQueryContext pContext) throws LensException {
+    if (pContext.getDriverQuery(this) == null) {
+      throw new NullPointerException("Null driver query for " + pContext.getUserQuery());
+    }
+    boolean validateThroughPrepare = pContext.getDriverConf(this).getBoolean(JDBC_VALIDATE_THROUGH_PREPARE,
+        DEFAULT_JDBC_VALIDATE_THROUGH_PREPARE);
+    if (validateThroughPrepare) {
+      PreparedStatement stmt = prepareInternal(pContext);
+      if (stmt != null) {
+        try {
+          stmt.close();
+        } catch (SQLException e) {
+          throw new LensException();
+        }
+      }
+    }
+  }
+
+  private final Map<QueryPrepareHandle, PreparedStatement> preparedQueries =
+      new HashMap<QueryPrepareHandle, PreparedStatement>();
+
+  /**
+   * Internally prepare the query
+   *
+   * @param pContext
+   * @return
+   * @throws LensException
+   */
+  private PreparedStatement prepareInternal(AbstractQueryContext pContext) throws LensException {
+    if (pContext.getDriverQuery(this) == null) {
+      throw new NullPointerException("Null driver query for " + pContext.getUserQuery());
+    }
     checkConfigured();
     // Only create a prepared statement and then close it
-    String rewrittenQuery = rewriteQuery(pContext.getSelectedDriverQuery(), pContext.getSelectedDriverConf());
+    String rewrittenQuery = rewriteQuery(pContext.getDriverQuery(this), pContext.getDriverConf(this));
     Connection conn = null;
     PreparedStatement stmt = null;
     try {
       conn = getConnection();
       stmt = conn.prepareStatement(rewrittenQuery);
+      if (stmt.getWarnings() != null) {
+        throw new LensException(stmt.getWarnings());
+      }
     } catch (SQLException sql) {
       throw new LensException(sql);
     } finally {
-      if (stmt != null) {
-        try {
-          stmt.close();
-        } catch (SQLException e) {
-          LOG.error("Error closing statement: " + pContext.getPrepareHandle(), e);
-        }
-      }
-
       if (conn != null) {
         try {
           conn.close();
         } catch (SQLException e) {
-          LOG.error("Error closing connection: " + pContext.getPrepareHandle(), e);
+          LOG.error("Error closing connection: " + rewrittenQuery, e);
         }
       }
     }
-    LOG.info("Prepared: " + pContext.getPrepareHandle());
+    LOG.info("Prepared: " + rewrittenQuery);
+    return stmt;
+  }
+
+
+  /**
+   * Prepare the given query.
+   *
+   * @param pContext
+   *          the context
+   * @throws LensException
+   *           the lens exception
+   */
+  @Override
+  public void prepare(PreparedQueryContext pContext) throws LensException {
+    PreparedStatement stmt = prepareInternal(pContext);
+    if (stmt != null) {
+      preparedQueries.put(pContext.getPrepareHandle(), stmt);
+    }
   }
 
   /**
@@ -645,7 +705,13 @@ public class JDBCDriver implements LensDriver {
   @Override
   public void closePreparedQuery(QueryPrepareHandle handle) throws LensException {
     checkConfigured();
-    // Do nothing
+    try {
+      if (preparedQueries.get(handle) != null) {
+        preparedQueries.get(handle).close();
+      }
+    } catch (SQLException e) {
+      throw new LensException(e);
+    }
   }
 
   /**
@@ -859,6 +925,17 @@ public class JDBCDriver implements LensDriver {
           closeQuery(query);
         } catch (LensException e) {
           LOG.warn("Error closing query : " + query.getHandleId(), e);
+        }
+      }
+      for (QueryPrepareHandle query : new ArrayList<QueryPrepareHandle>(preparedQueries.keySet())) {
+        try {
+          try {
+            preparedQueries.get(query).close();
+          } catch (SQLException e) {
+            throw new LensException();
+          }
+        } catch (LensException e) {
+          LOG.warn("Error closing prapared query : " + query , e);
         }
       }
     } finally {
