@@ -360,9 +360,9 @@ public class CubeMetastoreClient {
     String storageTableName = MetastoreUtil.getStorageTableName(partSpec.getCubeTableName(), Storage.getPrefix(
       storageName));
     getStorage(storageName).addPartition(getClient(), partSpec,
-      getLatestInfo(storageTableName, partSpec.getTimePartSpec(), partSpec.getUpdatePeriod())
+//      getLatestInfo(storageTableName, partSpec.getTimePartSpec(), partSpec.getUpdatePeriod())
       //TODO: remove this argument from Storage
-//      null
+      null
     );
     Map<String, PartitionInfo.PartitionTimeline> x = getPartitionInfoForStorageTable(
       partSpec.getCubeTableName(), storageName).get(partSpec.getUpdatePeriod());
