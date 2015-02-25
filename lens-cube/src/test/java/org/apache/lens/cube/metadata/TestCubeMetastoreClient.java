@@ -996,14 +996,14 @@ public class TestCubeMetastoreClient {
 //      .assertEquals(TextInputFormat.class.getCanonicalName(), parts.get(0).getInputFormatClass().getCanonicalName());
 //    Assert.assertEquals(parts.get(0).getParameters().get(MetastoreUtil.getLatestPartTimestampKey("dt")),
 //      UpdatePeriod.HOURLY.format().format(now));
-    Assert.assertEquals(client.getAllParts(storageTableName).size(), 3);
+    Assert.assertEquals(client.getAllParts(storageTableName).size(), 1);
     parts = client.getPartitionsByFilter(storageTableName, testDtPart.getName() + "='latest'");
-    Assert.assertEquals(1, parts.size());
-    Assert
-      .assertEquals(TextInputFormat.class.getCanonicalName(), parts.get(0).getInputFormatClass().getCanonicalName());
-    Assert.assertEquals(
-      parts.get(0).getParameters().get(MetastoreUtil.getLatestPartTimestampKey(testDtPart.getName())),
-      UpdatePeriod.HOURLY.format().format(testDt));
+    Assert.assertEquals(parts.size(), 0);
+//    Assert
+//      .assertEquals(TextInputFormat.class.getCanonicalName(), parts.get(0).getInputFormatClass().getCanonicalName());
+//    Assert.assertEquals(
+//      parts.get(0).getParameters().get(MetastoreUtil.getLatestPartTimestampKey(testDtPart.getName())),
+//      UpdatePeriod.HOURLY.format().format(testDt));
 
     client.dropPartition(cubeFact.getName(), c1, timeParts, null, UpdatePeriod.HOURLY);
     Assert.assertEquals(client.getAllParts(storageTableName).size(), 0);

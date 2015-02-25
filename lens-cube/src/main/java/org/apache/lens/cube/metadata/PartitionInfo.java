@@ -105,6 +105,10 @@ public class PartitionInfo extends HashMap<String, //storage table
 
     private void addHole(Date toDrop, UpdatePeriod updatePeriod) {
       //TODO: improve performance by taking both Date and String as argument. Parsing/formatting overhead will be gone
+      if (holes.isEmpty()) {
+        holes.add(updatePeriod.format().format(toDrop));
+        return;
+      }
       try {
         if (updatePeriod.format().parse(holes.get(holes.size() - 1)).before(toDrop)) {
           holes.add(updatePeriod.format().format(toDrop));
