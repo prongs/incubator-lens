@@ -711,8 +711,9 @@ public class CubeMetastoreClient {
   }
 
   boolean latestPartitionExists(String factName, String storageName, String latestPartCol) throws HiveException {
-    String storageTableName = MetastoreUtil.getFactStorageTableName(factName, storageName);
-    return partitionExistsByFilter(storageTableName, StorageConstants.getLatestPartFilter(latestPartCol));
+//    String storageTableName = MetastoreUtil.getFactStorageTableName(factName, storageName);
+//    return partitionExistsByFilter(storageTableName, StorageConstants.getLatestPartFilter(latestPartCol));
+    return true;
   }
 
   Partition getLatestPart(String storageTableName, String latestPartCol) throws HiveException {
