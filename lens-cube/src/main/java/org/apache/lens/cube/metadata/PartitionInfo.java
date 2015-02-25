@@ -21,6 +21,10 @@ package org.apache.lens.cube.metadata;
 import java.text.ParseException;
 import java.util.*;
 
+import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.lens.api.LensException;
+
 import lombok.Data;
 
 //Stored inside CubeFactTable
@@ -62,6 +66,35 @@ public class PartitionInfo extends HashMap<String, //storage table
         throw new RuntimeException("Shouldn't happen");
       }
     }
+    
+    public void dropPartition(UpdatePeriod updatePeriod, Date value, boolean isExists)
+    {
+    	if(isUninitialized()) {
+          throw new RuntimeException("Deleting a partition whose partitions are uninitialized in cache");
+        }
+    	
+    	if(isExists) {
+    	  // nothing to do, the same date time value exists, so no changes to cached values
+    	  return;
+    	}
+    	
+    	try {
+    	  Date firstDate = updatePeriod.format().parse(first);
+          Date latestDate = updatePeriod.format().parse(latest);
+          if(firstDate.equals(latestDate) && firstDate.equals(value)) {
+        	this.first = this.latest = null;
+          }
+          else if(firstDate.equals(value)) {
+        	this.first = this.getNextDate(firstDate, latestDate, updatePeriod, 1);
+          }
+          else if(latestDate.equals(value)) {
+        	this.latest = this.getNextDate(latestDate, firstDate, updatePeriod, -1);
+          }
+    	} catch (ParseException e) {
+            throw new RuntimeException("Shouldn't happen");
+        }
+    	
+    }
 
     private void addHolesBetween(Date begin, Date end, UpdatePeriod updatePeriod, boolean negative) {
       Calendar calendar = Calendar.getInstance();
@@ -79,6 +112,20 @@ public class PartitionInfo extends HashMap<String, //storage table
       }
     }
 
+    private String getNextDate(Date begin, Date end, UpdatePeriod updatePeriod, int increment) {
+      Calendar ipCalendar = Calendar.getInstance();
+  	  ipCalendar.setTime(begin);
+  	  while(!ipCalendar.getTime().equals(end)) {
+  	    ipCalendar.add(updatePeriod.calendarField(), increment);
+  	    String value = updatePeriod.format().format(ipCalendar.getTime());
+  	    if(!holes.contains(value)) {
+  	      return value;
+  	    }
+  	  }
+  	  
+  	  return null;
+    }
+    
     public void reduce(UpdatePeriod updatePeriod) {
       //TODO: improve algo by adding bulk addition.
       for(Date partDate: getAll()) {
@@ -150,7 +197,7 @@ public class PartitionInfo extends HashMap<String, //storage table
       }
     }
   }
-
+  
   public void addPartition(String cubeTableName, String storageName, StoragePartitionDesc partSpec) {
     Map<String, PartitionTimeline> timelines = get(cubeTableName, storageName).get(partSpec.getUpdatePeriod());
     for (Map.Entry<String, String> entry : partSpec.getStoragePartSpec().entrySet()) {
