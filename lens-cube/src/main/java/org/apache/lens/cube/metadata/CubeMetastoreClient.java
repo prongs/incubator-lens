@@ -391,16 +391,19 @@ public class CubeMetastoreClient {
       if (storageTable.getParameters().get(MetastoreUtil.getPartitionInfoKeyForPresence()) == null) {
         for (Partition partition : getPartitionsByFilter(storageTableName, null)) {
           UpdatePeriod period = deduceUpdatePeriod(partition);
+          List<String> timeParts = getTimePartsOfTable(partition.getTable());
           List<FieldSchema> cols = partition.getTable().getPartCols(); //TODO: verify this is correct
           List<String> values = partition.getValues();
           for (int i = 0; i < cols.size(); i++) {
-            partitionInfo.registerPartitionExistance(storageTableName, period, cols.get(i).getName(), values.get(i));
+            if (timeParts.contains(cols.get(i).getName())) {
+              partitionInfo.registerPartitionExistance(storageTableName, period, cols.get(i).getName(), values.get(i));
+            }
           }
         }
         partitionInfo.reduce(storageTableName);
         // Now make sure all have an entry even if no partitions exist
         for (UpdatePeriod updatePeriod : getCubeFact(fact).getUpdatePeriods().get(storage)) {
-          for (String partCol : getPartColNames(storageTableName)) {
+          for (String partCol : getTimePartsOfTable(storageTable)) {
             partitionInfo.ensureEntry(storageTableName, updatePeriod, partCol);
           }
         }
@@ -590,7 +593,7 @@ public class CubeMetastoreClient {
         throw new HiveException("Invalid partspec, missing value for" + column.getName());
       }
     }
-    if (getDimensionTable(cubeTableName) != null) {
+    if (isDimensionTable(cubeTableName)) {
       String timePartColsStr = hiveTable.getTTable().getParameters().get(MetastoreConstants.TIME_PART_COLUMNS);
       Map<String, LatestInfo> latest = new HashMap<String, Storage.LatestInfo>();
       if (timePartColsStr != null) {
@@ -639,18 +642,13 @@ public class CubeMetastoreClient {
 
       Map<String, PartitionTimeline> tablePartInfo = getPartitionInfoForStorageTable(
         cubeTableName, storageName).get(updatePeriod);
-      for (Map.Entry<String, Date> entry : timePartSpec.entrySet()) {
-        if (tablePartInfo.get(entry.getKey()) == null) {
-          throw new HiveException("Not a time partition column:" + entry.getKey() + " for storage table name:"
-            + MetastoreUtil.getStorageTableName(cubeTableName, Storage.getPrefix(storageName)));
+      for (int i = 0; i < partCols.size(); i++) {
+        if(timePartSpec.containsKey(partColNames.get(i))) {
+          boolean isExists = this.partitionExistsByFilter(storageTableName,
+            StorageConstants.getPartFilter(partColNames.get(i), partVals.get(i)));
+          tablePartInfo.get(partColNames.get(i)).dropPartition(updatePeriod, partVals.get(i), isExists);
         }
-        // check if there is another partition with the same datetime
-        boolean isExists = this.partitionExistsByFilter(storageTableName,
-          StorageConstants.getPartFilter(entry.getKey(),
-            updatePeriod.format().format(entry.getValue())));
-        tablePartInfo.get(entry.getKey()).dropPartition(updatePeriod, entry.getValue(), isExists);
       }
-
       this.alterTablePartitionInfo(storageTableName);
     }
   }
@@ -738,7 +736,7 @@ public class CubeMetastoreClient {
     if (isDimensionTable(factName)) {
       return partitionExistsByFilter(storageTableName, StorageConstants.getLatestPartFilter(latestPartCol));
     } else {
-      return !partitionInfo.noPartitionsExist(storageTableName);
+      return !partitionInfo.noPartitionsExist(storageTableName, latestPartCol);
     }
   }
 
@@ -760,6 +758,12 @@ public class CubeMetastoreClient {
    */
   public Table getHiveTable(String tableName) throws HiveException {
     return getTable(tableName);
+  }
+
+  public List<String> getTimePartsOfTable(Table table) {
+    List<String> ret = Arrays.asList(table.getParameters().get(MetastoreConstants.TIME_PART_COLUMNS).split(
+      "\\s*,\\s*"));
+    return ret == null ? new ArrayList<String>() : ret;
   }
 
   private Table getTable(String tableName) throws HiveException {

@@ -30,12 +30,11 @@ public class PartitionInfo extends HashMap<String, //storage table
       PartitionInfo.PartitionTimeline>>> {
 
 
-  public boolean noPartitionsExist(String storageTableName) {
-    for (UpdatePeriod updatePeriod: get(storageTableName).keySet()) {
-      for(String partCol: get(storageTableName).get(updatePeriod).keySet()) {
-        if(!get(storageTableName).get(updatePeriod).get(partCol).isUninitialized()) {
-          return false;
-        }
+  public boolean noPartitionsExist(String storageTableName, String latestPartCol) {
+    for (UpdatePeriod updatePeriod : get(storageTableName).keySet()) {
+      PartitionTimeline timeline = get(storageTableName).get(updatePeriod).get(latestPartCol);
+      if (timeline != null && !timeline.isUninitialized()) {
+        return false;
       }
     }
     return true;
@@ -74,7 +73,7 @@ public class PartitionInfo extends HashMap<String, //storage table
       }
     }
 
-    public void dropPartition(UpdatePeriod updatePeriod, Date value, boolean isExists) {
+    public void dropPartition(UpdatePeriod updatePeriod, String value, boolean isExists) {
       if (isUninitialized()) {
         throw new RuntimeException("Deleting a partition whose partitions are uninitialized in cache");
       }
@@ -87,17 +86,40 @@ public class PartitionInfo extends HashMap<String, //storage table
       try {
         Date firstDate = updatePeriod.format().parse(first);
         Date latestDate = updatePeriod.format().parse(latest);
-        if (firstDate.equals(latestDate) && firstDate.equals(value)) {
+        Date toDrop = updatePeriod.format().parse(value);
+        if (firstDate.equals(latestDate) && firstDate.equals(toDrop)) {
           this.first = this.latest = null;
-        } else if (firstDate.equals(value)) {
+          this.holes.clear();
+        } else if (firstDate.equals(toDrop)) {
           this.first = this.getNextDate(firstDate, latestDate, updatePeriod, 1);
-        } else if (latestDate.equals(value)) {
+        } else if (latestDate.equals(toDrop)) {
           this.latest = this.getNextDate(latestDate, firstDate, updatePeriod, -1);
+        } else {
+          this.addHole(toDrop, updatePeriod);
         }
       } catch (ParseException e) {
         throw new RuntimeException("Shouldn't happen");
       }
 
+    }
+
+    private void addHole(Date toDrop, UpdatePeriod updatePeriod) {
+      //TODO: improve performance by taking both Date and String as argument. Parsing/formatting overhead will be gone
+      try {
+        if (updatePeriod.format().parse(holes.get(holes.size() - 1)).before(toDrop)) {
+          holes.add(updatePeriod.format().format(toDrop));
+          return;
+        }
+        ListIterator<String> li = holes.listIterator();
+        while (li.hasNext()) {
+          if (updatePeriod.format().parse(li.next()).after(toDrop)) {
+            li.add(updatePeriod.format().format(toDrop));
+            break;
+          }
+        }
+      } catch (ParseException e) {
+        throw new RuntimeException("Shouldn't happen");
+      }
     }
 
     private void addHolesBetween(Date begin, Date end, UpdatePeriod updatePeriod, boolean negative) {
@@ -122,8 +144,11 @@ public class PartitionInfo extends HashMap<String, //storage table
       while (!ipCalendar.getTime().equals(end)) {
         ipCalendar.add(updatePeriod.calendarField(), increment);
         String value = updatePeriod.format().format(ipCalendar.getTime());
+        //TODO: instead of contains check, check either the first element or the last element.
         if (!holes.contains(value)) {
           return value;
+        } else {
+          holes.remove(value);
         }
       }
 
@@ -205,9 +230,10 @@ public class PartitionInfo extends HashMap<String, //storage table
 
   public void addPartition(String cubeTableName, String storageName, StoragePartitionDesc partSpec) {
     Map<String, PartitionTimeline> timelines = get(cubeTableName, storageName).get(partSpec.getUpdatePeriod());
-    for (Map.Entry<String, String> entry : partSpec.getStoragePartSpec().entrySet()) {
+    for (Map.Entry<String, Date> entry : partSpec.getTimePartSpec().entrySet()) {
       //Assume timelines has all the time part columns.
-      timelines.get(entry.getKey()).addPartition(partSpec.getUpdatePeriod(), entry.getValue());
+      timelines.get(entry.getKey()).addPartition(partSpec.getUpdatePeriod(), partSpec.getUpdatePeriod().format().format(
+        entry.getValue()));
     }
   }
 }

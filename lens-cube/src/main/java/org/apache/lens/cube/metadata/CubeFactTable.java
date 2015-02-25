@@ -28,12 +28,11 @@ import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.metadata.Table;
 
-import lombok.Data;
-
 public final class CubeFactTable extends AbstractCubeTable {
   private String cubeName;
   private final Map<String, Set<UpdatePeriod>> storageUpdatePeriods;
   private PartitionInfo partitionInfo = new PartitionInfo();
+
   public CubeFactTable(Table hiveTable) {
     super(hiveTable);
     this.storageUpdatePeriods = getUpdatePeriods(getName(), getProperties());
@@ -229,8 +228,7 @@ public final class CubeFactTable extends AbstractCubeTable {
   }
 
   /**
-   * Return valid columns of the fact, which can be specified by the property
-   * MetastoreUtil.getValidColumnsKey(getName())
+   * Return valid columns of the fact, which can be specified by the property MetastoreUtil.getValidColumnsKey(getName())
    *
    * @return
    */
