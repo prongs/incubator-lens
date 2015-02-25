@@ -326,7 +326,7 @@ public abstract class Storage extends AbstractCubeTable implements PartitionMeta
       String dbName = SessionState.get().getCurrentDatabase();
       Table storageTbl = client.getTable(storageTableName);
       // update latest info
-      if(updateLatestInfo != null) {
+      if (updateLatestInfo != null) {
         for (Map.Entry<String, LatestInfo> entry : updateLatestInfo.entrySet()) {
           String latestPartCol = entry.getKey();
           // symlink this partition to latest

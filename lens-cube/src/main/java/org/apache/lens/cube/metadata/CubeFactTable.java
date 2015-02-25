@@ -228,7 +228,7 @@ public final class CubeFactTable extends AbstractCubeTable {
   }
 
   /**
-   * Return valid columns of the fact, which can be specified by the property MetastoreUtil.getValidColumnsKey(getName())
+   * Return valid columns of the fact, which can be specified by property MetastoreUtil.getValidColumnsKey(getName())
    *
    * @return
    */

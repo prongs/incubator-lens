@@ -643,7 +643,7 @@ public class CubeMetastoreClient {
       Map<String, PartitionTimeline> tablePartInfo = getPartitionInfoForStorageTable(
         cubeTableName, storageName).get(updatePeriod);
       for (int i = 0; i < partCols.size(); i++) {
-        if(timePartSpec.containsKey(partColNames.get(i))) {
+        if (timePartSpec.containsKey(partColNames.get(i))) {
           boolean isExists = this.partitionExistsByFilter(storageTableName,
             StorageConstants.getPartFilter(partColNames.get(i), partVals.get(i)));
           tablePartInfo.get(partColNames.get(i)).dropPartition(updatePeriod, partVals.get(i), isExists);

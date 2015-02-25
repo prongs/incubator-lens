@@ -88,7 +88,8 @@ public class PartitionInfo extends HashMap<String, //storage table
         Date latestDate = updatePeriod.format().parse(latest);
         Date toDrop = updatePeriod.format().parse(value);
         if (firstDate.equals(latestDate) && firstDate.equals(toDrop)) {
-          this.first = this.latest = null;
+          this.first = null;
+          this.latest = null;
           this.holes.clear();
         } else if (firstDate.equals(toDrop)) {
           this.first = this.getNextDate(firstDate, latestDate, updatePeriod, 1);
