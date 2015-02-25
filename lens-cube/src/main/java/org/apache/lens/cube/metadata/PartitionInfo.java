@@ -21,10 +21,6 @@ package org.apache.lens.cube.metadata;
 import java.text.ParseException;
 import java.util.*;
 
-import org.apache.commons.lang.StringUtils;
-import org.apache.hadoop.hive.ql.metadata.HiveException;
-import org.apache.lens.api.LensException;
-
 import lombok.Data;
 
 //Stored inside CubeFactTable
@@ -33,6 +29,17 @@ public class PartitionInfo extends HashMap<String, //storage table
     Map<String, // partition column
       PartitionInfo.PartitionTimeline>>> {
 
+
+  public boolean noPartitionsExist(String storageTableName) {
+    for (UpdatePeriod updatePeriod: get(storageTableName).keySet()) {
+      for(String partCol: get(storageTableName).get(updatePeriod).keySet()) {
+        if(!get(storageTableName).get(updatePeriod).get(partCol).isUninitialized()) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
 
   @Data
   public static class PartitionTimeline {
@@ -43,7 +50,7 @@ public class PartitionInfo extends HashMap<String, //storage table
     private TreeSet<Date> all;
 
     public void addPartition(UpdatePeriod updatePeriod, String value) {
-      if(isUninitialized()) {
+      if (isUninitialized()) {
         // First partition being added
         first = value;
         latest = value;
@@ -66,34 +73,31 @@ public class PartitionInfo extends HashMap<String, //storage table
         throw new RuntimeException("Shouldn't happen");
       }
     }
-    
-    public void dropPartition(UpdatePeriod updatePeriod, Date value, boolean isExists)
-    {
-    	if(isUninitialized()) {
-          throw new RuntimeException("Deleting a partition whose partitions are uninitialized in cache");
+
+    public void dropPartition(UpdatePeriod updatePeriod, Date value, boolean isExists) {
+      if (isUninitialized()) {
+        throw new RuntimeException("Deleting a partition whose partitions are uninitialized in cache");
+      }
+
+      if (isExists) {
+        // nothing to do, the same date time value exists, so no changes to cached values
+        return;
+      }
+
+      try {
+        Date firstDate = updatePeriod.format().parse(first);
+        Date latestDate = updatePeriod.format().parse(latest);
+        if (firstDate.equals(latestDate) && firstDate.equals(value)) {
+          this.first = this.latest = null;
+        } else if (firstDate.equals(value)) {
+          this.first = this.getNextDate(firstDate, latestDate, updatePeriod, 1);
+        } else if (latestDate.equals(value)) {
+          this.latest = this.getNextDate(latestDate, firstDate, updatePeriod, -1);
         }
-    	
-    	if(isExists) {
-    	  // nothing to do, the same date time value exists, so no changes to cached values
-    	  return;
-    	}
-    	
-    	try {
-    	  Date firstDate = updatePeriod.format().parse(first);
-          Date latestDate = updatePeriod.format().parse(latest);
-          if(firstDate.equals(latestDate) && firstDate.equals(value)) {
-        	this.first = this.latest = null;
-          }
-          else if(firstDate.equals(value)) {
-        	this.first = this.getNextDate(firstDate, latestDate, updatePeriod, 1);
-          }
-          else if(latestDate.equals(value)) {
-        	this.latest = this.getNextDate(latestDate, firstDate, updatePeriod, -1);
-          }
-    	} catch (ParseException e) {
-            throw new RuntimeException("Shouldn't happen");
-        }
-    	
+      } catch (ParseException e) {
+        throw new RuntimeException("Shouldn't happen");
+      }
+
     }
 
     private void addHolesBetween(Date begin, Date end, UpdatePeriod updatePeriod, boolean negative) {
@@ -114,21 +118,21 @@ public class PartitionInfo extends HashMap<String, //storage table
 
     private String getNextDate(Date begin, Date end, UpdatePeriod updatePeriod, int increment) {
       Calendar ipCalendar = Calendar.getInstance();
-  	  ipCalendar.setTime(begin);
-  	  while(!ipCalendar.getTime().equals(end)) {
-  	    ipCalendar.add(updatePeriod.calendarField(), increment);
-  	    String value = updatePeriod.format().format(ipCalendar.getTime());
-  	    if(!holes.contains(value)) {
-  	      return value;
-  	    }
-  	  }
-  	  
-  	  return null;
+      ipCalendar.setTime(begin);
+      while (!ipCalendar.getTime().equals(end)) {
+        ipCalendar.add(updatePeriod.calendarField(), increment);
+        String value = updatePeriod.format().format(ipCalendar.getTime());
+        if (!holes.contains(value)) {
+          return value;
+        }
+      }
+
+      return null;
     }
-    
+
     public void reduce(UpdatePeriod updatePeriod) {
       //TODO: improve algo by adding bulk addition.
-      for(Date partDate: getAll()) {
+      for (Date partDate : getAll()) {
         addPartition(updatePeriod, updatePeriod.format().format(partDate));
       }
       //TODO: all = null;
@@ -136,14 +140,14 @@ public class PartitionInfo extends HashMap<String, //storage table
 
     public Map<? extends String, ? extends String> toProperties(UpdatePeriod updatePeriod, String partCol) {
       Map<String, String> params = new HashMap<String, String>();
-      if(isUninitialized()) {
+      if (isUninitialized()) {
         return params;
       }
       params.put(MetastoreUtil.getPartitionInfoKeyForFirst(updatePeriod, partCol), getFirst());
       params.put(MetastoreUtil.getPartitionInfoKeyForLatest(updatePeriod, partCol), getLatest());
       StringBuilder holesStringBuilder = new StringBuilder();
       String sep = "";
-      for(String s: getHoles()) {
+      for (String s : getHoles()) {
         holesStringBuilder.append(sep).append(s);
         sep = ",";
       }
@@ -152,7 +156,7 @@ public class PartitionInfo extends HashMap<String, //storage table
     }
 
     public boolean isUninitialized() {
-      return first == null && latest == null && holes.isEmpty() ;
+      return first == null && latest == null && holes.isEmpty();
     }
   }
 
@@ -172,6 +176,7 @@ public class PartitionInfo extends HashMap<String, //storage table
       e.printStackTrace();
     }
   }
+
   public void ensureEntry(String storageTable, UpdatePeriod updatePeriod, String partitionColumn) {
     if (get(storageTable) == null) {
       put(storageTable, new TreeMap<UpdatePeriod, Map<String, PartitionTimeline>>());
@@ -197,7 +202,7 @@ public class PartitionInfo extends HashMap<String, //storage table
       }
     }
   }
-  
+
   public void addPartition(String cubeTableName, String storageName, StoragePartitionDesc partSpec) {
     Map<String, PartitionTimeline> timelines = get(cubeTableName, storageName).get(partSpec.getUpdatePeriod());
     for (Map.Entry<String, String> entry : partSpec.getStoragePartSpec().entrySet()) {
