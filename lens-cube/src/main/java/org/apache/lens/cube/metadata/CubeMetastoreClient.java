@@ -359,17 +359,27 @@ public class CubeMetastoreClient {
   public void addPartition(StoragePartitionDesc partSpec, String storageName) throws HiveException {
     String storageTableName = MetastoreUtil.getStorageTableName(partSpec.getCubeTableName(), Storage.getPrefix(
       storageName));
-    getStorage(storageName).addPartition(getClient(), partSpec,
+    if(getDimensionTable(partSpec.getCubeTableName()) != null) {
+      // Adding partition in dimension table.
+      getStorage(storageName).addPartition(getClient(), partSpec,
+      getLatestInfo(storageTableName, partSpec.getTimePartSpec(), partSpec.getUpdatePeriod())
+        //TODO: remove this argument from Storage
+//        null
+      );
+    } else {
+      // Adding partition in fact table.
+      getStorage(storageName).addPartition(getClient(), partSpec,
 //      getLatestInfo(storageTableName, partSpec.getTimePartSpec(), partSpec.getUpdatePeriod())
-      //TODO: remove this argument from Storage
-      null
-    );
-    Map<String, PartitionInfo.PartitionTimeline> x = getPartitionInfoForStorageTable(
-      partSpec.getCubeTableName(), storageName).get(partSpec.getUpdatePeriod());
-    partitionInfo.addPartition(partSpec.getCubeTableName(), storageName, partSpec);
-    // update hive table
-    alterTablePartitionInfo(MetastoreUtil.getStorageTableName(partSpec.getCubeTableName(), Storage.getPrefix(
-      storageName)));
+        //TODO: remove this argument from Storage
+        null
+      );
+      Map<String, PartitionInfo.PartitionTimeline> x = getPartitionInfoForStorageTable(
+        partSpec.getCubeTableName(), storageName).get(partSpec.getUpdatePeriod());
+      partitionInfo.addPartition(partSpec.getCubeTableName(), storageName, partSpec);
+      // update hive table
+      alterTablePartitionInfo(MetastoreUtil.getStorageTableName(partSpec.getCubeTableName(), Storage.getPrefix(
+        storageName)));
+    }
   }
 
   private TreeMap<UpdatePeriod, Map<String, PartitionInfo.PartitionTimeline>> getPartitionInfoForStorageTable(
