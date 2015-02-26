@@ -186,13 +186,16 @@ public class TestMetastoreService extends LensJerseyTest {
       .queryParam("sessionid", lensSessionId).request(mediaType)
       .get(StringList.class);
     System.out.println("ALL DBs:" + allDbs.getElements());
-    assertEquals(allDbs.getElements().size(), 4);
+
+    for (String db : dbsToCreate) {
+      Assert.assertTrue(allDbs.getElements().contains(db));
+    }
 
     List<String> expected = new ArrayList<String>(Arrays.asList(dbsToCreate));
     // Default is always there
     expected.add("default");
 
-    assertEquals(allDbs.getElements(), expected);
+    assertTrue(allDbs.getElements().containsAll(expected));
 
     for (String name : dbsToCreate) {
       dbTarget.path(name).queryParam("cascade", "true").queryParam("sessionid", lensSessionId).request().delete();
@@ -623,8 +626,8 @@ public class TestMetastoreService extends LensJerseyTest {
       assertNotNull(hcube.getDimAttributeByName("testdim2col2"));
       assertEquals(hcube.getDimAttributeByName("testdim2col2").getDisplayString(), "Chained Dimension");
       assertEquals(hcube.getDimAttributeByName("testdim2col2").getDescription(), "ref chained dimension");
-      assertEquals(((BaseDimAttribute)hcube.getDimAttributeByName("dim4")).getType(),
-          "struct<a:int,b:array<string>,c:map<int,array<struct<x:int,y:array<int>>>");
+      assertEquals(((BaseDimAttribute) hcube.getDimAttributeByName("dim4")).getType(),
+        "struct<a:int,b:array<string>,c:map<int,array<struct<x:int,y:array<int>>>");
       assertEquals(((ReferencedDimAtrribute) hcube.getDimAttributeByName("testdim2col2")).getType(), "string");
       assertEquals(((ReferencedDimAtrribute) hcube.getDimAttributeByName("testdim2col2")).getChainName(), "chain1");
       assertEquals(((ReferencedDimAtrribute) hcube.getDimAttributeByName("testdim2col2")).getRefColumn(), "col2");
@@ -1744,7 +1747,7 @@ public class TestMetastoreService extends LensJerseyTest {
       XPartition xp = createPartition(fact1TableName, Arrays.asList(timePartSpecElement1, timePartSpecElement2));
 
       APIResult partAddResult = target().path("metastore/facts/").path(fact1TableName)
-        .path("storages/" + storages[0] + "/partitions")
+        .path("storages/" + storages[0] + "/partition")
         .queryParam("sessionid", lensSessionId).request(mediaType)
         .post(Entity.xml(cubeObjectFactory.createXPartition(xp)), APIResult.class);
       if (!partAddResult.getStatus().equals(APIResult.Status.SUCCEEDED)) {
@@ -1770,6 +1773,7 @@ public class TestMetastoreService extends LensJerseyTest {
       dropDatabase(dbName);
     }
   }
+
 
   @SuppressWarnings("deprecation")
   @Test
@@ -1804,10 +1808,17 @@ public class TestMetastoreService extends LensJerseyTest {
         .post(Entity.entity(mp, MediaType.MULTIPART_FORM_DATA_TYPE), APIResult.class);
       assertEquals(result.getStatus(), APIResult.Status.SUCCEEDED);
 
+      APIResult partAddResult;
+      // Add null partition
+      Response resp = target().path("metastore/facts/").path(table).path("storages/S2/partition")
+        .queryParam("sessionid", lensSessionId).request(mediaType)
+        .post(null);
+      Assert.assertEquals(resp.getStatus(), 400);
+
       // Add a partition
       final Date partDate = new Date();
       XPartition xp = createPartition(table, partDate);
-      APIResult partAddResult = target().path("metastore/facts/").path(table).path("storages/S2/partitions")
+      partAddResult = target().path("metastore/facts/").path(table).path("storages/S2/partition")
         .queryParam("sessionid", lensSessionId).request(mediaType)
         .post(Entity.xml(cubeObjectFactory.createXPartition(xp)), APIResult.class);
       assertEquals(partAddResult.getStatus(), Status.SUCCEEDED);
@@ -1845,11 +1856,16 @@ public class TestMetastoreService extends LensJerseyTest {
       partitions = partitionsElement.getValue();
       assertNotNull(partitions);
       assertEquals(partitions.getPartition().size(), 0);
-
-      // Add again
+      // add null in batch
+      resp = target().path("metastore/facts/").path(table).path("storages/S2/partitions")
+        .queryParam("sessionid", lensSessionId).request(mediaType)
+        .post(null);
+      Assert.assertEquals(resp.getStatus(), 400);
+      // Add again, in batch this time
       partAddResult = target().path("metastore/facts/").path(table).path("storages/S2/partitions")
         .queryParam("sessionid", lensSessionId).request(mediaType)
-        .post(Entity.xml(cubeObjectFactory.createXPartition(xp)), APIResult.class);
+        .post(Entity.xml(cubeObjectFactory.createXPartitionList(toXPartitionList(xp))),
+          APIResult.class);
       assertEquals(partAddResult.getStatus(), Status.SUCCEEDED);
 
       // Verify partition was added
@@ -1896,10 +1912,17 @@ public class TestMetastoreService extends LensJerseyTest {
 
     try {
       createDimTable(table);
+      APIResult partAddResult;
+      // Add null partition
+      Response resp = target().path("metastore/dimtables/").path(table).path("storages/test/partition")
+        .queryParam("sessionid", lensSessionId).request(mediaType)
+        .post(null);
+      Assert.assertEquals(resp.getStatus(), 400);
+
       // Add a partition
       final Date partDate = new Date();
       XPartition xp = createPartition(table, partDate);
-      APIResult partAddResult = target().path("metastore/dimtables/").path(table).path("storages/test/partitions")
+      partAddResult = target().path("metastore/dimtables/").path(table).path("storages/test/partition")
         .queryParam("sessionid", lensSessionId).request(mediaType)
         .post(Entity.xml(cubeObjectFactory.createXPartition(xp)), APIResult.class);
       assertEquals(partAddResult.getStatus(), Status.SUCCEEDED);
@@ -1929,10 +1952,16 @@ public class TestMetastoreService extends LensJerseyTest {
       assertNotNull(partitions);
       assertEquals(partitions.getPartition().size(), 0);
 
-      // Add again
+      // add null in batch
+      resp = target().path("metastore/dimtables/").path(table).path("storages/test/partitions")
+        .queryParam("sessionid", lensSessionId).request(mediaType)
+        .post(null);
+      Assert.assertEquals(resp.getStatus(), 400);
+      // Add again, this time in batch
       partAddResult = target().path("metastore/dimtables/").path(table).path("storages/test/partitions")
         .queryParam("sessionid", lensSessionId).request(mediaType)
-        .post(Entity.xml(cubeObjectFactory.createXPartition(xp)), APIResult.class);
+        .post(Entity.xml(cubeObjectFactory.createXPartitionList(toXPartitionList(xp))),
+          APIResult.class);
       assertEquals(partAddResult.getStatus(), Status.SUCCEEDED);
 
       // Verify partition was added
@@ -1964,6 +1993,12 @@ public class TestMetastoreService extends LensJerseyTest {
       setCurrentDatabase(prevDb);
       dropDatabase(DB);
     }
+  }
+
+  private XPartitionList toXPartitionList(final XPartition... xps) {
+    XPartitionList ret = new XPartitionList();
+    Collections.addAll(ret.getPartition(), xps);
+    return ret;
   }
 
   @Test
