@@ -18,7 +18,11 @@
  */
 package org.apache.lens.cube.parse;
 
+import java.util.Calendar;
 import java.util.Date;
+import java.util.Iterator;
+
+import org.apache.lens.cube.metadata.UpdatePeriod;
 
 import org.apache.hadoop.hive.ql.ErrorMsg;
 import org.apache.hadoop.hive.ql.parse.ASTNode;
@@ -122,5 +126,60 @@ public class TimeRange {
   @Override
   public String toString() {
     return partitionColumn + " [" + fromDate + ":" + toDate + "]";
+  }
+
+  public Iterator<Date> iterator(UpdatePeriod updatePeriod, int increment) {
+    return iterable(updatePeriod, increment).iterator();
+  }
+
+  public Iterator<Date> iterator(UpdatePeriod updatePeriod) {
+    return iterable(updatePeriod).iterator();
+  }
+
+  public Iterable iterable(UpdatePeriod updatePeriod) {
+    return iterable(updatePeriod, 1);
+  }
+
+  public Iterable iterable(UpdatePeriod updatePeriod, int increment) {
+    return new Iterable(updatePeriod, increment);
+  }
+
+  public class Iterable implements java.lang.Iterable<Date> {
+    private UpdatePeriod updatePeriod;
+    private int increment;
+
+    public Iterable(UpdatePeriod updatePeriod, int increment) {
+      this.updatePeriod = updatePeriod;
+      this.increment = increment;
+    }
+
+    @Override
+    public Iterator<Date> iterator() {
+      return new Iterator<Date>() {
+        Calendar calendar;
+
+        {
+          calendar = Calendar.getInstance();
+          calendar.setTime(fromDate);
+        }
+
+        @Override
+        public boolean hasNext() {
+          return calendar.getTime().before(toDate);
+        }
+
+        @Override
+        public Date next() {
+          Date cur = calendar.getTime();
+          calendar.add(updatePeriod.calendarField(), increment);
+          return cur;
+        }
+
+        @Override
+        public void remove() {
+          throw new RuntimeException("Not allowed");
+        }
+      };
+    }
   }
 }

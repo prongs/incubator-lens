@@ -163,7 +163,7 @@ class StorageTableResolver implements ContextRewriter {
       if (dimTables == null || dimTables.isEmpty()) {
         continue;
       }
-      for (Iterator<CandidateDim> i = dimTables.iterator(); i.hasNext();) {
+      for (Iterator<CandidateDim> i = dimTables.iterator(); i.hasNext(); ) {
         CandidateDim candidate = i.next();
         CubeDimensionTable dimtable = candidate.dimtable;
         if (dimtable.getStorages().isEmpty()) {
@@ -255,7 +255,7 @@ class StorageTableResolver implements ContextRewriter {
 
   // Resolves all the storage table names, which are valid for each updatePeriod
   private void resolveFactStorageTableNames(CubeQueryContext cubeql) throws SemanticException {
-    for (Iterator<CandidateFact> i = cubeql.getCandidateFactTables().iterator(); i.hasNext();) {
+    for (Iterator<CandidateFact> i = cubeql.getCandidateFactTables().iterator(); i.hasNext(); ) {
       CubeFactTable fact = i.next().fact;
       if (fact.getUpdatePeriods().isEmpty()) {
         cubeql.addFactPruningMsgs(fact, new CandidateTablePruneCause(CandidateTablePruneCode.MISSING_STORAGES));
@@ -337,7 +337,7 @@ class StorageTableResolver implements ContextRewriter {
 
   private void resolveFactStoragePartitions(CubeQueryContext cubeql) throws SemanticException {
     // Find candidate tables wrt supported storages
-    for (Iterator<CandidateFact> i = cubeql.getCandidateFactTables().iterator(); i.hasNext();) {
+    for (Iterator<CandidateFact> i = cubeql.getCandidateFactTables().iterator(); i.hasNext(); ) {
       CandidateFact cfact = i.next();
       List<FactPartition> answeringParts = new ArrayList<FactPartition>();
       HashMap<String, SkipStorageCause> skipStorageCauses = new HashMap<String, SkipStorageCause>();
@@ -579,12 +579,18 @@ class StorageTableResolver implements ContextRewriter {
                       getPartitions(fact, pdt, temp.getTime(), processTimePartCol, null, processTimeParts, newset,
                         false, skipStorageCauses, nonExistingParts);
                       if (!processTimeParts.isEmpty()) {
+                        TimeRange timeRange = TimeRange.getBuilder().fromDate(dt).toDate(cal.getTime()).build();
                         for (FactPartition pPart : processTimeParts) {
-                          LOG.info("Looking for finer partitions in pPart" + pPart);
-                          if (!getPartitions(fact, dt, cal.getTime(), partCol, pPart, partitions, newset, false,
-                            skipStorageCauses, nonExistingParts)) {
-                            LOG.info("No partitions found in look ahead range");
+                          LOG.info("Looking for finer partitions in pPart: " + pPart);
+                          for (Date date : timeRange.iterable(pPart.getPeriod())) {
+                            partitions.add(new FactPartition(partCol, date, pPart.getPeriod(), pPart,
+                              partWhereClauseFormat));
                           }
+                          LOG.info("added all sub partitions blindly in pPart: " + pPart);
+//                          if (!getPartitions(fact, dt, cal.getTime(), partCol, pPart, partitions, newset, false,
+//                            skipStorageCauses, nonExistingParts)) {
+//                            LOG.info("No partitions found in look ahead range");
+//                          }
                         }
                       } else {
                         LOG.info("No look ahead partitions found");
@@ -610,9 +616,9 @@ class StorageTableResolver implements ContextRewriter {
     }
     if (containingPart == null) {
       return getPartitions(fact, fromDate, ceilFromDate, partCol, null, partitions,
-          updatePeriods, addNonExistingParts, skipStorageCauses, nonExistingParts)
+        updatePeriods, addNonExistingParts, skipStorageCauses, nonExistingParts)
         && getPartitions(fact, floorToDate, toDate, partCol, null, partitions,
-          updatePeriods, addNonExistingParts, skipStorageCauses, nonExistingParts);
+        updatePeriods, addNonExistingParts, skipStorageCauses, nonExistingParts);
     } else {
       return true;
     }
