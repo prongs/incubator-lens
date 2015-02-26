@@ -25,6 +25,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
 
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 /**
  * Collapses the time range filters using IN operators
@@ -100,14 +101,14 @@ public class AbridgedTimeRangeWriter implements TimeRangeWriter {
       FactPartition key = part.getContainingPart();
       part.setContainingPart(null);
       if (partitionSetMap.get(key) == null) {
-        partitionSetMap.put(key, new HashSet<FactPartition>());
+        partitionSetMap.put(key, Sets.<FactPartition>newTreeSet());
       }
       partitionSetMap.get(key).add(part);
     }
     Map<Set<FactPartition>, Set<FactPartition>> setSetOppositeMap = Maps.newHashMap();
     for (Map.Entry<FactPartition, Set<FactPartition>> entry : partitionSetMap.entrySet()) {
       if (setSetOppositeMap.get(entry.getValue()) == null) {
-        setSetOppositeMap.put(entry.getValue(), new HashSet<FactPartition>());
+        setSetOppositeMap.put(entry.getValue(), Sets.<FactPartition>newTreeSet());
       }
       if (entry.getKey() != null) {
         setSetOppositeMap.get(entry.getValue()).add(entry.getKey());

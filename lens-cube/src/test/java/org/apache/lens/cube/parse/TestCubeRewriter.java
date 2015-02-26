@@ -1192,6 +1192,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
 
     Configuration conf = getConf();
     conf.set(CubeQueryConfUtil.PROCESS_TIME_PART_COL, "pt");
+    conf.setClass(CubeQueryConfUtil.TIME_RANGE_WRITER_CLASS, AbridgedTimeRangeWriter.class, TimeRangeWriter.class);
     String hqlQuery = rewrite("select dim1, max(msr3)," + " msr2 from testCube" + " where " + twoDaysITRange, conf);
     System.out.println("Query With process time col:" + hqlQuery);
     // TODO compare queries
