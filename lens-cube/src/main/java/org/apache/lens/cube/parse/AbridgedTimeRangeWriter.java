@@ -24,8 +24,6 @@ import java.util.*;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Maps;
 
 /**
@@ -55,8 +53,17 @@ public class AbridgedTimeRangeWriter implements TimeRangeWriter {
     // This clause will be ORed with filters which contain multiple columns.
     List<String> subFilters = new ArrayList<String>();
     for (Map.Entry<Set<FactPartition>, Set<FactPartition>> entry : groupPartitions(parts).entrySet()) {
-      subFilters.add(StringUtils.join(Arrays.asList(getClause(cubeQueryContext, tableName, entry.getKey()), getClause(
-        cubeQueryContext, tableName, entry.getValue())), " AND "));
+      List<String> clauses = new ArrayList<String>();
+      String clause;
+      clause = getClause(cubeQueryContext, tableName, entry.getKey());
+      if (clause != null && !clause.isEmpty()) {
+        clauses.add(clause);
+      }
+      clause = getClause(cubeQueryContext, tableName, entry.getValue());
+      if (clause != null && !clause.isEmpty()) {
+        clauses.add(clause);
+      }
+      subFilters.add("(" + StringUtils.join(clauses, " AND ") + ")");
     }
     return StringUtils.join(subFilters, " OR ");
   }
@@ -101,13 +108,14 @@ public class AbridgedTimeRangeWriter implements TimeRangeWriter {
     for (Map.Entry<FactPartition, Set<FactPartition>> entry : partitionSetMap.entrySet()) {
       if (setSetOppositeMap.get(entry.getValue()) == null) {
         setSetOppositeMap.put(entry.getValue(), new HashSet<FactPartition>());
-        if (entry.getKey() != null) {
-          setSetOppositeMap.get(entry.getValue()).add(entry.getKey());
-        }
+      }
+      if (entry.getKey() != null) {
+        setSetOppositeMap.get(entry.getValue()).add(entry.getKey());
       }
     }
+
     Map<Set<FactPartition>, Set<FactPartition>> setSetMap = Maps.newHashMap();
-    for(Map.Entry<Set<FactPartition>, Set<FactPartition>> entry: setSetOppositeMap.entrySet()) {
+    for (Map.Entry<Set<FactPartition>, Set<FactPartition>> entry : setSetOppositeMap.entrySet()) {
       setSetMap.put(entry.getValue(), entry.getKey());
     }
     return setSetMap;

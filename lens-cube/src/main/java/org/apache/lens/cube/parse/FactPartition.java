@@ -26,9 +26,11 @@ import java.util.Set;
 
 import org.apache.lens.cube.metadata.UpdatePeriod;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
+@EqualsAndHashCode
 public class FactPartition implements Comparable<FactPartition> {
   private final String partCol;
   private final Date partSpec;
