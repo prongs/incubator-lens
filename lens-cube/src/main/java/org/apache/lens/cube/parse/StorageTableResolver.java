@@ -482,6 +482,7 @@ class StorageTableResolver implements ContextRewriter {
       Map<String, List<Partition>> metaParts = new HashMap<String, List<Partition>>();
       for (String storageTableName : storageTbls) {
         int numParts;
+
         if (leastInterval) {
           numParts = client.getNumPartitionsByFilter(storageTableName, part.getFilter());
         } else {
