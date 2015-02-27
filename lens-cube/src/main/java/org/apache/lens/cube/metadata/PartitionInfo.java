@@ -188,6 +188,17 @@ public class PartitionInfo extends HashMap<String, //storage table
     public boolean isUninitialized() {
       return first == null && latest == null && holes.isEmpty();
     }
+
+    public boolean exists(UpdatePeriod updatePeriod, Date partSpec) {
+      try {
+        Date firstDate = updatePeriod.format().parse(first);
+        Date latestDate = updatePeriod.format().parse(latest);
+        return !partSpec.before(firstDate) && !partSpec.after(latestDate) && !holes.contains(
+          updatePeriod.format().format(partSpec));
+      } catch (ParseException e) {
+        throw new RuntimeException("Shouldn't happen");
+      }
+    }
   }
 
   public TreeMap<UpdatePeriod, Map<String, PartitionTimeline>> get(String fact, String storage) {

@@ -61,6 +61,10 @@ public class FactPartition implements Comparable<FactPartition> {
     return containingPart != null;
   }
 
+  public boolean found() {
+    return !getStorageTables().isEmpty();
+  }
+
   public String getPartCol() {
     return partCol;
   }

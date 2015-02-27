@@ -25,6 +25,7 @@ import java.util.*;
 import org.apache.lens.cube.metadata.PartitionInfo.PartitionTimeline;
 import org.apache.lens.cube.metadata.Storage.LatestInfo;
 import org.apache.lens.cube.metadata.Storage.LatestPartColumnInfo;
+import org.apache.lens.cube.parse.FactPartition;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
@@ -1582,6 +1583,15 @@ public class CubeMetastoreClient {
       updateDimCache(dimTableName);
     } else {
       throw new HiveException(dimTableName + " is not a dimension table");
+    }
+  }
+
+  public void updateFactPartitionStorageTablesFrom(FactPartition part, Collection<String> storageTableNames) {
+    for (String storageTableName : storageTableNames) {
+      if (partitionInfo.get(storageTableName).get(part.getPeriod()).get(part.getPartCol()).exists(part.getPeriod(),
+        part.getPartSpec())) {
+        part.getStorageTables().add(storageTableName);
+      }
     }
   }
 }

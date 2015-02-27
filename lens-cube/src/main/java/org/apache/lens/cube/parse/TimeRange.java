@@ -28,6 +28,8 @@ import org.apache.hadoop.hive.ql.ErrorMsg;
 import org.apache.hadoop.hive.ql.parse.ASTNode;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
 
+import lombok.Getter;
+
 /**
  * Timerange data structure
  */
@@ -128,21 +130,25 @@ public class TimeRange {
     return partitionColumn + " [" + fromDate + ":" + toDate + "]";
   }
 
-  public Iterator<Date> iterator(UpdatePeriod updatePeriod, int increment) {
-    return iterable(updatePeriod, increment).iterator();
-  }
-
   public static CalendarIterable iterable(Date fromDate, Date toDate, UpdatePeriod updatePeriod, int increment) {
     return TimeRange.getBuilder().fromDate(fromDate).toDate(toDate).build().iterable(updatePeriod, increment);
+  }
+
+  public static CalendarIterable iterable(Date fromDate, int numIters, UpdatePeriod updatePeriod, int increment) {
+    return TimeRange.getBuilder().fromDate(fromDate).build().iterable(updatePeriod, numIters, increment);
+  }
+  public static CalendarIterable iterable(Date fromDate, int numIters, UpdatePeriod updatePeriod) {
+    //TODO: define a constant DEFAULT_INCREMENT = 1
+    return TimeRange.getBuilder().fromDate(fromDate).build().iterable(updatePeriod, numIters, 1);
+  }
+  private CalendarIterable iterable(UpdatePeriod updatePeriod, int numIters, int increment) {
+    return new CalendarIterable(updatePeriod, numIters, increment);
   }
 
   public static CalendarIterable iterable(Date fromDate, Date toDate, UpdatePeriod updatePeriod) {
     return TimeRange.getBuilder().fromDate(fromDate).toDate(toDate).build().iterable(updatePeriod);
   }
 
-  public CalendarIterable.CalendarIterator iterator(UpdatePeriod updatePeriod) {
-    return iterable(updatePeriod).iterator();
-  }
 
   public CalendarIterable iterable(UpdatePeriod updatePeriod) {
     return iterable(updatePeriod, 1);
@@ -154,10 +160,16 @@ public class TimeRange {
 
   public class CalendarIterable implements java.lang.Iterable<Date> {
     private UpdatePeriod updatePeriod;
+    private long numIters;
     private int increment;
 
     public CalendarIterable(UpdatePeriod updatePeriod, int increment) {
+      this(updatePeriod, DateUtil.getTimeDiff(fromDate, toDate, updatePeriod), increment);
+    }
+
+    public CalendarIterable(UpdatePeriod updatePeriod, long numIters, int increment) {
       this.updatePeriod = updatePeriod;
+      this.numIters = numIters;
       this.increment = increment;
     }
 
@@ -168,21 +180,31 @@ public class TimeRange {
 
     public class CalendarIterator implements Iterator<Date> {
       Calendar calendar;
+      // Tracks the index of the item returned after the last next() call.
+      // Index here refers to the index if the iterator were iterated and converted into a list.
+      @Getter
+      int counter = -1;
 
       {
         calendar = Calendar.getInstance();
         calendar.setTime(fromDate);
+        if (toDate != null) {
+          numIters = DateUtil.getTimeDiff(fromDate, toDate, updatePeriod);
+        } else {
+          numIters = CalendarIterable.this.numIters;
+        }
       }
 
       @Override
       public boolean hasNext() {
-        return calendar.getTime().before(toDate);
+        return counter < numIters - 1;
       }
 
       @Override
       public Date next() {
         Date cur = calendar.getTime();
         calendar.add(updatePeriod.calendarField(), increment);
+        counter++;
         return cur;
       }
 
@@ -196,7 +218,7 @@ public class TimeRange {
       }
 
       public long getNumIters() {
-        return DateUtil.getTimeDiff(fromDate, toDate, updatePeriod);
+        return numIters;
       }
     }
   }
