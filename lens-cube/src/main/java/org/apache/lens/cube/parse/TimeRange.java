@@ -132,54 +132,72 @@ public class TimeRange {
     return iterable(updatePeriod, increment).iterator();
   }
 
-  public Iterator<Date> iterator(UpdatePeriod updatePeriod) {
+  public static CalendarIterable iterable(Date fromDate, Date toDate, UpdatePeriod updatePeriod, int increment) {
+    return TimeRange.getBuilder().fromDate(fromDate).toDate(toDate).build().iterable(updatePeriod, increment);
+  }
+
+  public static CalendarIterable iterable(Date fromDate, Date toDate, UpdatePeriod updatePeriod) {
+    return TimeRange.getBuilder().fromDate(fromDate).toDate(toDate).build().iterable(updatePeriod);
+  }
+
+  public CalendarIterable.CalendarIterator iterator(UpdatePeriod updatePeriod) {
     return iterable(updatePeriod).iterator();
   }
 
-  public Iterable iterable(UpdatePeriod updatePeriod) {
+  public CalendarIterable iterable(UpdatePeriod updatePeriod) {
     return iterable(updatePeriod, 1);
   }
 
-  public Iterable iterable(UpdatePeriod updatePeriod, int increment) {
-    return new Iterable(updatePeriod, increment);
+  public CalendarIterable iterable(UpdatePeriod updatePeriod, int increment) {
+    return new CalendarIterable(updatePeriod, increment);
   }
 
-  public class Iterable implements java.lang.Iterable<Date> {
+  public class CalendarIterable implements java.lang.Iterable<Date> {
     private UpdatePeriod updatePeriod;
     private int increment;
 
-    public Iterable(UpdatePeriod updatePeriod, int increment) {
+    public CalendarIterable(UpdatePeriod updatePeriod, int increment) {
       this.updatePeriod = updatePeriod;
       this.increment = increment;
     }
 
     @Override
-    public Iterator<Date> iterator() {
-      return new Iterator<Date>() {
-        Calendar calendar;
+    public CalendarIterator iterator() {
+      return new CalendarIterator();
+    }
 
-        {
-          calendar = Calendar.getInstance();
-          calendar.setTime(fromDate);
-        }
+    public class CalendarIterator implements Iterator<Date> {
+      Calendar calendar;
 
-        @Override
-        public boolean hasNext() {
-          return calendar.getTime().before(toDate);
-        }
+      {
+        calendar = Calendar.getInstance();
+        calendar.setTime(fromDate);
+      }
 
-        @Override
-        public Date next() {
-          Date cur = calendar.getTime();
-          calendar.add(updatePeriod.calendarField(), increment);
-          return cur;
-        }
+      @Override
+      public boolean hasNext() {
+        return calendar.getTime().before(toDate);
+      }
 
-        @Override
-        public void remove() {
-          throw new RuntimeException("Not allowed");
-        }
-      };
+      @Override
+      public Date next() {
+        Date cur = calendar.getTime();
+        calendar.add(updatePeriod.calendarField(), increment);
+        return cur;
+      }
+
+      public Date peekNext() {
+        return calendar.getTime();
+      }
+
+      @Override
+      public void remove() {
+        throw new RuntimeException("Not allowed");
+      }
+
+      public long getNumIters() {
+        return DateUtil.getTimeDiff(fromDate, toDate, updatePeriod);
+      }
     }
   }
 }

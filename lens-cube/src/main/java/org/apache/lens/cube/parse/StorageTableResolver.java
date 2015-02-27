@@ -163,7 +163,7 @@ class StorageTableResolver implements ContextRewriter {
       if (dimTables == null || dimTables.isEmpty()) {
         continue;
       }
-      for (Iterator<CandidateDim> i = dimTables.iterator(); i.hasNext();) {
+      for (Iterator<CandidateDim> i = dimTables.iterator(); i.hasNext(); ) {
         CandidateDim candidate = i.next();
         CubeDimensionTable dimtable = candidate.dimtable;
         if (dimtable.getStorages().isEmpty()) {
@@ -466,17 +466,18 @@ class StorageTableResolver implements ContextRewriter {
     Date ceilFromDate = DateUtil.getCeilDate(fromDate, interval);
     Date floorToDate = DateUtil.getFloorDate(toDate, interval);
 
-    // add partitions from ceilFrom to floorTo
-    Calendar cal = Calendar.getInstance();
-    cal.setTime(ceilFromDate);
-    Date dt = cal.getTime();
-    long numIters = DateUtil.getTimeDiff(ceilFromDate, floorToDate, interval);
+
     int i = 1;
     int lookAheadNumParts =
       conf.getInt(CubeQueryConfUtil.getLookAheadPTPartsKey(interval), CubeQueryConfUtil.DEFAULT_LOOK_AHEAD_PT_PARTS);
     boolean leastInterval = updatePeriods.first().equals(interval);
-    while (dt.compareTo(floorToDate) < 0) {
-      cal.add(interval.calendarField(), 1);
+    TimeRange.CalendarIterable.CalendarIterator iter = TimeRange.iterable(ceilFromDate, floorToDate, interval)
+      .iterator();
+    long numIters = iter.getNumIters();
+    // add partitions from ceilFrom to floorTo
+    for (; iter.hasNext(); ) {
+      Date dt = iter.next();
+      Date nextDt = iter.peekNext();
       boolean foundPart = false;
       FactPartition part = new FactPartition(partCol, dt, interval, null, partWhereClauseFormat);
       Map<String, List<Partition>> metaParts = new HashMap<String, List<Partition>>();
@@ -507,7 +508,7 @@ class StorageTableResolver implements ContextRewriter {
         TreeSet<UpdatePeriod> newset = new TreeSet<UpdatePeriod>();
         newset.addAll(updatePeriods);
         newset.remove(interval);
-        if (!getPartitions(fact, dt, cal.getTime(), partCol, partitions, newset, false, skipStorageCauses,
+        if (!getPartitions(fact, dt, nextDt, partCol, partitions, newset, false, skipStorageCauses,
           nonExistingParts)) {
 
           // Add non existing partitions for all cases of whether we populate all non existing or not.
@@ -539,7 +540,7 @@ class StorageTableResolver implements ContextRewriter {
               // look-ahead
               // process time are present
               Calendar processCal = Calendar.getInstance();
-              processCal.setTime(cal.getTime());
+              processCal.setTime(nextDt);
               Date start = processCal.getTime();
               processCal.add(interval.calendarField(), lookAheadNumParts);
               Date end = processCal.getTime();
@@ -572,7 +573,7 @@ class StorageTableResolver implements ContextRewriter {
                     getPartitions(fact, pdt, temp.getTime(), processTimePartCol, processTimeParts, newset,
                       false, skipStorageCauses, nonExistingParts);
                     if (!processTimeParts.isEmpty()) {
-                      TimeRange timeRange = TimeRange.getBuilder().fromDate(dt).toDate(cal.getTime()).build();
+                      TimeRange timeRange = TimeRange.getBuilder().fromDate(dt).toDate(nextDt).build();
                       for (FactPartition pPart : processTimeParts) {
                         LOG.info("Looking for finer partitions in pPart: " + pPart);
                         for (Date date : timeRange.iterable(pPart.getPeriod())) {
@@ -603,8 +604,6 @@ class StorageTableResolver implements ContextRewriter {
           LOG.info("part column is process time col");
         }
       }
-
-      dt = cal.getTime();
       i++;
     }
     return getPartitions(fact, fromDate, ceilFromDate, partCol, partitions,
