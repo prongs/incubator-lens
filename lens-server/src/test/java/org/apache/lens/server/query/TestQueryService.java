@@ -1316,6 +1316,8 @@ public class TestQueryService extends LensJerseyTest {
     }
     ctx.setDriverQueries(driverQueries);
 
+    // This still holds since current database is default
+    Assert.assertEquals(queryService.getSession(lensSessionId).getCurrentDatabase(), "default");
     Assert.assertEquals(queryService.getSession(lensSessionId).getHiveConf().getClassLoader(), ctx.getConf()
       .getClassLoader());
     Assert.assertEquals(queryService.getSession(lensSessionId).getHiveConf().getClassLoader(),
@@ -1432,8 +1434,11 @@ public class TestQueryService extends LensJerseyTest {
 
       LOG.info("@@@ Final query status " + stat.getStatus());
 
-      // Get the session
+      // Make sure correct class loader gets set in query conf
       LensSessionImpl session = sessionService.getSession(sessionHandle);
+      QueryExecutionServiceImpl queryService = LensServices.get().getService(QueryExecutionServiceImpl.NAME);
+      QueryContext queryContext = queryService.getQueryContext(ctx.getQueryHandle());
+      Assert.assertEquals(queryContext.getConf().getClassLoader(), session.getClassLoader());
 
       boolean addedToHiveDriver = false;
 
@@ -1452,4 +1457,45 @@ public class TestQueryService extends LensJerseyTest {
     }
   }
 
+  @Test
+  public void testRewriteFailure() {
+    final WebTarget target = target().path("queryapi/queries");
+
+    // estimate cube query which fails semantic analysis
+    final FormDataMultiPart mp = new FormDataMultiPart();
+    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("sessionid").build(), lensSessionId,
+      MediaType.APPLICATION_XML_TYPE));
+    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("query").build(), "cube select ID from nonexist"));
+    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("operation").build(), "estimate"));
+    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("conf").fileName("conf").build(), new LensConf(),
+      MediaType.APPLICATION_XML_TYPE));
+
+    final EstimateResult result = target.request()
+      .post(Entity.entity(mp, MediaType.MULTIPART_FORM_DATA_TYPE), EstimateResult.class);
+    Assert.assertNotNull(result);
+    Assert.assertNull(result.getCost());
+    Assert.assertTrue(result.isError());
+    System.out.println("ERROR for REWRITE:" + result.getErrorMsg());
+    Assert.assertTrue(result.getErrorMsg().contains("No driver accepted the query, because Neither cube nor dimensions"
+      + " accessed in the query"));
+  }
+
+  @Test
+  public void testDriverEstimateSkippingForRewritefailure() throws LensException {
+    Configuration conf = queryService.getLensConf(lensSessionId, new LensConf());
+    QueryContext ctx = new QueryContext("cube select ID from nonexist", "user", new LensConf(), conf,
+      queryService.getDrivers());
+    for (LensDriver driver : queryService.getDrivers()) {
+      ctx.setDriverRewriteError(driver, new LensException());
+    }
+    try {
+      ctx.estimateCostForDrivers();
+      Assert.fail("estimate should have failed");
+    } catch (LensException e) {
+      // expected
+    }
+    for (LensDriver driver : queryService.getDrivers()) {
+      Assert.assertNull(ctx.getDriverQueryCost(driver));
+    }
+  }
 }
