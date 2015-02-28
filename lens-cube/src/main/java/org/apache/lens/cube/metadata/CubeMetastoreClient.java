@@ -1588,7 +1588,7 @@ public class CubeMetastoreClient {
 
   public void updateFactPartitionStorageTablesFrom(FactPartition part, Collection<String> storageTableNames) {
     for (String storageTableName : storageTableNames) {
-      if (partitionInfo.get(storageTableName).get(part.getPeriod()).get(part.getPartCol()).exists(part.getPeriod(),
+      if (getPartitionInfoForStorageTable(storageTableName).get(part.getPeriod()).get(part.getPartCol()).exists(part.getPeriod(),
         part.getPartSpec())) {
         part.getStorageTables().add(storageTableName);
       }

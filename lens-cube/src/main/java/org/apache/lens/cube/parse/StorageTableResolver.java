@@ -276,9 +276,9 @@ class StorageTableResolver implements ContextRewriter {
           skipStorageCauses.put(storage, new SkipStorageCause(SkipStorageCode.UNSUPPORTED));
           continue;
         }
-        String tableName = getStorageTableName(fact, storage, validFactStorageTables);
+        StorageTable table = getStorageTableName(fact, storage, validFactStorageTables);
         // skip the update period if the storage is not valid
-        if (tableName == null) {
+        if (table == null) {
           skipStorageCauses.put(storage, new SkipStorageCause(SkipStorageCode.INVALID));
           continue;
         }
@@ -298,14 +298,14 @@ class StorageTableResolver implements ContextRewriter {
             skipUpdatePeriodCauses.put(updatePeriod.toString(), SkipUpdatePeriodCode.INVALID);
             continue;
           }
-          Set<String> storageTables = storageTableMap.get(updatePeriod);
+          Set<StorageTable> storageTables = storageTableMap.get(updatePeriod);
           if (storageTables == null) {
             storageTables = new LinkedHashSet<String>();
             storageTableMap.put(updatePeriod, storageTables);
           }
           isStorageAdded = true;
-          LOG.info("Adding storage table:" + tableName + " for fact:" + fact + " for update period" + updatePeriod);
-          storageTables.add(tableName);
+          LOG.info("Adding storage table:" + table + " for fact:" + fact + " for update period" + updatePeriod);
+          storageTables.add(table);
         }
         if (!isStorageAdded) {
           skipStorageCauses.put(storage, SkipStorageCause.noCandidateUpdatePeriod(skipUpdatePeriodCauses));
@@ -325,13 +325,13 @@ class StorageTableResolver implements ContextRewriter {
     return set;
   }
 
-  String getStorageTableName(CubeFactTable fact, String storage, List<String> validFactStorageTables) {
-    String tableName = MetastoreUtil.getFactStorageTableName(fact.getName(), storage).toLowerCase();
-    if (validFactStorageTables != null && !validFactStorageTables.contains(tableName)) {
-      LOG.info("Skipping storage table " + tableName + " as it is not valid");
+  StorageTable getStorageTableName(CubeFactTable fact, String storage, List<String> validFactStorageTables) {
+    StorageTable table = new StorageTable(fact, storage);
+    if (validFactStorageTables != null && !validFactStorageTables.contains(table.getName())) {
+      LOG.info("Skipping storage table " + table.getName() + " as it is not valid");
       return null;
     }
-    return tableName;
+    return table;
   }
 
   private void resolveFactStoragePartitions(CubeQueryContext cubeql) throws SemanticException {
@@ -513,7 +513,7 @@ class StorageTableResolver implements ContextRewriter {
               newset.addAll(updatePeriods);
               newset.remove(interval);
               LOG.info("newset of update periods:" + newset);
-              if (!newset.isEmpty()) {8
+              if (!newset.isEmpty()) {
                 // Get partitions for look ahead process time
                 LOG.info("Looking for process time partitions between " + pdt + " and " + nextPdt);
                 Set<FactPartition> processTimeParts =
