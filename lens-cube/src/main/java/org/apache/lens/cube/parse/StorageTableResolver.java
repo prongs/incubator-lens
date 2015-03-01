@@ -276,7 +276,7 @@ class StorageTableResolver implements ContextRewriter {
           skipStorageCauses.put(storage, new SkipStorageCause(SkipStorageCode.UNSUPPORTED));
           continue;
         }
-        StorageTable table = getStorageTableName(fact, storage, validFactStorageTables);
+        String table = getStorageTableName(fact, storage, validFactStorageTables);
         // skip the update period if the storage is not valid
         if (table == null) {
           skipStorageCauses.put(storage, new SkipStorageCause(SkipStorageCode.INVALID));
@@ -298,7 +298,7 @@ class StorageTableResolver implements ContextRewriter {
             skipUpdatePeriodCauses.put(updatePeriod.toString(), SkipUpdatePeriodCode.INVALID);
             continue;
           }
-          Set<StorageTable> storageTables = storageTableMap.get(updatePeriod);
+          Set<String> storageTables = storageTableMap.get(updatePeriod);
           if (storageTables == null) {
             storageTables = new LinkedHashSet<String>();
             storageTableMap.put(updatePeriod, storageTables);
@@ -326,12 +326,12 @@ class StorageTableResolver implements ContextRewriter {
   }
 
   StorageTable getStorageTableName(CubeFactTable fact, String storage, List<String> validFactStorageTables) {
-    StorageTable table = new StorageTable(fact, storage);
-    if (validFactStorageTables != null && !validFactStorageTables.contains(table.getName())) {
-      LOG.info("Skipping storage table " + table.getName() + " as it is not valid");
+    String tableName = MetastoreUtil.getFactStorageTableName(fact.getName(), storage).toLowerCase();
+    if (validFactStorageTables != null && !validFactStorageTables.contains(tableName)) {
+      LOG.info("Skipping storage table " + tableName + " as it is not valid");
       return null;
     }
-    return table;
+    return tableName;
   }
 
   private void resolveFactStoragePartitions(CubeQueryContext cubeql) throws SemanticException {
@@ -475,7 +475,7 @@ class StorageTableResolver implements ContextRewriter {
       Date nextDt = iter.peekNext();
       FactPartition part = new FactPartition(partCol, dt, interval, null, partWhereClauseFormat);
       LOG.info("candidate storage tables for searching partitions: " + storageTbls);
-      client.updateFactPartitionStorageTablesFrom(part, storageTbls);
+      updateFactPartitionStorageTablesFrom(part, storageTbls);
       LOG.info("Storage tables containing Partition " + part + " are: " + part.getStorageTables());
       if (part.found()) {
         LOG.info("Adding existing partition" + part);
