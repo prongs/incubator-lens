@@ -1481,8 +1481,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
     // Run explain on this command, it should pass successfully.
     CommandProcessorResponse inExplainResponse = runExplain(hqlWithInClause, conf);
     Assert.assertNotNull(inExplainResponse);
-    Assert.assertTrue(hqlWithInClause.contains("in")
-      && (hqlWithInClause.contains("OR") || hqlWithInClause.contains("or")));
+    Assert.assertTrue(hqlWithInClause.contains("in"));
 
     // Test 2 - check for single part column
     // Verify for large number of partitions, single column. This is just to check if we don't see
