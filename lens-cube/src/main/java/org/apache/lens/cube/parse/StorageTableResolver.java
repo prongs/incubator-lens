@@ -22,6 +22,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+import org.apache.lens.api.LensException;
 import org.apache.lens.cube.metadata.*;
 import org.apache.lens.cube.parse.CandidateTablePruneCause.CandidateTablePruneCode;
 import org.apache.lens.cube.parse.CandidateTablePruneCause.SkipStorageCause;
@@ -325,7 +326,7 @@ class StorageTableResolver implements ContextRewriter {
     return set;
   }
 
-  StorageTable getStorageTableName(CubeFactTable fact, String storage, List<String> validFactStorageTables) {
+  String getStorageTableName(CubeFactTable fact, String storage, List<String> validFactStorageTables) {
     String tableName = MetastoreUtil.getFactStorageTableName(fact.getName(), storage).toLowerCase();
     if (validFactStorageTables != null && !validFactStorageTables.contains(tableName)) {
       LOG.info("Skipping storage table " + tableName + " as it is not valid");
@@ -426,7 +427,7 @@ class StorageTableResolver implements ContextRewriter {
       updatePeriods, addNonExistingParts, skipStorageCauses, nonExistingParts)) {
       return partitions;
     } else {
-      return null;
+      return new TreeSet<FactPartition>();
     }
   }
 
@@ -475,7 +476,7 @@ class StorageTableResolver implements ContextRewriter {
       Date nextDt = iter.peekNext();
       FactPartition part = new FactPartition(partCol, dt, interval, null, partWhereClauseFormat);
       LOG.info("candidate storage tables for searching partitions: " + storageTbls);
-      updateFactPartitionStorageTablesFrom(part, storageTbls);
+      updateFactPartitionStorageTablesFrom(fact, part, storageTbls);
       LOG.info("Storage tables containing Partition " + part + " are: " + part.getStorageTables());
       if (part.found()) {
         LOG.info("Adding existing partition" + part);
@@ -503,7 +504,7 @@ class StorageTableResolver implements ContextRewriter {
             Date nextPdt = processTimeIter.peekNext();
             FactPartition processTimePartition = new FactPartition(processTimePartCol, pdt, interval, null,
               partWhereClauseFormat);
-            client.updateFactPartitionStorageTablesFrom(processTimePartition,
+            updateFactPartitionStorageTablesFrom(fact, processTimePartition,
               part.getStorageTables());
             if (processTimePartition.found()) {
               LOG.info("Finer parts not required for look-ahead partition :" + part);
@@ -567,5 +568,30 @@ class StorageTableResolver implements ContextRewriter {
       updatePeriods, addNonExistingParts, skipStorageCauses, nonExistingParts)
       && getPartitions(fact, floorToDate, toDate, partCol, partitions,
       updatePeriods, addNonExistingParts, skipStorageCauses, nonExistingParts);
+  }
+
+  private void updateFactPartitionStorageTablesFrom(CubeFactTable fact, FactPartition part,
+    Set<String> storageTableNames) throws LensException, HiveException {
+    for (String storageTableName : storageTableNames) {
+      if (client.getPartitionInfoForStorageTable(fact.getName(), extractStorageName(fact,
+        storageTableName)) != null && client.getPartitionInfoForStorageTable(fact.getName(), extractStorageName(fact,
+        storageTableName)).get(
+        part.getPeriod()) != null && client.getPartitionInfoForStorageTable(fact.getName(), extractStorageName(fact,
+        storageTableName)).get(
+        part.getPeriod()).get(part.getPartCol()) != null && client.getPartitionInfoForStorageTable(fact.getName(),
+        extractStorageName(fact, storageTableName)).get(
+        part.getPeriod()).get(part.getPartCol()).exists(part.getPeriod(),
+        part.getPartSpec())) {
+        part.getStorageTables().add(storageTableName);
+      }
+    }
+  }
+
+  private String extractStorageName(CubeFactTable fact, String storageTableName) throws LensException {
+    int ind = storageTableName.lastIndexOf(fact.getName());
+    if (ind <= 0) {
+      throw new LensException("storageTable: " + storageTableName + ", does notbelong to fact: " + fact.getName());
+    }
+    return storageTableName.substring(0, ind - StorageConstants.STORGAE_SEPARATOR.length());
   }
 }

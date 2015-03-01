@@ -190,6 +190,9 @@ public class PartitionInfo extends HashMap<String, //storage table
     }
 
     public boolean exists(UpdatePeriod updatePeriod, Date partSpec) {
+      if (isUninitialized()) {
+        return false;
+      }
       try {
         Date firstDate = updatePeriod.format().parse(first);
         Date latestDate = updatePeriod.format().parse(latest);
@@ -232,14 +235,16 @@ public class PartitionInfo extends HashMap<String, //storage table
 
 
   public void reduce(String storageTable) {
-    for (UpdatePeriod updatePeriod : get(storageTable).keySet()) {
-      for (String partCol : get(storageTable).get(updatePeriod).keySet()) {
-        PartitionTimeline timeline = get(storageTable).get(updatePeriod).get(partCol);
-        Date first = timeline.getAll().first();
-        timeline.setFirst(updatePeriod.format().format(first));
-        Date latest = timeline.getAll().last();
-        timeline.setLatest(updatePeriod.format().format(latest));
-        get(storageTable).get(updatePeriod).get(partCol).reduce(updatePeriod);
+    if (get(storageTable) != null) {
+      for (UpdatePeriod updatePeriod : get(storageTable).keySet()) {
+        for (String partCol : get(storageTable).get(updatePeriod).keySet()) {
+          PartitionTimeline timeline = get(storageTable).get(updatePeriod).get(partCol);
+          Date first = timeline.getAll().first();
+          timeline.setFirst(updatePeriod.format().format(first));
+          Date latest = timeline.getAll().last();
+          timeline.setLatest(updatePeriod.format().format(latest));
+          get(storageTable).get(updatePeriod).get(partCol).reduce(updatePeriod);
+        }
       }
     }
   }
@@ -251,5 +256,16 @@ public class PartitionInfo extends HashMap<String, //storage table
       timelines.get(entry.getKey()).addPartition(partSpec.getUpdatePeriod(), partSpec.getUpdatePeriod().format().format(
         entry.getValue()));
     }
+  }
+
+  @Override
+  public TreeMap<UpdatePeriod, Map<String, PartitionTimeline>> get(Object key) {
+    return super.get(key.toString().toLowerCase());
+  }
+
+  @Override
+  public TreeMap<UpdatePeriod, Map<String, PartitionTimeline>> put(String key,
+    TreeMap<UpdatePeriod, Map<String, PartitionTimeline>> value) {
+    return super.put(key.toLowerCase(), value);
   }
 }
