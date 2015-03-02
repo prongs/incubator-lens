@@ -23,6 +23,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+import org.apache.lens.api.LensException;
 import org.apache.lens.cube.metadata.*;
 
 import org.apache.commons.lang.StringUtils;
@@ -869,7 +870,7 @@ public class CubeTestSetup {
 
   }
 
-  private void createCubeFact(CubeMetastoreClient client) throws HiveException {
+  private void createCubeFact(CubeMetastoreClient client) throws HiveException, LensException {
     String factName = "testFact";
     List<FieldSchema> factColumns = new ArrayList<FieldSchema>(cubeMeasures.size());
     for (CubeMeasure measure : cubeMeasures) {
@@ -955,7 +956,7 @@ public class CubeTestSetup {
     }
   }
 
-  private void createCubeCheapFact(CubeMetastoreClient client) throws HiveException {
+  private void createCubeCheapFact(CubeMetastoreClient client) throws HiveException, LensException {
     String factName = "cheapFact";
     List<FieldSchema> factColumns = new ArrayList<FieldSchema>(cubeMeasures.size());
     for (CubeMeasure measure : cubeMeasures) {
@@ -1065,7 +1066,7 @@ public class CubeTestSetup {
     client.createCubeFactTable(TEST_CUBE_NAME, factName, factColumns, storageAggregatePeriods, 5L, null, storageTables);
   }
 
-  private void createCubeFactOnlyHourly(CubeMetastoreClient client) throws HiveException {
+  private void createCubeFactOnlyHourly(CubeMetastoreClient client) throws HiveException, LensException {
     String factName = "testFact2";
     List<FieldSchema> factColumns = new ArrayList<FieldSchema>(cubeMeasures.size());
     for (CubeMeasure measure : cubeMeasures) {
@@ -1126,7 +1127,7 @@ public class CubeTestSetup {
     }
   }
 
-  private void createCubeFactOnlyHourlyRaw(CubeMetastoreClient client) throws HiveException {
+  private void createCubeFactOnlyHourlyRaw(CubeMetastoreClient client) throws HiveException, LensException {
     String factName = "testFact2_raw";
     String factName2 = "testFact1_raw_BASE";
     List<FieldSchema> factColumns = new ArrayList<FieldSchema>(cubeMeasures.size());
@@ -1774,7 +1775,7 @@ public class CubeTestSetup {
     metastore.dropDatabase(dbName, true, true, true);
   }
 
-  private void createCubeFactsWithValidColumns(CubeMetastoreClient client) throws HiveException {
+  private void createCubeFactsWithValidColumns(CubeMetastoreClient client) throws HiveException, LensException {
     String factName = "summary1";
     StringBuilder commonCols = new StringBuilder();
     List<FieldSchema> factColumns = new ArrayList<FieldSchema>(cubeMeasures.size());
@@ -1872,7 +1873,7 @@ public class CubeTestSetup {
     createPIEParts(client, fact4, c2);
   }
 
-  private void createPIEParts(CubeMetastoreClient client, CubeFactTable fact, String storageName) throws HiveException {
+  private void createPIEParts(CubeMetastoreClient client, CubeFactTable fact, String storageName) throws HiveException, LensException {
     // Add partitions in PIE storage
     Calendar pcal = Calendar.getInstance();
     pcal.setTime(TWODAYS_BACK);
