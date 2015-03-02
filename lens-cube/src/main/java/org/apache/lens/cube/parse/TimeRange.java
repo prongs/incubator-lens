@@ -137,10 +137,12 @@ public class TimeRange {
   public static CalendarIterable iterable(Date fromDate, int numIters, UpdatePeriod updatePeriod, int increment) {
     return TimeRange.getBuilder().fromDate(fromDate).build().iterable(updatePeriod, numIters, increment);
   }
+
   public static CalendarIterable iterable(Date fromDate, int numIters, UpdatePeriod updatePeriod) {
     //TODO: define a constant DEFAULT_INCREMENT = 1
     return TimeRange.getBuilder().fromDate(fromDate).build().iterable(updatePeriod, numIters, 1);
   }
+
   private CalendarIterable iterable(UpdatePeriod updatePeriod, int numIters, int increment) {
     return new CalendarIterable(updatePeriod, numIters, increment);
   }
@@ -164,7 +166,7 @@ public class TimeRange {
     private int increment;
 
     public CalendarIterable(UpdatePeriod updatePeriod, int increment) {
-      this(updatePeriod, DateUtil.getTimeDiff(fromDate, toDate, updatePeriod), increment);
+      this(updatePeriod, DateUtil.getTimeDiff(fromDate, toDate, updatePeriod) / increment, increment);
     }
 
     public CalendarIterable(UpdatePeriod updatePeriod, long numIters, int increment) {

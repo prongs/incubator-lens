@@ -31,7 +31,6 @@ import org.apache.hadoop.hive.ql.metadata.Table;
 public final class CubeFactTable extends AbstractCubeTable {
   private String cubeName;
   private final Map<String, Set<UpdatePeriod>> storageUpdatePeriods;
-  private PartitionInfo partitionInfo = new PartitionInfo();
 
   public CubeFactTable(Table hiveTable) {
     super(hiveTable);

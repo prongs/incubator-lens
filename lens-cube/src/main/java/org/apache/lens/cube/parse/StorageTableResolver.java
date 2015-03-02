@@ -573,25 +573,9 @@ class StorageTableResolver implements ContextRewriter {
   private void updateFactPartitionStorageTablesFrom(CubeFactTable fact, FactPartition part,
     Set<String> storageTableNames) throws LensException, HiveException {
     for (String storageTableName : storageTableNames) {
-      if (client.getPartitionInfoForStorageTable(fact.getName(), extractStorageName(fact,
-        storageTableName)) != null && client.getPartitionInfoForStorageTable(fact.getName(), extractStorageName(fact,
-        storageTableName)).get(
-        part.getPeriod()) != null && client.getPartitionInfoForStorageTable(fact.getName(), extractStorageName(fact,
-        storageTableName)).get(
-        part.getPeriod()).get(part.getPartCol()) != null && client.getPartitionInfoForStorageTable(fact.getName(),
-        extractStorageName(fact, storageTableName)).get(
-        part.getPeriod()).get(part.getPartCol()).exists(part.getPeriod(),
-        part.getPartSpec())) {
+      if (client.factPartitionExists(fact, part, storageTableName)) {
         part.getStorageTables().add(storageTableName);
       }
     }
-  }
-
-  private String extractStorageName(CubeFactTable fact, String storageTableName) throws LensException {
-    int ind = storageTableName.lastIndexOf(fact.getName());
-    if (ind <= 0) {
-      throw new LensException("storageTable: " + storageTableName + ", does notbelong to fact: " + fact.getName());
-    }
-    return storageTableName.substring(0, ind - StorageConstants.STORGAE_SEPARATOR.length());
   }
 }
