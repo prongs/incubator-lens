@@ -1873,7 +1873,8 @@ public class CubeTestSetup {
     createPIEParts(client, fact4, c2);
   }
 
-  private void createPIEParts(CubeMetastoreClient client, CubeFactTable fact, String storageName) throws HiveException, LensException {
+  private void createPIEParts(CubeMetastoreClient client, CubeFactTable fact, String storageName)
+    throws HiveException, LensException {
     // Add partitions in PIE storage
     Calendar pcal = Calendar.getInstance();
     pcal.setTime(TWODAYS_BACK);

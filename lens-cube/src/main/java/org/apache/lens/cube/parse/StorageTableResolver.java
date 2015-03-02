@@ -163,7 +163,8 @@ class StorageTableResolver implements ContextRewriter {
       if (dimTables == null || dimTables.isEmpty()) {
         continue;
       }
-      for (Iterator<CandidateDim> i = dimTables.iterator(); i.hasNext(); ) {
+      Iterator<CandidateDim> i = dimTables.iterator();
+      while (i.hasNext()) {
         CandidateDim candidate = i.next();
         CubeDimensionTable dimtable = candidate.dimtable;
         if (dimtable.getStorages().isEmpty()) {
@@ -255,7 +256,8 @@ class StorageTableResolver implements ContextRewriter {
 
   // Resolves all the storage table names, which are valid for each updatePeriod
   private void resolveFactStorageTableNames(CubeQueryContext cubeql) throws SemanticException {
-    for (Iterator<CandidateFact> i = cubeql.getCandidateFactTables().iterator(); i.hasNext(); ) {
+    Iterator<CandidateFact> i = cubeql.getCandidateFactTables().iterator();
+    while (i.hasNext()) {
       CubeFactTable fact = i.next().fact;
       if (fact.getUpdatePeriods().isEmpty()) {
         cubeql.addFactPruningMsgs(fact, new CandidateTablePruneCause(CandidateTablePruneCode.MISSING_STORAGES));
@@ -337,7 +339,8 @@ class StorageTableResolver implements ContextRewriter {
 
   private void resolveFactStoragePartitions(CubeQueryContext cubeql) throws SemanticException {
     // Find candidate tables wrt supported storages
-    for (Iterator<CandidateFact> i = cubeql.getCandidateFactTables().iterator(); i.hasNext(); ) {
+    Iterator<CandidateFact> i = cubeql.getCandidateFactTables().iterator();
+    while (i.hasNext()) {
       CandidateFact cfact = i.next();
       List<FactPartition> answeringParts = new ArrayList<FactPartition>();
       HashMap<String, SkipStorageCause> skipStorageCauses = new HashMap<String, SkipStorageCause>();
@@ -567,7 +570,7 @@ class StorageTableResolver implements ContextRewriter {
     return getPartitions(fact, fromDate, ceilFromDate, partCol, partitions,
       updatePeriods, addNonExistingParts, skipStorageCauses, nonExistingParts)
       && getPartitions(fact, floorToDate, toDate, partCol, partitions,
-      updatePeriods, addNonExistingParts, skipStorageCauses, nonExistingParts);
+        updatePeriods, addNonExistingParts, skipStorageCauses, nonExistingParts);
   }
 
   private void updateFactPartitionStorageTablesFrom(CubeFactTable fact, FactPartition part,

@@ -95,9 +95,10 @@ public class PartitionTimeline {
     }
   }
 
-  private TimePartition getNextPartition(TimePartition begin, TimePartition end, UpdatePeriod updatePeriod, int increment) throws LensException {
-    for (Date date : TimeRange.iterable(begin.getDate(), end.partitionAtDiff(increment).getDate(), updatePeriod,
-      increment)) {
+  private TimePartition getNextPartition(TimePartition begin, TimePartition end, UpdatePeriod updatePeriod,
+    int increment) throws LensException {
+    for (Date date : TimeRange.iterable(begin.partitionAtDiff(increment).getDate(),
+      end.partitionAtDiff(increment).getDate(), updatePeriod, increment)) {
       TimePartition value = new TimePartition(updatePeriod, date);
       if (!holes.contains(value)) {
         return value;

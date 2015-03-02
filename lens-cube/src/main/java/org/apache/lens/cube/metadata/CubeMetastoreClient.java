@@ -96,7 +96,7 @@ public class CubeMetastoreClient {
 
   public class PartitionCache extends CaseInsensitiveHashMap<//storage table
     TreeMap<UpdatePeriod,
-      CaseInsensitiveHashMap< // partition column
+      CaseInsensitiveHashMap<// partition column
         PartitionTimeline>>> {
 
     public boolean noPartitionsExist(String storageTableName, String latestPartCol) {
@@ -112,7 +112,8 @@ public class CubeMetastoreClient {
       return true;
     }
 
-    public TreeMap<UpdatePeriod, CaseInsensitiveHashMap<PartitionTimeline>> get(String fact, String storage) throws LensException, HiveException {
+    public TreeMap<UpdatePeriod, CaseInsensitiveHashMap<PartitionTimeline>> get(String fact, String storage)
+      throws LensException, HiveException {
       String storageTableName = MetastoreUtil.getStorageTableName(fact, Storage.getPrefix(storage));
       if (get(storageTableName) == null) {
         Table storageTable = getTable(storageTableName);
@@ -186,7 +187,8 @@ public class CubeMetastoreClient {
       }
     }
 
-    public void addPartition(String cubeTableName, String storageName, StoragePartitionDesc partSpec) throws HiveException, LensException {
+    public void addPartition(String cubeTableName, String storageName, StoragePartitionDesc partSpec)
+      throws HiveException, LensException {
       Map<String, PartitionTimeline> timelines = get(cubeTableName, storageName).get(partSpec.getUpdatePeriod());
       for (Map.Entry<String, Date> entry : partSpec.getTimePartSpec().entrySet()) {
         //Assume timelines has all the time part columns.
@@ -535,7 +537,8 @@ public class CubeMetastoreClient {
   }
 
 
-  public void addPartitions(List<StoragePartitionDesc> storagePartitionDescs, String storageName) throws HiveException, LensException {
+  public void addPartitions(List<StoragePartitionDesc> storagePartitionDescs, String storageName)
+    throws HiveException, LensException {
     //TODO: improve this in later jira. Just providing naive implementation for now.
     // Should ideally do some optimization because the list has been provided together, not one by one.
     for (StoragePartitionDesc partSpec : storagePartitionDescs) {

@@ -194,7 +194,7 @@ public class TimeRange {
         calendar = Calendar.getInstance();
         calendar.setTime(fromDate);
         if (toDate != null) {
-          numIters = DateUtil.getTimeDiff(fromDate, toDate, updatePeriod);
+          numIters = DateUtil.getTimeDiff(fromDate, toDate, updatePeriod)/increment;
         } else {
           numIters = CalendarIterable.this.numIters;
         }
