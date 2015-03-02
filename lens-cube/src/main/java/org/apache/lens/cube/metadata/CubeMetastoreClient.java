@@ -502,15 +502,13 @@ public class CubeMetastoreClient {
 //        null
       );
     } else {
+      partitionCache.addPartition(partSpec.getCubeTableName(), storageName, partSpec);
       // Adding partition in fact table.
       getStorage(storageName).addPartition(getClient(), partSpec,
 //      getLatestInfo(storageTableName, partSpec.getTimePartSpec(), partSpec.getUpdatePeriod())
         //TODO: remove this argument from Storage
         null
       );
-      Map<String, PartitionTimeline> x = partitionCache.get(
-        partSpec.getCubeTableName(), storageName).get(partSpec.getUpdatePeriod());
-      partitionCache.addPartition(partSpec.getCubeTableName(), storageName, partSpec);
       // update hive table
       alterTablePartitionInfo(MetastoreUtil.getStorageTableName(partSpec.getCubeTableName(), Storage.getPrefix(
         storageName)));

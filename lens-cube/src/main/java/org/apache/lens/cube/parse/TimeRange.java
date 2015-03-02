@@ -172,6 +172,9 @@ public class TimeRange {
     public CalendarIterable(UpdatePeriod updatePeriod, long numIters, int increment) {
       this.updatePeriod = updatePeriod;
       this.numIters = numIters;
+      if (numIters < 0) {
+        numIters = 0;
+      }
       this.increment = increment;
     }
 

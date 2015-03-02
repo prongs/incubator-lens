@@ -271,8 +271,9 @@ public class TestCubeRewriter extends TestQueryRewrite {
 
   @Test
   public void testCubeWhereQuery() throws Exception {
-    String hqlQuery = rewrite("select SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE, getConf());
-    String expected =
+    String hqlQuery, expected;
+    hqlQuery = rewrite("select SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE, getConf());
+    expected =
       getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null, null,
         getWhereForDailyAndHourly2days(cubeName, "C2_testfact"));
     compareQueries(expected, hqlQuery);

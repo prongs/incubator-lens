@@ -19,6 +19,7 @@
 package org.apache.lens.cube.metadata;
 
 import java.text.ParseException;
+import java.util.Calendar;
 import java.util.Date;
 
 import org.apache.lens.api.LensException;
@@ -32,10 +33,9 @@ public class TimePartition implements Comparable<TimePartition> {
   private final Date date;
   private final String dateString;
 
-  public TimePartition(UpdatePeriod updatePeriod, Date date) {
-    this.updatePeriod = updatePeriod;
-    this.date = date;
-    this.dateString = updatePeriod.format().format(date);
+  public TimePartition(UpdatePeriod updatePeriod, Date date) throws LensException {
+    // Ensure date is truncated
+    this(updatePeriod, updatePeriod.format().format(date));
   }
 
   public TimePartition(UpdatePeriod updatePeriod, String dateString) throws LensException {
@@ -65,6 +65,21 @@ public class TimePartition implements Comparable<TimePartition> {
       return 1;
     }
     return this.date.compareTo(o.date);
+  }
+
+  public TimePartition partitionAtDiff(int increment) throws LensException {
+    Calendar cal = Calendar.getInstance();
+    cal.setTime(date);
+    cal.add(updatePeriod.calendarField(), increment);
+    return new TimePartition(updatePeriod, cal.getTime());
+  }
+
+  public TimePartition previous() throws LensException {
+    return partitionAtDiff(-1);
+  }
+
+  public TimePartition next() throws LensException {
+    return partitionAtDiff(1);
   }
 
   public boolean before(TimePartition when) {

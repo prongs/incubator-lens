@@ -89,13 +89,13 @@ public class PartitionTimeline {
     holes.add(toDrop);
   }
 
-  private void addHolesBetween(TimePartition begin, TimePartition end, UpdatePeriod updatePeriod) {
-    for (Date date : TimeRange.iterable(begin.getDate(), end.getDate(), updatePeriod, 1)) {
+  private void addHolesBetween(TimePartition begin, TimePartition end, UpdatePeriod updatePeriod) throws LensException {
+    for (Date date : TimeRange.iterable(begin.next().getDate(), end.getDate(), updatePeriod, 1)) {
       addHole(new TimePartition(updatePeriod, date));
     }
   }
 
-  private TimePartition getNextPartition(TimePartition begin, TimePartition end, UpdatePeriod updatePeriod, int increment) {
+  private TimePartition getNextPartition(TimePartition begin, TimePartition end, UpdatePeriod updatePeriod, int increment) throws LensException {
     for (Date date : TimeRange.iterable(begin.getDate(), end.getDate(), updatePeriod, increment)) {
       TimePartition value = new TimePartition(updatePeriod, date);
       if (!holes.contains(value)) {
@@ -131,7 +131,7 @@ public class PartitionTimeline {
     return first == null && latest == null && holes.isEmpty();
   }
 
-  public boolean exists(UpdatePeriod updatePeriod, Date partSpec) {
+  public boolean exists(UpdatePeriod updatePeriod, Date partSpec) throws LensException {
     if (isEmpty()) {
       return false;
     }
