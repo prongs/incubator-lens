@@ -21,8 +21,6 @@ package org.apache.lens.cube.metadata;
 import java.lang.reflect.Constructor;
 import java.util.*;
 
-import org.apache.lens.api.LensException;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.metadata.Table;
