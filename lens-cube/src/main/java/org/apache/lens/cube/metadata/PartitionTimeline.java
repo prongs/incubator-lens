@@ -34,9 +34,9 @@ import lombok.Data;
 @Data
 public class PartitionTimeline {
   private TimePartition first;
-  // Temporary. Kind of Internal use
   private TreeSet<TimePartition> holes = new TreeSet<TimePartition>();
   private TimePartition latest;
+  // Temporary. Kind of Internal use
   private TreeSet<TimePartition> all;
 
   public void addPartition(UpdatePeriod updatePeriod, String value) throws LensException {
@@ -156,5 +156,9 @@ public class PartitionTimeline {
       }
     }
     return timeline;
+  }
+
+  public Date getLatestDate() {
+    return getLatest() == null ? null : getLatest().getDate();
   }
 }
