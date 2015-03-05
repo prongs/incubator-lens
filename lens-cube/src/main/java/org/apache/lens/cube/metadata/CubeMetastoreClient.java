@@ -642,7 +642,8 @@ public class CubeMetastoreClient {
     return partDate;
   }
 
-  private LatestInfo getNextLatestOfDimtable(Table hiveTable, String timeCol, final int timeColIndex) throws HiveException {
+  private LatestInfo getNextLatestOfDimtable(Table hiveTable, String timeCol, final int timeColIndex)
+    throws HiveException {
     // getClient().getPartitionsByNames(tbl, partNames)
     List<Partition> partitions = getClient().getPartitions(hiveTable);
 
@@ -898,7 +899,7 @@ public class CubeMetastoreClient {
     return ret == null ? new ArrayList<String>() : ret;
   }
 
-  Table getTable(String tableName) throws HiveException {
+  public Table getTable(String tableName) throws HiveException {
     Table tbl;
     try {
       tbl = allHiveTables.get(tableName.toLowerCase());

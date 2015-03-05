@@ -98,24 +98,30 @@ class JoinResolver implements ContextRewriter {
      * bifurcate from there, then in the chain, both paths will have the common path but the resultant tree will have
      * single path from root(cube) to that table and paths will bifurcate from there.
      * <p/>
-     * For example, citystate   =   [basecube.cityid=citydim.id], [citydim.stateid=statedim.id] cityzip     =
-     * [basecube.cityid=citydim.id], [citydim.zipcode=zipdim.code]
+     * For example, citystate   =   [basecube.cityid=citydim.id], [citydim.stateid=statedim.id]
+     *              cityzip     =   [basecube.cityid=citydim.id], [citydim.zipcode=zipdim.code]
      * <p/>
      * Without merging, the behaviour is like this:
      * <p/>
      * <p/>
-     * (basecube.cityid=citydim.id)          (citydim.stateid=statedim.id) _____________________________citydim____________________________________statedim
-     * | basecube------| |_____________________________citydim____________________________________zipdim
+     *                  (basecube.cityid=citydim.id)          (citydim.stateid=statedim.id)
+     *                  _____________________________citydim____________________________________statedim
+     *                 |
+     *   basecube------|
+     *                 |_____________________________citydim____________________________________zipdim
+     *
+     *                  (basecube.cityid=citydim.id)          (citydim.zipcode=zipdim.code)
+     *
      * <p/>
-     * (basecube.cityid=citydim.id)          (citydim.zipcode=zipdim.code)
-     * <p/>
-     * <p/>
-     * Merging will result in a tree like following <p/> (citydim.stateid=statedim.id) <p/>
-     * ________________________________ statedim (basecube.cityid=citydim.id)           |
-     * basecube-------------------------------citydim---- | |________________________________  zipdim
-     * <p/>
-     * (citydim.zipcode=zipdim.code)
-     * <p/>
+     * Merging will result in a tree like following
+     * <p/>                                                  (citydim.stateid=statedim.id)
+     * <p/>                                                ________________________________ statedim
+     *             (basecube.cityid=citydim.id)           |
+     * basecube-------------------------------citydim---- |
+     *                                                    |________________________________  zipdim
+     *
+     *                                                       (citydim.zipcode=zipdim.code)
+     *
      * <p/>
      * Doing this will reduce the number of joins wherever possible.
      *
@@ -642,7 +648,6 @@ class JoinResolver implements ContextRewriter {
      * @param candidateDims
      */
     public void pruneAllPathsForCandidateDims(Map<Dimension, Set<CandidateDim>> candidateDims) {
-      LOG.info("candidateDims: " + candidateDims);
       Map<Dimension, Set<String>> dimColumns = new HashMap<Dimension, Set<String>>();
       // populate all columns present in candidate dims for each dimension
       for (Map.Entry<Dimension, Set<CandidateDim>> entry : candidateDims.entrySet()) {
@@ -653,15 +658,12 @@ class JoinResolver implements ContextRewriter {
         }
         dimColumns.put(dim, allColumns);
       }
-      LOG.info("allPaths: " + allPaths);
       for (List<SchemaGraph.JoinPath> paths : allPaths.values()) {
         for (int i = 0; i < paths.size(); i++) {
           SchemaGraph.JoinPath jp = paths.get(i);
-          LOG.info("processing JoinPath : " + jp + ", allTables of which: " + jp.getAllTables());
           for (AbstractCubeTable refTable : jp.getAllTables()) {
             List<String> cols = jp.getColumnsForTable(refTable);
             if (refTable instanceof Dimension) {
-              LOG.info("dimColumns.get(refTable): " + dimColumns.get(refTable));
               if (cols != null && !dimColumns.get(refTable).containsAll(cols)) {
                 // This path requires some columns from the cube which are not present in any candidate dim
                 // Remove this path
@@ -869,7 +871,7 @@ class JoinResolver implements ContextRewriter {
       minCostClause.initChainColumns();
       // prune candidate dims of joiningOptionalTables wrt joinging columns
       for (Dimension dim : joiningOptionalTables) {
-        for (Iterator<CandidateDim> i = cubeql.getCandidateDimTables().get(dim).iterator(); i.hasNext(); ) {
+        for (Iterator<CandidateDim> i = cubeql.getCandidateDimTables().get(dim).iterator(); i.hasNext();) {
           CandidateDim cdim = i.next();
           CubeDimensionTable dimtable = cdim.dimtable;
           if (!cdim.getColumns().containsAll(minCostClause.chainColumns.get(dim))) {
@@ -1075,9 +1077,9 @@ class JoinResolver implements ContextRewriter {
         }
       } else if (dimensionInJoinChain.get(joinee).size() > 1) {
         throw new SemanticException("Table " + joinee.getName() + " has "
-          + dimensionInJoinChain.get(joinee).size() + " different paths through joinchains "
-          + "(" + dimensionInJoinChain.get(joinee) + ")"
-          + " used in query. Couldn't determine which one to use");
+          +dimensionInJoinChain.get(joinee).size() + " different paths through joinchains "
+          +"(" + dimensionInJoinChain.get(joinee) + ")"
+          +" used in query. Couldn't determine which one to use");
       } else {
         // the case when dimension is used only once in all joinchains.
         if (isJoinchainDestination(cubeql, joinee)) {

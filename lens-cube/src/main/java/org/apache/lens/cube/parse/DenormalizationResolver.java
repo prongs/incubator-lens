@@ -133,9 +133,7 @@ public class DenormalizationResolver implements ContextRewriter {
     // if the field can be reached through reference,
     // if yes adds the ref usage and returns to true, if not returns false.
     boolean addRefUsage(CandidateTable table, String col, String srcTbl) throws SemanticException {
-      LOG.info("addRefUsage: " + table + ", " + col + ", " + srcTbl);
       // available as referenced col
-      LOG.info("referencedCols: " + referencedCols);
       if (referencedCols.containsKey(col)) {
         for (ReferencedQueriedColumn refer : referencedCols.get(col)) {
           if (refer.srcTable.getName().equalsIgnoreCase(srcTbl)) {
@@ -153,6 +151,7 @@ public class DenormalizationResolver implements ContextRewriter {
             // Add to optional tables
             if (refer.col.isChainedColumn()) {
               cubeql.addOptionalDimTable(refer.col.getChainName(), refer.col.getRefColumn(), table, false);
+
             } else {
               for (TableReference reference : refer.col.getReferences()) {
                 cubeql.addOptionalDimTable(reference.getDestTable(), reference.getDestColumn(), table, false);
@@ -355,7 +354,7 @@ public class DenormalizationResolver implements ContextRewriter {
       // candidate tables which require denorm fields and the refernces are no
       // more valid will be pruned
       if (cubeql.getCube() != null && !cubeql.getCandidateFactTables().isEmpty()) {
-        for (Iterator<CandidateFact> i = cubeql.getCandidateFactTables().iterator(); i.hasNext(); ) {
+        for (Iterator<CandidateFact> i = cubeql.getCandidateFactTables().iterator(); i.hasNext();) {
           CandidateFact cfact = i.next();
           if (denormCtx.tableToRefCols.containsKey(cfact.getName())) {
             for (ReferencedQueriedColumn refcol : denormCtx.tableToRefCols.get(cfact.getName())) {
@@ -375,7 +374,7 @@ public class DenormalizationResolver implements ContextRewriter {
       }
       if (cubeql.getDimensions() != null && !cubeql.getDimensions().isEmpty()) {
         for (Dimension dim : cubeql.getDimensions()) {
-          for (Iterator<CandidateDim> i = cubeql.getCandidateDimTables().get(dim).iterator(); i.hasNext(); ) {
+          for (Iterator<CandidateDim> i = cubeql.getCandidateDimTables().get(dim).iterator(); i.hasNext();) {
             CandidateDim cdim = i.next();
             if (denormCtx.tableToRefCols.containsKey(cdim.getName())) {
               for (ReferencedQueriedColumn refcol : denormCtx.tableToRefCols.get(cdim.getName())) {
