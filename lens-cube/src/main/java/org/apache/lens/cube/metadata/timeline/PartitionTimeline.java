@@ -78,7 +78,7 @@ public abstract class PartitionTimeline {
     initFromProperties(props);
   }
 
-  public boolean commitBatchAdditions() {
+  public boolean commitBatchAdditions() throws LensException {
     if (getAll() == null) {
       return true;
     }
@@ -87,9 +87,9 @@ public abstract class PartitionTimeline {
     return result;
   }
 
-  public abstract boolean add(@NonNull TimePartition partition);
+  public abstract boolean add(@NonNull TimePartition partition) throws LensException;
 
-  public abstract boolean add(@NonNull Collection<TimePartition> partition);
+  public abstract boolean add(@NonNull Collection<TimePartition> partition) throws LensException;
 
   public abstract boolean drop(@NonNull TimePartition toDrop) throws LensException;
 

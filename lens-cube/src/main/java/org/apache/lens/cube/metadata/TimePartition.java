@@ -49,12 +49,18 @@ public class TimePartition implements Comparable<TimePartition> {
       throw new LensException(e);
     }
   }
-  public static TimePartition of(UpdatePeriod updatePeriod, Date date) {
-    return date == null ? null : new TimePartition(updatePeriod, date);
+
+  public static TimePartition of(UpdatePeriod updatePeriod, Date date) throws LensException {
+    if (date == null) {
+      throw new LensException("time parition date is null");
+    }
+    return new TimePartition(updatePeriod, date);
   }
+
   public static TimePartition of(UpdatePeriod updatePeriod, String dateString) throws LensException {
     return dateString == null || dateString.isEmpty() ? null : new TimePartition(updatePeriod, dateString);
   }
+
   public String toString() {
     return dateString;
   }

@@ -49,7 +49,7 @@ public class EndsAndHolesPartitionTimeline extends PartitionTimeline {
   }
 
   @Override
-  public boolean add(TimePartition partition) {
+  public boolean add(TimePartition partition) throws LensException {
     if (isEmpty()) {
       // First partition being added
       first = partition;
@@ -70,7 +70,7 @@ public class EndsAndHolesPartitionTimeline extends PartitionTimeline {
   }
 
   @Override
-  public boolean add(@NonNull Collection<TimePartition> partitions) {
+  public boolean add(@NonNull Collection<TimePartition> partitions) throws LensException {
     boolean result = true;
     for (TimePartition partition : partitions) {
       result &= add(partition);
@@ -144,13 +144,13 @@ public class EndsAndHolesPartitionTimeline extends PartitionTimeline {
     return holes.add(toDrop);
   }
 
-  private void addHolesBetween(TimePartition begin, TimePartition end, UpdatePeriod updatePeriod) {
+  private void addHolesBetween(TimePartition begin, TimePartition end, UpdatePeriod updatePeriod) throws LensException {
     for (Date date : TimeRange.iterable(begin.next().getDate(), end.getDate(), updatePeriod, 1)) {
       addHole(TimePartition.of(updatePeriod, date));
     }
   }
 
-  private TimePartition getNextPartition(TimePartition begin, TimePartition end, int increment) {
+  private TimePartition getNextPartition(TimePartition begin, TimePartition end, int increment) throws LensException {
     for (Date date : TimeRange.iterable(begin.partitionAtDiff(increment).getDate(),
       end.partitionAtDiff(increment).getDate(), begin.getUpdatePeriod(), increment)) {
       TimePartition value = TimePartition.of(begin.getUpdatePeriod(), date);

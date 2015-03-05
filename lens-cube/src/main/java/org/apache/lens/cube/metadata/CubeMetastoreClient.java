@@ -196,7 +196,7 @@ public class CubeMetastoreClient {
       return get(storageTable).get(updatePeriod).get(partitionColumn);
     }
 
-    public void commitAllBatchAdditions(String storageTable) throws HiveException {
+    public void commitAllBatchAdditions(String storageTable) throws HiveException, LensException {
       if (get(storageTable) != null) {
         for (UpdatePeriod updatePeriod : get(storageTable).keySet()) {
           for (String partCol : get(storageTable).get(updatePeriod).keySet()) {
@@ -223,8 +223,7 @@ public class CubeMetastoreClient {
     public boolean partitionExists(String name, String storage, UpdatePeriod period, String partCol, Date partSpec)
       throws HiveException, LensException {
       return get(name, storage, period, partCol) != null && get(name, storage, period, partCol).exists(TimePartition.of(
-        period,
-        partSpec));
+        period, partSpec));
     }
 
     private PartitionTimeline get(String name, String storage, UpdatePeriod period, String partCol)
