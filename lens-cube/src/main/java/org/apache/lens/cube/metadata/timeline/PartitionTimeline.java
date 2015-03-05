@@ -19,28 +19,90 @@
 package org.apache.lens.cube.metadata.timeline;
 
 
+import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeSet;
 
 import org.apache.lens.api.LensException;
+import org.apache.lens.cube.metadata.CubeMetastoreClient;
+import org.apache.lens.cube.metadata.MetastoreUtil;
 import org.apache.lens.cube.metadata.TimePartition;
+import org.apache.lens.cube.metadata.UpdatePeriod;
 
+import org.apache.hadoop.hive.ql.metadata.Table;
+
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+import lombok.Data;
 import lombok.NonNull;
 
-public interface PartitionTimeline {
+@Data
+public abstract class PartitionTimeline {
+  public void addForBatchAddition(TimePartition partition) {
+    if (all == null) {
+      all = Sets.newTreeSet();
+    }
+    all.add(partition);
+  }
 
-  boolean add(@NonNull TimePartition partition);
+  private final CubeMetastoreClient client;
+  private final String storageTableName;
+  private final UpdatePeriod updatePeriod;
+  private final String partCol;
+  private TreeSet<TimePartition> all;
 
-  boolean drop(@NonNull TimePartition toDrop) throws LensException;
+  public boolean add(UpdatePeriod updatePeriod, String value) throws LensException {
+    return add(TimePartition.of(updatePeriod, value));
+  }
 
-  TimePartition latest();
+  public Date getLatestDate() {
+    return latest() == null ? null : latest().getDate();
+  }
 
-  Map<String, String> toProperties();
+  public void updateTableParams(Table table) {
+    String prefix = MetastoreUtil.getPartitionInfoKeyPrefix(getUpdatePeriod(), getPartCol());
+    String storageClass = MetastoreUtil.getPartitionTimelineStorageClassKey(getUpdatePeriod(), getPartCol());
+    table.getParameters().put(storageClass, this.getClass().getCanonicalName());
+    for (Map.Entry<String, String> entry : toProperties().entrySet()) {
+      table.getParameters().put(prefix + entry
+        .getKey(), entry.getValue());
+    }
+  }
 
-  boolean initFromProperties(Map<String, String> properties) throws LensException;
+  public void init(Table table) throws LensException {
+    HashMap<String, String> props = Maps.newHashMap();
+    String prefix = MetastoreUtil.getPartitionInfoKeyPrefix(getUpdatePeriod(), getPartCol());
+    for (Map.Entry<String, String> entry : table.getParameters().entrySet()) {
+      if (entry.getKey().startsWith(prefix)) {
+        props.put(entry.getKey().substring(prefix.length()), entry.getValue());
+      }
+    }
+    initFromProperties(props);
+  }
 
-  boolean isEmpty();
+  public void commitBatchAdditions() {
+    if (getAll() != null) {
+      for (TimePartition partition : getAll()) {
+        add(partition);
+      }
+      all = null;
+    }
+  }
 
-  boolean isConsistent();
+  public abstract boolean add(@NonNull TimePartition partition);
 
-  boolean exists(TimePartition partition);
+  public abstract boolean drop(@NonNull TimePartition toDrop) throws LensException;
+
+  public abstract TimePartition latest();
+
+  public abstract Map<String, String> toProperties();
+
+  public abstract boolean initFromProperties(Map<String, String> properties) throws LensException;
+
+  public abstract boolean isEmpty();
+
+  public abstract boolean isConsistent();
+
+  public abstract boolean exists(TimePartition partition);
 }

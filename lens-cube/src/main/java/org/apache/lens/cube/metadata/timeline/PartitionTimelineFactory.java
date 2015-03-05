@@ -23,7 +23,7 @@ import org.apache.lens.cube.metadata.CubeMetastoreClient;
 import org.apache.lens.cube.metadata.UpdatePeriod;
 
 public class PartitionTimelineFactory {
-  public static AbstractPartitionTimeline get(CubeMetastoreClient client, String storageTable,
+  public static PartitionTimeline get(CubeMetastoreClient client, String storageTable,
     UpdatePeriod updatePeriod, String partitionColumn) {
     return new EndsAndHolesPartitionTimeline(client, storageTable, updatePeriod, partitionColumn);
   }

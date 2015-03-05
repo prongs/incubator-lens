@@ -40,7 +40,7 @@ import com.google.common.collect.Sets;
 import lombok.Data;
 
 @Data
-public class EndsAndHolesPartitionTimeline extends AbstractPartitionTimeline {
+public class EndsAndHolesPartitionTimeline extends PartitionTimeline {
   private TimePartition first;
   private TreeSet<TimePartition> holes = new TreeSet<TimePartition>();
   private TimePartition latest;

@@ -353,7 +353,7 @@ public class MetastoreUtil {
     String sep = "";
     StringBuilder valueStr = new StringBuilder();
     Iterator<E> it = set.iterator();
-    while(it.hasNext()) {
+    while (it.hasNext()) {
       valueStr.append(sep).append(it.next().getName());
       sep = ",";
     }
@@ -457,19 +457,16 @@ public class MetastoreUtil {
       cols.add(dim.getName().toLowerCase());
     }
   }
+
   public static String getPartitionInfoKeyPrefix(UpdatePeriod updatePeriod, String partCol) {
-    return STORAGE_PFX + PARTITIONINFO + updatePeriod.getName() + "." + partCol + ".";
+    return STORAGE_PFX + PARTITION_TIMELINE_CACHE + updatePeriod.getName() + "." + partCol + ".";
   }
-  public static String getPartitionInfoKeyForFirst(UpdatePeriod updatePeriod, String partCol) {
-    return getPartitionInfoKeyPrefix(updatePeriod, partCol) + "first";
+
+  public static String getPartitionTimelineStorageClassKey(UpdatePeriod updatePeriod, String partCol) {
+    return getPartitionInfoKeyPrefix(updatePeriod, partCol) + STORAGE_CLASS;
   }
-  public static String getPartitionInfoKeyForLatest(UpdatePeriod updatePeriod, String partCol) {
-    return getPartitionInfoKeyPrefix(updatePeriod, partCol) + "latest";
-  }
-  public static String getPartitionInfoKeyForHoles(UpdatePeriod updatePeriod, String partCol) {
-    return getPartitionInfoKeyPrefix(updatePeriod, partCol) + "holes";
-  }
-  public static String getPartitionInfoKeyForPresence() {
-    return  STORAGE_PFX + PARTITIONINFO + "present";
+
+  public static String getPartitoinTimelineCachePresenceKey() {
+    return STORAGE_PFX + PARTITION_TIMELINE_CACHE + "present";
   }
 }
