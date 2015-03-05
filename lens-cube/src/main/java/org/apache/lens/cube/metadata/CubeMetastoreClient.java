@@ -535,7 +535,7 @@ public class CubeMetastoreClient {
   public void addPartition(StoragePartitionDesc partSpec, String storageName) throws HiveException, LensException {
     String storageTableName = MetastoreUtil.getStorageTableName(partSpec.getCubeTableName(), Storage.getPrefix(
       storageName));
-    if (isDimensionTable(storageTableName)) {
+    if (getDimensionTable(partSpec.getCubeTableName()) != null) {
       // Adding partition in dimension table.
       getStorage(storageName).addPartition(getClient(), partSpec,
         getDimTableLatestInfo(storageTableName, partSpec.getTimePartSpec(), partSpec.getUpdatePeriod())
