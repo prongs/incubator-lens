@@ -25,6 +25,7 @@ import java.util.Date;
 import org.apache.lens.api.LensException;
 
 import lombok.Data;
+import lombok.NonNull;
 
 @Data
 public class TimePartition implements Comparable<TimePartition> {
@@ -33,12 +34,13 @@ public class TimePartition implements Comparable<TimePartition> {
   private final Date date;
   private final String dateString;
 
-  public TimePartition(UpdatePeriod updatePeriod, Date date) throws LensException {
-    // Ensure date is truncated
-    this(updatePeriod, updatePeriod.format().format(date));
+  private TimePartition(@NonNull UpdatePeriod updatePeriod, @NonNull Date date) {
+    this.updatePeriod = updatePeriod;
+    this.date = date;
+    this.dateString = updatePeriod.format().format(date);
   }
 
-  public TimePartition(UpdatePeriod updatePeriod, String dateString) throws LensException {
+  private TimePartition(@NonNull UpdatePeriod updatePeriod, @NonNull String dateString) throws LensException {
     this.updatePeriod = updatePeriod;
     this.dateString = dateString;
     try {
@@ -47,14 +49,12 @@ public class TimePartition implements Comparable<TimePartition> {
       throw new LensException(e);
     }
   }
-
-  public TimePartition(UpdatePeriod updatePeriod, Date date, String dateString) throws LensException {
-    this(updatePeriod, date);
-    if (!this.updatePeriod.equals(dateString)) {
-      throw new LensException("Date: " + date + " is not equal to dateString: " + dateString);
-    }
+  public static TimePartition of(UpdatePeriod updatePeriod, Date date) {
+    return date == null ? null : new TimePartition(updatePeriod, date);
   }
-
+  public static TimePartition of(UpdatePeriod updatePeriod, String dateString) throws LensException {
+    return dateString == null || dateString.isEmpty() ? null : new TimePartition(updatePeriod, dateString);
+  }
   public String toString() {
     return dateString;
   }
@@ -67,18 +67,18 @@ public class TimePartition implements Comparable<TimePartition> {
     return this.date.compareTo(o.date);
   }
 
-  public TimePartition partitionAtDiff(int increment) throws LensException {
+  public TimePartition partitionAtDiff(int increment) {
     Calendar cal = Calendar.getInstance();
     cal.setTime(date);
     cal.add(updatePeriod.calendarField(), increment);
     return new TimePartition(updatePeriod, cal.getTime());
   }
 
-  public TimePartition previous() throws LensException {
+  public TimePartition previous() {
     return partitionAtDiff(-1);
   }
 
-  public TimePartition next() throws LensException {
+  public TimePartition next() {
     return partitionAtDiff(1);
   }
 

@@ -19,6 +19,7 @@
 package org.apache.lens.cube.parse;
 
 import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -574,7 +575,7 @@ class StorageTableResolver implements ContextRewriter {
   }
 
   private void updateFactPartitionStorageTablesFrom(CubeFactTable fact, FactPartition part,
-    Set<String> storageTableNames) throws LensException, HiveException {
+    Set<String> storageTableNames) throws LensException, HiveException, ParseException {
     for (String storageTableName : storageTableNames) {
       if (client.factPartitionExists(fact, part, storageTableName)) {
         part.getStorageTables().add(storageTableName);

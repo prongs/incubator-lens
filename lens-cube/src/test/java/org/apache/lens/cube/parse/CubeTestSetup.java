@@ -1109,7 +1109,13 @@ public class CubeTestSetup {
       Map<String, Date> timeParts = new HashMap<String, Date>();
       timeParts.put(TestCubeMetastoreClient.getDatePartitionKey(), temp);
       StoragePartitionDesc sPartSpec = new StoragePartitionDesc(fact2.getName(), timeParts, null, UpdatePeriod.HOURLY);
-      client.addPartition(sPartSpec, c1);
+      try {
+        client.addPartition(sPartSpec, c1);
+      } catch (HiveException e) {
+        e.printStackTrace();
+      } catch (LensException e) {
+        e.printStackTrace();
+      }
       cal.add(Calendar.HOUR_OF_DAY, 1);
       temp = cal.getTime();
     }

@@ -101,18 +101,18 @@ class CandidateTableResolver implements ContextRewriter {
         }
         LOG.info("Populated candidate facts:" + cubeql.getCandidateFactTables());
       }
-
-      if (cubeql.getDimensions().size() != 0) {
-        for (Dimension dim : cubeql.getDimensions()) {
-          populateDimTables(dim, cubeql, false);
-        }
+      LOG.info("cubeql.getDimensions: " + cubeql.getDimensions());
+      for (Dimension dim : cubeql.getDimensions()) {
+        populateDimTables(dim, cubeql, false);
       }
+
     } catch (HiveException e) {
       throw new SemanticException(e);
     }
   }
 
   private void populateDimTables(Dimension dim, CubeQueryContext cubeql, boolean optional) throws SemanticException {
+    LOG.info("populateDimTables: " + dim + ", optional: " + optional);
     if (cubeql.getCandidateDimTables().get(dim) != null) {
       return;
     }
@@ -207,7 +207,7 @@ class CandidateTableResolver implements ContextRewriter {
       Set<String> queriedMsrs = cubeql.getQueriedMsrs();
 
       // Remove fact tables based on columns in the query
-      for (Iterator<CandidateFact> i = cubeql.getCandidateFactTables().iterator(); i.hasNext();) {
+      for (Iterator<CandidateFact> i = cubeql.getCandidateFactTables().iterator(); i.hasNext(); ) {
         CandidateFact cfact = i.next();
 
         if (validFactTables != null) {
@@ -229,6 +229,7 @@ class CandidateTableResolver implements ContextRewriter {
         for (String col : queriedDimAttrs) {
           if (!cfact.getColumns().contains(col.toLowerCase())) {
             // check if it available as reference, if not remove the candidate
+            LOG.info("adding denorm usage");
             if (!cubeql.getDenormCtx().addRefUsage(cfact, col, cubeql.getCube().getName())) {
               LOG.info("Not considering fact table:" + cfact + " as column " + col + " is not available");
               cubeql.addFactPruningMsgs(cfact.fact, CandidateTablePruneCause.columnNotFound(col));
@@ -283,7 +284,7 @@ class CandidateTableResolver implements ContextRewriter {
   static Set<Set<CandidateFact>> findCoveringSets(List<CandidateFact> cfactsPassed, Set<String> msrs) {
     Set<Set<CandidateFact>> cfactset = new HashSet<Set<CandidateFact>>();
     List<CandidateFact> cfacts = new ArrayList<CandidateFact>(cfactsPassed);
-    for (Iterator<CandidateFact> i = cfacts.iterator(); i.hasNext();) {
+    for (Iterator<CandidateFact> i = cfacts.iterator(); i.hasNext(); ) {
       CandidateFact cfact = i.next();
       i.remove();
       if (!checkForColumnExists(cfact, msrs)) {
@@ -321,7 +322,7 @@ class CandidateTableResolver implements ContextRewriter {
     allDims.addAll(cubeql.getOptionalDimensions());
     for (Dimension dim : allDims) {
       if (cubeql.getCandidateDimTables().get(dim) != null && !cubeql.getCandidateDimTables().get(dim).isEmpty()) {
-        for (Iterator<CandidateDim> i = cubeql.getCandidateDimTables().get(dim).iterator(); i.hasNext();) {
+        for (Iterator<CandidateDim> i = cubeql.getCandidateDimTables().get(dim).iterator(); i.hasNext(); ) {
           CandidateDim cdim = i.next();
           CubeDimensionTable dimtable = cdim.dimtable;
           // go over the join columns accessed in the query and find out which tables
@@ -403,7 +404,7 @@ class CandidateTableResolver implements ContextRewriter {
     }
     Collection<String> colSet = null;
     if (cubeql.getCube() != null && !cubeql.getCandidateFactTables().isEmpty()) {
-      for (Iterator<CandidateFact> i = cubeql.getCandidateFactTables().iterator(); i.hasNext();) {
+      for (Iterator<CandidateFact> i = cubeql.getCandidateFactTables().iterator(); i.hasNext(); ) {
         CandidateFact cfact = i.next();
         CubeFactTable fact = cfact.fact;
 
@@ -503,7 +504,7 @@ class CandidateTableResolver implements ContextRewriter {
       for (Dimension dim : cubeql.getDimensions()) {
         // go over the columns accessed in the query and find out which tables
         // can answer the query
-        for (Iterator<CandidateDim> i = cubeql.getCandidateDimTables().get(dim).iterator(); i.hasNext();) {
+        for (Iterator<CandidateDim> i = cubeql.getCandidateDimTables().get(dim).iterator(); i.hasNext(); ) {
           CandidateDim cdim = i.next();
           if (cubeql.getColumnsQueried(dim.getName()) != null) {
             for (String col : cubeql.getColumnsQueried(dim.getName())) {

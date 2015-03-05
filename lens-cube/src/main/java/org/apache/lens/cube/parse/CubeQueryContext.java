@@ -201,6 +201,7 @@ public class CubeQueryContext {
   }
 
   private boolean addJoinChain(String alias, boolean isOptional) throws SemanticException {
+    LOG.info("add joinchain: " + alias + ", " + isOptional);
     boolean retVal = false;
     String aliasLowerCaseStr = alias.toLowerCase();
     JoinChain joinchain = null;
@@ -297,8 +298,10 @@ public class CubeQueryContext {
         return false;
       }
     } catch (HiveException e) {
+      LOG.info("returning false2");
       return false;
     }
+    LOG.info("returning true2");
     return true;
   }
 
@@ -1054,7 +1057,7 @@ public class CubeQueryContext {
    */
   public void pruneCandidateFactSet(CandidateTablePruneCode pruneCause) {
     // remove candidate fact sets that have missing facts
-    for (Iterator<Set<CandidateFact>> i = candidateFactSets.iterator(); i.hasNext();) {
+    for (Iterator<Set<CandidateFact>> i = candidateFactSets.iterator(); i.hasNext(); ) {
       Set<CandidateFact> cfacts = i.next();
       if (!candidateFacts.containsAll(cfacts)) {
         LOG.info("Not considering fact table set:" + cfacts
@@ -1077,7 +1080,7 @@ public class CubeQueryContext {
     for (Set<CandidateFact> set : candidateFactSets) {
       allCoveringFacts.addAll(set);
     }
-    for (Iterator<CandidateFact> i = candidateFacts.iterator(); i.hasNext();) {
+    for (Iterator<CandidateFact> i = candidateFacts.iterator(); i.hasNext(); ) {
       CandidateFact cfact = i.next();
       if (!allCoveringFacts.contains(cfact)) {
         LOG.info("Not considering fact table:" + cfact + " as " + pruneCause);

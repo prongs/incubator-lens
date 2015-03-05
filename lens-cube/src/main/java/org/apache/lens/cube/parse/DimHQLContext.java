@@ -68,7 +68,9 @@ abstract class DimHQLContext extends SimpleHQLContext {
       genWhereClauseWithDimPartitions(where)));
   }
 
-  protected abstract String getPostSelectionWhereClause() throws SemanticException;
+  protected String getPostSelectionWhereClause() throws SemanticException{
+    return null;
+  }
 
   protected String getFromString() throws SemanticException {
     String fromString = getFromTable();

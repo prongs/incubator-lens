@@ -71,8 +71,9 @@ public class TestExpressionResolver extends TestQueryRewrite {
   @Test
   public void testCubeQuery() throws Exception {
     // select with expression
-    String hqlQuery = rewrite("cube select" + " avgmsr from testCube where " + TWO_DAYS_RANGE, conf);
-    String expected =
+    String hqlQuery, expected, join1, join2, joinExpr;
+    hqlQuery = rewrite("cube select" + " avgmsr from testCube where " + TWO_DAYS_RANGE, conf);
+    expected =
       getExpectedQuery(cubeName, "select avg(testCube.msr1 + testCube.msr2) FROM ", null, null,
         getWhereForHourly2days("C1_testfact2_raw"));
     TestCubeRewriter.compareQueries(expected, hqlQuery);
@@ -150,12 +151,11 @@ public class TestExpressionResolver extends TestQueryRewrite {
       rewrite("select cityAndState, avgmsr from testCube" + " where " + TWO_DAYS_RANGE + " and substrexpr != 'XYZ'",
         conf);
 
-    String join1 =
+    join1 =
       " join " + getDbName() + "c1_citytable citydim"
         + " on testcube.cityid = citydim.id and (citydim.dt = 'latest') ";
-    String join2 = " join" + getDbName()
+    join2 = " join" + getDbName()
       + "c1_statetable statedim on" + " testcube.stateid = statedim.id and (statedim.dt = 'latest')";
-    String joinExpr;
 
     expected =
       getExpectedQuery(cubeName, "select concat(citydim.name, \":\", statedim.name),"
