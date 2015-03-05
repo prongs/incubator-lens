@@ -19,10 +19,7 @@
 package org.apache.lens.cube.metadata.timeline;
 
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TreeSet;
+import java.util.*;
 
 import org.apache.lens.api.LensException;
 import org.apache.lens.cube.metadata.CubeMetastoreClient;
@@ -38,6 +35,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import lombok.Data;
+import lombok.NonNull;
 
 @Data
 public class EndsAndHolesPartitionTimeline extends PartitionTimeline {
@@ -69,6 +67,16 @@ public class EndsAndHolesPartitionTimeline extends PartitionTimeline {
     } else {
       return holes.remove(partition);
     }
+  }
+
+  @Override
+  public boolean add(@NonNull Collection<TimePartition> partitions) {
+    boolean result = true;
+    for (TimePartition partition : partitions) {
+      result &= add(partition);
+    }
+    // Can also return the failed to add items.
+    return result;
   }
 
   @Override
@@ -133,7 +141,6 @@ public class EndsAndHolesPartitionTimeline extends PartitionTimeline {
   }
 
   private boolean addHole(TimePartition toDrop) {
-    //TODO: improve performance by taking both Date and String as argument. Parsing/formatting overhead will be gone
     return holes.add(toDrop);
   }
 

@@ -171,7 +171,6 @@ public class SchemaGraph {
       } else {
         throw new IllegalArgumentException("Target neither cube nor dimension");
       }
-      System.out.println("a");
     }
 
     public List<JoinPath> findAllPathsToTarget() {

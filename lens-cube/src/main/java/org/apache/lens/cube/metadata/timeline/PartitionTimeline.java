@@ -19,10 +19,7 @@
 package org.apache.lens.cube.metadata.timeline;
 
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TreeSet;
+import java.util.*;
 
 import org.apache.lens.api.LensException;
 import org.apache.lens.cube.metadata.CubeMetastoreClient;
@@ -81,16 +78,18 @@ public abstract class PartitionTimeline {
     initFromProperties(props);
   }
 
-  public void commitBatchAdditions() {
-    if (getAll() != null) {
-      for (TimePartition partition : getAll()) {
-        add(partition);
-      }
-      all = null;
+  public boolean commitBatchAdditions() {
+    if (getAll() == null) {
+      return true;
     }
+    boolean result = add(getAll());
+    all = null;
+    return result;
   }
 
   public abstract boolean add(@NonNull TimePartition partition);
+
+  public abstract boolean add(@NonNull Collection<TimePartition> partition);
 
   public abstract boolean drop(@NonNull TimePartition toDrop) throws LensException;
 
