@@ -22,11 +22,9 @@ package org.apache.lens.cube.metadata.timeline;
 import java.util.*;
 
 import org.apache.lens.api.LensException;
-import org.apache.lens.cube.metadata.CubeMetastoreClient;
-import org.apache.lens.cube.metadata.MetastoreUtil;
-import org.apache.lens.cube.metadata.TimePartition;
-import org.apache.lens.cube.metadata.UpdatePeriod;
+import org.apache.lens.cube.metadata.*;
 
+import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.metadata.Table;
 
 import com.google.common.collect.Maps;
@@ -44,6 +42,7 @@ import lombok.NonNull;
 public abstract class PartitionTimeline {
   /**
    * Add partition to local memory to be sent for batch addigion
+   *
    * @see com
    */
   public void addForBatchAddition(TimePartition partition) {
@@ -97,9 +96,18 @@ public abstract class PartitionTimeline {
     return result;
   }
 
+  public boolean morePartitionsExist(String value) throws LensException {
+    try {
+      return getClient().partitionExistsByFilter(getStorageTableName(), StorageConstants.getPartFilter(getPartCol(),
+        value));
+    } catch (HiveException e) {
+      throw new LensException(e);
+    }
+  }
+
   public abstract boolean add(@NonNull TimePartition partition) throws LensException;
 
-  public abstract boolean add(@NonNull Collection<TimePartition> partition) throws LensException;
+  public abstract boolean add(@NonNull Collection<TimePartition> partitions) throws LensException;
 
   public abstract boolean drop(@NonNull TimePartition toDrop) throws LensException;
 

@@ -108,6 +108,10 @@ public class CubeMetastoreClient {
     return updated ? max : null;
   }
 
+  public void clearHiveTableCache() {
+    allHiveTables.clear();
+  }
+
   private class PartitionTimelineCache extends CaseInsensitiveHashMap<// storage table
     TreeMap<UpdatePeriod,
       CaseInsensitiveHashMap<// partition column
@@ -531,7 +535,7 @@ public class CubeMetastoreClient {
   public void addPartition(StoragePartitionDesc partSpec, String storageName) throws HiveException, LensException {
     String storageTableName = MetastoreUtil.getStorageTableName(partSpec.getCubeTableName(), Storage.getPrefix(
       storageName));
-    if (getDimensionTable(partSpec.getCubeTableName()) != null) {
+    if (isDimensionTable(storageTableName)) {
       // Adding partition in dimension table.
       getStorage(storageName).addPartition(getClient(), partSpec,
         getDimTableLatestInfo(storageTableName, partSpec.getTimePartSpec(), partSpec.getUpdatePeriod())
@@ -1430,7 +1434,11 @@ public class CubeMetastoreClient {
     return columnsChanged;
   }
 
-  private void alterHiveTable(String table, Table hiveTable) throws HiveException {
+  public void pushHiveTable(Table hiveTable) throws HiveException {
+    alterHiveTable(hiveTable.getTableName(), hiveTable);
+  }
+
+  public void alterHiveTable(String table, Table hiveTable) throws HiveException {
     try {
       getClient().alterTable(table, hiveTable);
     } catch (InvalidOperationException e) {

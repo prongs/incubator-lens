@@ -25,6 +25,7 @@ import java.util.*;
 
 import org.apache.lens.api.LensException;
 import org.apache.lens.cube.metadata.*;
+import org.apache.lens.cube.metadata.timeline.StoreAllPartitionTimeline;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
@@ -33,6 +34,7 @@ import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat;
 import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.ql.parse.ParseException;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.session.SessionState;
@@ -41,6 +43,7 @@ import org.apache.hadoop.mapred.TextInputFormat;
 
 import org.testng.Assert;
 
+import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 
 /*
@@ -926,30 +929,75 @@ public class CubeTestSetup {
     storageTables.put(c3, s1);
     // create cube fact
     client.createCubeFactTable(TEST_CUBE_NAME, factName, factColumns, storageAggregatePeriods, 5L, null, storageTables);
-
     CubeFactTable fact = client.getFactTable(factName);
+
+    Table table = client.getTable(MetastoreUtil.getStorageTableName(fact.getName(),
+      Storage.getPrefix(c4)));
+    table.getParameters().put(MetastoreUtil.getPartitionTimelineStorageClassKey(UpdatePeriod.HOURLY, "ttd"),
+      StoreAllPartitionTimeline.class.getCanonicalName());
+    table.getParameters().put(MetastoreUtil.getPartitionTimelineStorageClassKey(UpdatePeriod.HOURLY, "ttd2"),
+      StoreAllPartitionTimeline.class.getCanonicalName());
+    client.pushHiveTable(table);
     // Add all hourly partitions for two days
     Calendar cal = Calendar.getInstance();
     cal.setTime(TWODAYS_BACK);
     Date temp = cal.getTime();
-    List<Date> dates = new ArrayList<Date>();
+    List<StoragePartitionDesc> storagePartitionDescs = Lists.newArrayList();
+    List<String> partitions = Lists.newArrayList();
     while (!(temp.after(NOW))) {
-      dates.add(temp);
       Map<String, Date> timeParts = new HashMap<String, Date>();
       timeParts.put("ttd", temp);
       timeParts.put("ttd2", temp);
+      partitions.add(UpdatePeriod.HOURLY.format().format(temp));
       StoragePartitionDesc sPartSpec = new StoragePartitionDesc(fact.getName(), timeParts, null, UpdatePeriod.HOURLY);
-      client.addPartition(sPartSpec, c4);
+      storagePartitionDescs.add(sPartSpec);
       cal.add(Calendar.HOUR_OF_DAY, 1);
       temp = cal.getTime();
     }
-    List<Date> dates2 = new ArrayList<Date>();
-    for (Date d : TimeRange.iterable(TWODAYS_BACK, TimePartition.of(UpdatePeriod.HOURLY, NOW).next().getDate(),
-      UpdatePeriod.HOURLY, 1)) {
-      dates2.add(d);
-    }
-    System.out.println(dates);
-    System.out.println(dates2);
+    client.addPartitions(storagePartitionDescs, c4);
+    client.clearHiveTableCache();
+    table = client.getTable(MetastoreUtil.getStorageTableName(fact.getName(),
+      Storage.getPrefix(c4)));
+    Assert.assertEquals(table.getParameters().get("cube.storagetable.parition.timeline.cache.present"), "true");
+    Assert.assertEquals(table.getParameters().get("cube.storagetable.parition.timeline.cache.DAILY.ttd.storage.class"),
+      "org.apache.lens.cube.metadata.timeline.EndsAndHolesPartitionTimeline");
+    Assert.assertEquals(table.getParameters().get("cube.storagetable.parition.timeline.cache.DAILY.ttd2.storage.class"),
+      "org.apache.lens.cube.metadata.timeline.EndsAndHolesPartitionTimeline");
+    Assert.assertEquals(table.getParameters().get("cube.storagetable.parition.timeline.cache.HOURLY.ttd.storage.class"),
+      "org.apache.lens.cube.metadata.timeline.StoreAllPartitionTimeline");
+    Assert.assertEquals(table.getParameters().get(
+        "cube.storagetable.parition.timeline.cache.HOURLY.ttd2.storage.class"),
+      "org.apache.lens.cube.metadata.timeline.StoreAllPartitionTimeline");
+    Assert.assertEquals(table.getParameters().get(
+        "cube.storagetable.parition.timeline.cache.MINUTELY.ttd.storage.class"),
+      "org.apache.lens.cube.metadata.timeline.EndsAndHolesPartitionTimeline");
+    Assert.assertEquals(table.getParameters().get(
+        "cube.storagetable.parition.timeline.cache.MINUTELY.ttd2.storage.class"),
+      "org.apache.lens.cube.metadata.timeline.EndsAndHolesPartitionTimeline");
+    Assert.assertEquals(table.getParameters().get(
+        "cube.storagetable.parition.timeline.cache.MONTHLY.ttd.storage.class"),
+      "org.apache.lens.cube.metadata.timeline.EndsAndHolesPartitionTimeline");
+    Assert.assertEquals(table.getParameters().get(
+        "cube.storagetable.parition.timeline.cache.MONTHLY.ttd2.storage.class"),
+      "org.apache.lens.cube.metadata.timeline.EndsAndHolesPartitionTimeline");
+    Assert.assertEquals(table.getParameters().get(
+        "cube.storagetable.parition.timeline.cache.QUARTERLY.ttd.storage.class"),
+      "org.apache.lens.cube.metadata.timeline.EndsAndHolesPartitionTimeline");
+    Assert.assertEquals(table.getParameters().get(
+        "cube.storagetable.parition.timeline.cache.QUARTERLY.ttd2.storage.class"),
+      "org.apache.lens.cube.metadata.timeline.EndsAndHolesPartitionTimeline");
+    Assert.assertEquals(table.getParameters().get(
+        "cube.storagetable.parition.timeline.cache.YEARLY.ttd.storage.class"),
+      "org.apache.lens.cube.metadata.timeline.EndsAndHolesPartitionTimeline");
+    Assert.assertEquals(table.getParameters().get(
+        "cube.storagetable.parition.timeline.cache.YEARLY.ttd2.storage.class"),
+      "org.apache.lens.cube.metadata.timeline.EndsAndHolesPartitionTimeline");
+    Assert.assertEquals(table.getParameters().get(
+        "cube.storagetable.parition.timeline.cache.HOURLY.ttd.partitions"),
+      StringUtils.join(partitions, ","));
+    Assert.assertEquals(table.getParameters().get(
+        "cube.storagetable.parition.timeline.cache.HOURLY.ttd2.partitions"),
+      StringUtils.join(partitions, ","));
     // Add all hourly partitions for TWO_DAYS_RANGE_BEFORE_4_DAYS
     cal.setTime(BEFORE_4_DAYS_START);
     temp = cal.getTime();

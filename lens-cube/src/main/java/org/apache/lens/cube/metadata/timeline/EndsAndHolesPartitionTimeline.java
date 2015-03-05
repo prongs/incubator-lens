@@ -100,15 +100,6 @@ public class EndsAndHolesPartitionTimeline extends PartitionTimeline {
     }
   }
 
-  private boolean morePartitionsExist(String value) throws LensException {
-    try {
-      return getClient().partitionExistsByFilter(getStorageTableName(), StorageConstants.getPartFilter(getPartCol(),
-        value));
-    } catch (HiveException e) {
-      throw new LensException(e);
-    }
-  }
-
   @Override
   public TimePartition latest() {
     return latest;
