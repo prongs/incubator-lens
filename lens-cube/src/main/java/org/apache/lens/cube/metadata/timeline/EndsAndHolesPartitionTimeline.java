@@ -23,13 +23,11 @@ import java.util.*;
 
 import org.apache.lens.api.LensException;
 import org.apache.lens.cube.metadata.CubeMetastoreClient;
-import org.apache.lens.cube.metadata.StorageConstants;
 import org.apache.lens.cube.metadata.TimePartition;
 import org.apache.lens.cube.metadata.UpdatePeriod;
 import org.apache.lens.cube.parse.TimeRange;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.hadoop.hive.ql.metadata.HiveException;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
