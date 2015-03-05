@@ -85,7 +85,7 @@ public class CubeMetastoreClient {
 
   public Date getLatestDateOfCube(Cube c, String timeDimension) throws HiveException, LensException {
     String partCol = c.getPartitionColumnOfTimeDim(timeDimension);
-    Date min = new Date(Long.MIN_VALUE);
+    Date max = new Date(Long.MIN_VALUE);
     boolean updated = false;
     for (CubeFactTable fact : getAllFactTables(c)) {
       for (String storage : fact.getStorages()) {
@@ -97,15 +97,15 @@ public class CubeMetastoreClient {
             partCol);
           if (timeline != null) {// this storage table is partitioned by partCol or not.
             Date latest = timeline.getLatestDate();
-            if (latest != null && latest.after(min)) {
-              min = latest;
+            if (latest != null && latest.after(max)) {
+              max = latest;
               updated = true;
             }
           }
         }
       }
     }
-    return updated ? min : null;
+    return updated ? max : null;
   }
 
   private class PartitionTimelineCache extends CaseInsensitiveHashMap<// storage table
@@ -893,8 +893,8 @@ public class CubeMetastoreClient {
   }
 
   public List<String> getTimePartsOfTable(Table table) {
-    List<String> ret = Arrays.asList(table.getParameters().get(MetastoreConstants.TIME_PART_COLUMNS).split(
-      "\\s*,\\s*"));
+    List<String> ret = Arrays.asList(StringUtils.split(table.getParameters().get(MetastoreConstants.TIME_PART_COLUMNS),
+      ","));
     return ret == null ? new ArrayList<String>() : ret;
   }
 

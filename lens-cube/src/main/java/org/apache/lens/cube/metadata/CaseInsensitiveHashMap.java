@@ -19,15 +19,32 @@
 package org.apache.lens.cube.metadata;
 
 import java.util.HashMap;
+import java.util.Map;
 
 public class CaseInsensitiveHashMap<T> extends HashMap<String, T> {
   @Override
   public T get(Object key) {
-    return super.get(key.toString().toLowerCase());
+    return super.get(caseInsensitiveKey(key));
   }
 
   @Override
   public T put(String key, T value) {
-    return super.put(key.toLowerCase(), value);
+    return super.put(caseInsensitiveKey(key), value);
+  }
+
+  @Override
+  public boolean containsKey(Object key) {
+    return super.containsKey(caseInsensitiveKey(key));
+  }
+
+  public static String caseInsensitiveKey(Object key) {
+    return key == null ? null : key.toString().toLowerCase();
+  }
+
+  @Override
+  public void putAll(Map<? extends String, ? extends T> m) {
+    for (Map.Entry<? extends String, ? extends T> entry : m.entrySet()) {
+      put(entry.getKey(), entry.getValue());
+    }
   }
 }
