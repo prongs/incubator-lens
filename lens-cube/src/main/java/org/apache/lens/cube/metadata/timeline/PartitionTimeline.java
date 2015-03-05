@@ -34,8 +34,18 @@ import com.google.common.collect.Sets;
 import lombok.Data;
 import lombok.NonNull;
 
+/**
+ * Represents the in-memory data structure that represents timeline of all existing partitions for a given storage
+ * table, update period, partition column. Is an Abstract class. Can be implemented in multiple ways.
+ *
+ * @see org.apache.lens.cube.metadata.timeline.EndsAndHolesPartitionTimeline
+ */
 @Data
 public abstract class PartitionTimeline {
+  /**
+   * Add partition to local memory to be sent for batch addigion
+   * @see com
+   */
   public void addForBatchAddition(TimePartition partition) {
     if (all == null) {
       all = Sets.newTreeSet();

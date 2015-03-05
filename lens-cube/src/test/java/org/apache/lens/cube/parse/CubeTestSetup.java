@@ -932,7 +932,9 @@ public class CubeTestSetup {
     Calendar cal = Calendar.getInstance();
     cal.setTime(TWODAYS_BACK);
     Date temp = cal.getTime();
+    List<Date> dates = new ArrayList<Date>();
     while (!(temp.after(NOW))) {
+      dates.add(temp);
       Map<String, Date> timeParts = new HashMap<String, Date>();
       timeParts.put("ttd", temp);
       timeParts.put("ttd2", temp);
@@ -941,7 +943,13 @@ public class CubeTestSetup {
       cal.add(Calendar.HOUR_OF_DAY, 1);
       temp = cal.getTime();
     }
-
+    List<Date> dates2 = new ArrayList<Date>();
+    for (Date d : TimeRange.iterable(TWODAYS_BACK, TimePartition.of(UpdatePeriod.HOURLY, NOW).next().getDate(),
+      UpdatePeriod.HOURLY, 1)) {
+      dates2.add(d);
+    }
+    System.out.println(dates);
+    System.out.println(dates2);
     // Add all hourly partitions for TWO_DAYS_RANGE_BEFORE_4_DAYS
     cal.setTime(BEFORE_4_DAYS_START);
     temp = cal.getTime();
