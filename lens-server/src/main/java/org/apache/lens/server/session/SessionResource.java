@@ -93,8 +93,7 @@ public class SessionResource {
       } else {
         conf = new HashMap<String, String>();
       }
-      LensSessionHandle x = sessionService.openSession(username, password, database, conf);
-      return x;
+      return sessionService.openSession(username, password, database,   conf);
     } catch (LensException e) {
       throw new WebApplicationException(e);
     }

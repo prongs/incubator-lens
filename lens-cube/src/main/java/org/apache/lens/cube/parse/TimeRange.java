@@ -129,10 +129,12 @@ public class TimeRange {
     return partitionColumn + " [" + fromDate + ":" + toDate + "]";
   }
 
+  /** iterable from fromDate(including) to toDate(excluding) incrementing increment units of updatePeriod */
   public static Iterable iterable(Date fromDate, Date toDate, UpdatePeriod updatePeriod, int increment) {
     return TimeRange.getBuilder().fromDate(fromDate).toDate(toDate).build().iterable(updatePeriod, increment);
   }
 
+  /** iterable from fromDate(including) incrementing increment units of updatePeriod. Do this numIters times */
   public static Iterable iterable(Date fromDate, int numIters, UpdatePeriod updatePeriod, int increment) {
     return TimeRange.getBuilder().fromDate(fromDate).build().iterable(updatePeriod, numIters, increment);
   }
@@ -142,10 +144,14 @@ public class TimeRange {
   }
 
   public Iterable iterable(UpdatePeriod updatePeriod, int increment) {
+    if (increment == 0) {
+      throw new UnsupportedOperationException("Can't iterate if iteration increment is zero");
+    }
     long numIters = DateUtil.getTimeDiff(fromDate, toDate, updatePeriod) / increment;
     return new Iterable(updatePeriod, numIters, increment);
   }
 
+  /** Iterable so that foreach is supported */
   public class Iterable implements java.lang.Iterable {
     private UpdatePeriod updatePeriod;
     private long numIters;
