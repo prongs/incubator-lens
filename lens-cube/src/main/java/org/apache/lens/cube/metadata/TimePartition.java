@@ -24,6 +24,8 @@ import java.util.Date;
 
 import org.apache.lens.api.LensException;
 
+import org.apache.commons.lang3.time.DateUtils;
+
 import lombok.Data;
 import lombok.NonNull;
 
@@ -37,8 +39,8 @@ public class TimePartition implements Comparable<TimePartition> {
 
   private TimePartition(@NonNull UpdatePeriod updatePeriod, @NonNull Date date) {
     this.updatePeriod = updatePeriod;
-    this.date = date;
-    this.dateString = updatePeriod.format().format(date);
+    this.date = DateUtils.truncate(date, updatePeriod.calendarField());
+    this.dateString = updatePeriod.format().format(this.date);
   }
 
   private TimePartition(@NonNull UpdatePeriod updatePeriod, @NonNull String dateString) throws LensException {
