@@ -34,6 +34,9 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import lombok.NonNull;
 
+/**
+ * Implementation of PartitionTimeline that stores all partitions as a tree set.
+ */
 public class StoreAllPartitionTimeline extends PartitionTimeline {
   TreeSet<TimePartition> allPartitions;
 

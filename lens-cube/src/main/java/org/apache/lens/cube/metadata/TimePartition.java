@@ -27,6 +27,7 @@ import org.apache.lens.api.LensException;
 import lombok.Data;
 import lombok.NonNull;
 
+/** stores a partition's update period, date and string representation. Provides some utility methods around it */
 @Data
 public class TimePartition implements Comparable<TimePartition> {
 

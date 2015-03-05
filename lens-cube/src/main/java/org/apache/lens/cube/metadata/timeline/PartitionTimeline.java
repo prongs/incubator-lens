@@ -37,35 +37,27 @@ import lombok.NonNull;
  * table, update period, partition column. Is an Abstract class. Can be implemented in multiple ways.
  *
  * @see org.apache.lens.cube.metadata.timeline.EndsAndHolesPartitionTimeline
+ * @see org.apache.lens.cube.metadata.timeline.StoreAllPartitionTimeline
  */
 @Data
 public abstract class PartitionTimeline {
-  /**
-   * Add partition to local memory to be sent for batch addigion
-   *
-   * @see com
-   */
-  public void addForBatchAddition(TimePartition partition) {
-    if (all == null) {
-      all = Sets.newTreeSet();
-    }
-    all.add(partition);
-  }
-
   private final CubeMetastoreClient client;
   private final String storageTableName;
   private final UpdatePeriod updatePeriod;
   private final String partCol;
   private TreeSet<TimePartition> all;
 
-  public boolean add(UpdatePeriod updatePeriod, String value) throws LensException {
-    return add(TimePartition.of(updatePeriod, value));
-  }
-
+  /** wrapper on latest data */
   public Date getLatestDate() {
     return latest() == null ? null : latest().getDate();
   }
 
+  /**
+   * Sets PartitionTimeline implementation class's name and specific params in table param.
+   *
+   * @param table
+   * @see #init(org.apache.hadoop.hive.ql.metadata.Table)
+   */
   public void updateTableParams(Table table) {
     String prefix = MetastoreUtil.getPartitionInfoKeyPrefix(getUpdatePeriod(), getPartCol());
     String storageClass = MetastoreUtil.getPartitionTimelineStorageClassKey(getUpdatePeriod(), getPartCol());
@@ -76,6 +68,14 @@ public abstract class PartitionTimeline {
     }
   }
 
+  /**
+   * Extracts timeline implementation class from table params and instantiates it with other arguments, also in table
+   * params.
+   *
+   * @param table
+   * @throws LensException
+   * @see #updateTableParams(org.apache.hadoop.hive.ql.metadata.Table)
+   */
   public void init(Table table) throws LensException {
     HashMap<String, String> props = Maps.newHashMap();
     String prefix = MetastoreUtil.getPartitionInfoKeyPrefix(getUpdatePeriod(), getPartCol());
@@ -87,6 +87,24 @@ public abstract class PartitionTimeline {
     initFromProperties(props);
   }
 
+  /**
+   * Add partition to local memory to be sent for batch addition.
+   *
+   * @see #commitBatchAdditions()
+   */
+  public void addForBatchAddition(TimePartition partition) {
+    if (all == null) {
+      all = Sets.newTreeSet();
+    }
+    all.add(partition);
+  }
+
+  /**
+   * Commit all partitions that were added to batch addition queue. //TODO: improve batch addition implementation.
+   *
+   * @return
+   * @throws LensException
+   */
   public boolean commitBatchAdditions() throws LensException {
     if (getAll() == null) {
       return true;
@@ -96,6 +114,15 @@ public abstract class PartitionTimeline {
     return result;
   }
 
+  /**
+   * goes to metastore and queries if more partitions exist associated with (partCol = value) in storage table
+   * #getStorageTableName for update period #getUpdatePeriod. This might be useful for implementations while
+   * implementing drop.
+   *
+   * @param value
+   * @return
+   * @throws LensException
+   */
   public boolean morePartitionsExist(String value) throws LensException {
     try {
       return getClient().partitionExistsByFilter(getStorageTableName(), StorageConstants.getPartFilter(getPartCol(),
@@ -105,21 +132,76 @@ public abstract class PartitionTimeline {
     }
   }
 
+  /**
+   * Add partition to timeline
+   *
+   * @param partition
+   * @return whether add was successful
+   * @throws LensException
+   */
   public abstract boolean add(@NonNull TimePartition partition) throws LensException;
 
+  /**
+   * Add multiple partitions to timeline
+   *
+   * @param partitions
+   * @return whether add was successful
+   * @throws LensException
+   */
   public abstract boolean add(@NonNull Collection<TimePartition> partitions) throws LensException;
 
+  /**
+   * drop partition.
+   *
+   * @param toDrop
+   * @return whether drop was successful
+   * @throws LensException
+   */
   public abstract boolean drop(@NonNull TimePartition toDrop) throws LensException;
 
+  /**
+   * latest partition. will be null if no partitions exist.
+   *
+   * @return
+   */
   public abstract TimePartition latest();
 
+  /**
+   * serialize member objects as map
+   *
+   * @return
+   */
   public abstract Map<String, String> toProperties();
 
+  /**
+   * deserialize member variables from given map
+   *
+   * @param properties
+   * @return true if after deserializing, the timeline is in consistent state
+   * @throws LensException
+   * @see #isConsistent()
+   */
   public abstract boolean initFromProperties(Map<String, String> properties) throws LensException;
 
+  /**
+   * Whether No partitions have been registered
+   *
+   * @return
+   */
   public abstract boolean isEmpty();
 
+  /**
+   * whether timeline is in consistent state
+   *
+   * @return
+   */
   public abstract boolean isConsistent();
 
+  /**
+   * Checks partition existance
+   *
+   * @param partition
+   * @return
+   */
   public abstract boolean exists(TimePartition partition);
 }

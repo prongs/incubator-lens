@@ -164,7 +164,7 @@ class StorageTableResolver implements ContextRewriter {
       if (dimTables == null || dimTables.isEmpty()) {
         continue;
       }
-      Iterator<CandidateDim> i = dimTables.iterator();
+      Iterator i = dimTables.iterator();
       while (i.hasNext()) {
         CandidateDim candidate = i.next();
         CubeDimensionTable dimtable = candidate.dimtable;
@@ -257,7 +257,7 @@ class StorageTableResolver implements ContextRewriter {
 
   // Resolves all the storage table names, which are valid for each updatePeriod
   private void resolveFactStorageTableNames(CubeQueryContext cubeql) throws SemanticException {
-    Iterator<CandidateFact> i = cubeql.getCandidateFactTables().iterator();
+    Iterator i = cubeql.getCandidateFactTables().iterator();
     while (i.hasNext()) {
       CubeFactTable fact = i.next().fact;
       if (fact.getUpdatePeriods().isEmpty()) {
@@ -340,7 +340,7 @@ class StorageTableResolver implements ContextRewriter {
 
   private void resolveFactStoragePartitions(CubeQueryContext cubeql) throws SemanticException {
     // Find candidate tables wrt supported storages
-    Iterator<CandidateFact> i = cubeql.getCandidateFactTables().iterator();
+    Iterator i = cubeql.getCandidateFactTables().iterator();
     while (i.hasNext()) {
       CandidateFact cfact = i.next();
       List<FactPartition> answeringParts = new ArrayList<FactPartition>();
@@ -452,7 +452,7 @@ class StorageTableResolver implements ContextRewriter {
     Set<String> storageTbls = new LinkedHashSet<String>();
     storageTbls.addAll(validStorageMap.get(fact).get(interval));
 
-    Iterator<String> it = storageTbls.iterator();
+    Iterator it = storageTbls.iterator();
     while (it.hasNext()) {
       String storageTableName = it.next();
       if (!client.partColExists(storageTableName, partCol)) {
@@ -472,7 +472,7 @@ class StorageTableResolver implements ContextRewriter {
     int lookAheadNumParts =
       conf.getInt(CubeQueryConfUtil.getLookAheadPTPartsKey(interval), CubeQueryConfUtil.DEFAULT_LOOK_AHEAD_PT_PARTS);
 
-    TimeRange.CalendarIterable.CalendarIterator iter = TimeRange.iterable(ceilFromDate, floorToDate, interval)
+    TimeRange.Iterable.Iterator iter = TimeRange.iterable(ceilFromDate, floorToDate, interval, 1)
       .iterator();
     // add partitions from ceilFrom to floorTo
     while (iter.hasNext()) {
@@ -501,8 +501,8 @@ class StorageTableResolver implements ContextRewriter {
           // final partitions are required if no partitions from
           // look-ahead
           // process time are present
-          TimeRange.CalendarIterable.CalendarIterator processTimeIter = TimeRange.iterable(nextDt, lookAheadNumParts,
-            interval).iterator();
+          TimeRange.Iterable.Iterator processTimeIter = TimeRange.iterable(nextDt, lookAheadNumParts,
+            interval, 1).iterator();
           while (processTimeIter.hasNext()) {
             Date pdt = processTimeIter.next();
             Date nextPdt = processTimeIter.peekNext();
@@ -528,7 +528,7 @@ class StorageTableResolver implements ContextRewriter {
                 TimeRange timeRange = TimeRange.getBuilder().fromDate(dt).toDate(nextDt).build();
                 for (FactPartition pPart : processTimeParts) {
                   LOG.info("Looking for finer partitions in pPart: " + pPart);
-                  for (Date date : timeRange.iterable(pPart.getPeriod())) {
+                  for (Date date : timeRange.iterable(pPart.getPeriod(), 1)) {
                     partitions.add(new FactPartition(partCol, date, pPart.getPeriod(), pPart,
                       partWhereClauseFormat));
                   }
@@ -571,7 +571,7 @@ class StorageTableResolver implements ContextRewriter {
     return getPartitions(fact, fromDate, ceilFromDate, partCol, partitions,
       updatePeriods, addNonExistingParts, skipStorageCauses, nonExistingParts)
       && getPartitions(fact, floorToDate, toDate, partCol, partitions,
-        updatePeriods, addNonExistingParts, skipStorageCauses, nonExistingParts);
+      updatePeriods, addNonExistingParts, skipStorageCauses, nonExistingParts);
   }
 
   private void updateFactPartitionStorageTablesFrom(CubeFactTable fact, FactPartition part,

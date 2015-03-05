@@ -25,11 +25,22 @@ import org.apache.lens.cube.metadata.CubeMetastoreClient;
 import org.apache.lens.cube.metadata.MetastoreUtil;
 import org.apache.lens.cube.metadata.UpdatePeriod;
 
+/** factory class for getting new timeline instances */
 public final class PartitionTimelineFactory {
   private PartitionTimelineFactory() {
 
   }
 
+  /**
+   * Checks in table params if desired implementing class is given. Otherwise by default returns instance of {@link
+   * org.apache.lens.cube.metadata.timeline.EndsAndHolesPartitionTimeline}.
+   *
+   * @param client
+   * @param storageTable
+   * @param updatePeriod
+   * @param partitionColumn
+   * @return
+   */
   public static PartitionTimeline get(CubeMetastoreClient client, String storageTable,
     UpdatePeriod updatePeriod, String partitionColumn) {
     try {

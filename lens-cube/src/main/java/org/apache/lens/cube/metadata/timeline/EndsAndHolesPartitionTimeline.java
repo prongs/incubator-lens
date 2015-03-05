@@ -35,6 +35,10 @@ import com.google.common.collect.Sets;
 import lombok.Data;
 import lombok.NonNull;
 
+/**
+ * One implementation of PartitionTimeline that stores first partition, latest partition and a collection of holes in
+ * between them, excluding the edges.
+ */
 @Data
 public class EndsAndHolesPartitionTimeline extends PartitionTimeline {
   private TimePartition first;
