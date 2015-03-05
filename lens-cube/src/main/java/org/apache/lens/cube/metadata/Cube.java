@@ -415,4 +415,5 @@ public class Cube extends AbstractBaseTable implements CubeInterface {
     }
     return partCol;
   }
+
 }

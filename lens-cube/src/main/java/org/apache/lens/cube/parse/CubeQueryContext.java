@@ -1054,8 +1054,7 @@ public class CubeQueryContext {
    */
   public void pruneCandidateFactSet(CandidateTablePruneCode pruneCause) {
     // remove candidate fact sets that have missing facts
-    Iterator<Set<CandidateFact>> i = candidateFactSets.iterator();
-    while (i.hasNext()) {
+    for (Iterator<Set<CandidateFact>> i = candidateFactSets.iterator(); i.hasNext();) {
       Set<CandidateFact> cfacts = i.next();
       if (!candidateFacts.containsAll(cfacts)) {
         LOG.info("Not considering fact table set:" + cfacts
@@ -1078,8 +1077,7 @@ public class CubeQueryContext {
     for (Set<CandidateFact> set : candidateFactSets) {
       allCoveringFacts.addAll(set);
     }
-    Iterator<CandidateFact> i = candidateFacts.iterator();
-    while (i.hasNext()) {
+    for (Iterator<CandidateFact> i = candidateFacts.iterator(); i.hasNext();) {
       CandidateFact cfact = i.next();
       if (!allCoveringFacts.contains(cfact)) {
         LOG.info("Not considering fact table:" + cfact + " as " + pruneCause);
