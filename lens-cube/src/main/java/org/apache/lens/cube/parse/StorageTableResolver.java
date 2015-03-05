@@ -164,7 +164,7 @@ class StorageTableResolver implements ContextRewriter {
       if (dimTables == null || dimTables.isEmpty()) {
         continue;
       }
-      Iterator i = dimTables.iterator();
+      Iterator<CandidateDim> i = dimTables.iterator();
       while (i.hasNext()) {
         CandidateDim candidate = i.next();
         CubeDimensionTable dimtable = candidate.dimtable;
@@ -257,7 +257,7 @@ class StorageTableResolver implements ContextRewriter {
 
   // Resolves all the storage table names, which are valid for each updatePeriod
   private void resolveFactStorageTableNames(CubeQueryContext cubeql) throws SemanticException {
-    Iterator i = cubeql.getCandidateFactTables().iterator();
+    Iterator<CandidateFact> i = cubeql.getCandidateFactTables().iterator();
     while (i.hasNext()) {
       CubeFactTable fact = i.next().fact;
       if (fact.getUpdatePeriods().isEmpty()) {
@@ -340,7 +340,7 @@ class StorageTableResolver implements ContextRewriter {
 
   private void resolveFactStoragePartitions(CubeQueryContext cubeql) throws SemanticException {
     // Find candidate tables wrt supported storages
-    Iterator i = cubeql.getCandidateFactTables().iterator();
+    Iterator<CandidateFact> i = cubeql.getCandidateFactTables().iterator();
     while (i.hasNext()) {
       CandidateFact cfact = i.next();
       List<FactPartition> answeringParts = new ArrayList<FactPartition>();
@@ -452,7 +452,7 @@ class StorageTableResolver implements ContextRewriter {
     Set<String> storageTbls = new LinkedHashSet<String>();
     storageTbls.addAll(validStorageMap.get(fact).get(interval));
 
-    Iterator it = storageTbls.iterator();
+    Iterator<String> it = storageTbls.iterator();
     while (it.hasNext()) {
       String storageTableName = it.next();
       if (!client.partColExists(storageTableName, partCol)) {

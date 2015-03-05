@@ -152,7 +152,7 @@ public class TimeRange {
   }
 
   /** Iterable so that foreach is supported */
-  public class Iterable implements java.lang.Iterable {
+  public class Iterable implements java.lang.Iterable<Date> {
     private UpdatePeriod updatePeriod;
     private long numIters;
     private int increment;
@@ -171,7 +171,7 @@ public class TimeRange {
       return new Iterator();
     }
 
-    public class Iterator implements java.util.Iterator {
+    public class Iterator implements java.util.Iterator<Date> {
       Calendar calendar;
       // Tracks the index of the item returned after the last next() call.
       // Index here refers to the index if the iterator were iterated and converted into a list.

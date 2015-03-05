@@ -25,6 +25,7 @@ import java.util.*;
 
 import org.apache.lens.api.LensException;
 import org.apache.lens.cube.metadata.*;
+import org.apache.lens.cube.metadata.timeline.EndsAndHolesPartitionTimeline;
 import org.apache.lens.cube.metadata.timeline.StoreAllPartitionTimeline;
 
 import org.apache.commons.lang.StringUtils;
@@ -2007,6 +2008,38 @@ public class CubeTestSetup {
           pcal.add(Calendar.HOUR_OF_DAY, 1);
           ical.add(Calendar.HOUR_OF_DAY, 1);
         }
+      }
+    }
+    Map<String, String> params = client.getTable(MetastoreUtil.getStorageTableName(fact.getName(), Storage.getPrefix(
+      storageName))).getParameters();
+    String prefix = MetastoreConstants.STORAGE_PFX + MetastoreConstants.PARTITION_TIMELINE_CACHE;
+    Assert.assertEquals(params.get(prefix + "present"), "true");
+    for (UpdatePeriod up : Arrays.asList(UpdatePeriod.DAILY, UpdatePeriod.HOURLY)) {
+      for (String p : Arrays.asList("et", "it", "pt")) {
+        String first = params.get(prefix + up + "." + p + "." + "first");
+        String latest = params.get(prefix + up + "." + p + "." + "latest");
+        String holes = params.get(prefix + up + "." + p + "." + "holes");
+        String storageClass = params.get(prefix + up + "." + p + "." + "storage.class");
+        Assert.assertNotNull(first);
+        Assert.assertNotNull(latest);
+        Assert.assertNull(holes);
+        Assert.assertEquals(storageClass, EndsAndHolesPartitionTimeline.class.getCanonicalName());
+        try {
+          up.format().parse(first);
+          up.format().parse(latest);
+        } catch (java.text.ParseException e) {
+          Assert.fail("parse failed. first/latest not updated correctly in table");
+        }
+      }
+      for (String p : Arrays.asList("et", "it", "pt")) {
+        up = UpdatePeriod.MINUTELY;
+        String first = params.get(prefix + up + "." + p + "." + "first");
+        String latest = params.get(prefix + up + "." + p + "." + "latest");
+        String holes = params.get(prefix + up + "." + p + "." + "holes");
+        String storageClass = params.get(prefix + up + "." + p + "." + "storage.class");
+        Assert.assertNull(first);
+        Assert.assertNull(latest);
+        Assert.assertNull(holes);
       }
     }
   }
