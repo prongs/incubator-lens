@@ -172,8 +172,8 @@ public class TimeRange {
     public CalendarIterable(UpdatePeriod updatePeriod, long numIters, int increment) {
       this.updatePeriod = updatePeriod;
       this.numIters = numIters;
-      if (numIters < 0) {
-        numIters = 0;
+      if (this.numIters < 0) {
+        this.numIters = 0;
       }
       this.increment = increment;
     }
@@ -190,11 +190,11 @@ public class TimeRange {
       @Getter
       int counter = -1;
 
-      {
+      public CalendarIterator() {
         calendar = Calendar.getInstance();
         calendar.setTime(fromDate);
         if (toDate != null) {
-          numIters = DateUtil.getTimeDiff(fromDate, toDate, updatePeriod)/increment;
+          numIters = DateUtil.getTimeDiff(fromDate, toDate, updatePeriod) / increment;
         } else {
           numIters = CalendarIterable.this.numIters;
         }
@@ -219,7 +219,7 @@ public class TimeRange {
 
       @Override
       public void remove() {
-        throw new RuntimeException("Not allowed");
+        throw new UnsupportedOperationException("remove from timerange iterator");
       }
 
       public long getNumIters() {
