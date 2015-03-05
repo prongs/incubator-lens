@@ -19,6 +19,8 @@
 package org.apache.lens.cube.metadata.timeline;
 
 
+import java.lang.reflect.Constructor;
+
 import org.apache.lens.cube.metadata.CubeMetastoreClient;
 import org.apache.lens.cube.metadata.MetastoreUtil;
 import org.apache.lens.cube.metadata.UpdatePeriod;
@@ -34,13 +36,10 @@ public final class PartitionTimelineFactory {
       String storageClassName = client.getTable(storageTable).getParameters().get(
         MetastoreUtil.getPartitionTimelineStorageClassKey(
           updatePeriod, partitionColumn));
-      Class<? extends PartitionTimeline> clz = EndsAndHolesPartitionTimeline.class;
-      try {
-        clz = (Class<? extends PartitionTimeline>) Class.forName(storageClassName);
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
-      return clz.getConstructor(CubeMetastoreClient.class, String.class, UpdatePeriod.class, String.class).newInstance(
+      Class<? extends PartitionTimeline> clz = (Class<? extends PartitionTimeline>) Class.forName(storageClassName);
+      Constructor<? extends PartitionTimeline> constructor = clz.getConstructor(
+        CubeMetastoreClient.class, String.class, UpdatePeriod.class, String.class);
+      return constructor.newInstance(
         client, storageTable, updatePeriod, partitionColumn);
     } catch (Exception e) {
       return new EndsAndHolesPartitionTimeline(client, storageTable, updatePeriod, partitionColumn);
