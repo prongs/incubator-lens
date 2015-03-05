@@ -2022,7 +2022,7 @@ public class CubeTestSetup {
         String storageClass = params.get(prefix + up + "." + p + "." + "storage.class");
         Assert.assertNotNull(first);
         Assert.assertNotNull(latest);
-        Assert.assertNull(holes);
+        Assert.assertEquals(holes, "");
         Assert.assertEquals(storageClass, EndsAndHolesPartitionTimeline.class.getCanonicalName());
         try {
           up.format().parse(first);
@@ -2040,6 +2040,7 @@ public class CubeTestSetup {
         Assert.assertNull(first);
         Assert.assertNull(latest);
         Assert.assertNull(holes);
+        Assert.assertEquals(storageClass, EndsAndHolesPartitionTimeline.class.getCanonicalName());
       }
     }
   }
