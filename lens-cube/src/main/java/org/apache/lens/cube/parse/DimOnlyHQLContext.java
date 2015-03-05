@@ -57,6 +57,11 @@ class DimOnlyHQLContext extends DimHQLContext {
   }
 
   @Override
+  protected String getPostSelectionWhereClause() throws SemanticException {
+    return null;
+  }
+
+  @Override
   protected Set<Dimension> getQueriedDimSet() {
     return getDimsToQuery().keySet();
   }

@@ -101,18 +101,15 @@ class CandidateTableResolver implements ContextRewriter {
         }
         LOG.info("Populated candidate facts:" + cubeql.getCandidateFactTables());
       }
-      LOG.info("cubeql.getDimensions: " + cubeql.getDimensions());
       for (Dimension dim : cubeql.getDimensions()) {
         populateDimTables(dim, cubeql, false);
       }
-
     } catch (HiveException e) {
       throw new SemanticException(e);
     }
   }
 
   private void populateDimTables(Dimension dim, CubeQueryContext cubeql, boolean optional) throws SemanticException {
-    LOG.info("populateDimTables: " + dim + ", optional: " + optional);
     if (cubeql.getCandidateDimTables().get(dim) != null) {
       return;
     }

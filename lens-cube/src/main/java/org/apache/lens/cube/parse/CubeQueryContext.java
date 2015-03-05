@@ -201,7 +201,6 @@ public class CubeQueryContext {
   }
 
   private boolean addJoinChain(String alias, boolean isOptional) throws SemanticException {
-    LOG.info("add joinchain: " + alias + ", " + isOptional);
     boolean retVal = false;
     String aliasLowerCaseStr = alias.toLowerCase();
     JoinChain joinchain = null;
@@ -298,10 +297,8 @@ public class CubeQueryContext {
         return false;
       }
     } catch (HiveException e) {
-      LOG.info("returning false2");
       return false;
     }
-    LOG.info("returning true2");
     return true;
   }
 

@@ -32,8 +32,11 @@ import lombok.Setter;
 
 @EqualsAndHashCode
 public class FactPartition implements Comparable<FactPartition> {
+  @Getter
   private final String partCol;
+  @Getter
   private final Date partSpec;
+  @Getter
   private final Set<String> storageTables = new LinkedHashSet<String>();
   @Getter
   private final UpdatePeriod period;
@@ -65,15 +68,6 @@ public class FactPartition implements Comparable<FactPartition> {
     return !getStorageTables().isEmpty();
   }
 
-  public String getPartCol() {
-    return partCol;
-  }
-
-
-  public Date getPartSpec() {
-    return partSpec;
-  }
-
   public String getFormattedPartSpec() {
     if (partFormat == null) {
       return getPartString();
@@ -84,10 +78,6 @@ public class FactPartition implements Comparable<FactPartition> {
 
   public String getPartString() {
     return period.format().format(partSpec);
-  }
-
-  public Set<String> getStorageTables() {
-    return storageTables;
   }
 
   public String getFormattedFilter(String tableName) {
