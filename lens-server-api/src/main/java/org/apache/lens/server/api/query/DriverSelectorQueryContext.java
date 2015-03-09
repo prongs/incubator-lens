@@ -18,16 +18,22 @@
  */
 package org.apache.lens.server.api.query;
 
-import lombok.Getter;
-import lombok.Setter;
+import java.util.*;
+
+import org.apache.lens.api.LensException;
+import org.apache.lens.api.query.QueryCost;
+import org.apache.lens.server.api.LensConfConstants;
+import org.apache.lens.server.api.driver.DriverQueryPlan;
+import org.apache.lens.server.api.driver.LensDriver;
+import org.apache.lens.server.api.util.LensUtil;
+
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.lens.api.LensException;
-import org.apache.lens.server.api.driver.DriverQueryPlan;
-import org.apache.lens.server.api.driver.LensDriver;
 
-import java.util.*;
+import lombok.Getter;
+import lombok.Setter;
 
 public class DriverSelectorQueryContext {
 
@@ -50,13 +56,18 @@ public class DriverSelectorQueryContext {
   @Getter
   @Setter
   protected Map<LensDriver, DriverQueryContext> driverQueryContextMap = new HashMap<LensDriver,
-    DriverQueryContext>();
+  DriverQueryContext>();
 
   public DriverSelectorQueryContext(final String userQuery, final Configuration queryConf,
-    final Collection<LensDriver> drivers) {
+      final Collection<LensDriver> drivers) {
     for (LensDriver driver : drivers) {
       DriverQueryContext ctx = new DriverQueryContext(driver);
       ctx.setDriverSpecificConf(mergeConf(driver, queryConf));
+      String metricId = ctx.driverSpecificConf.get(LensConfConstants.QUERY_METRIC_UNIQUE_ID_CONF_KEY);
+      if (!StringUtils.isBlank(metricId)) {
+        ctx.driverSpecificConf.set(LensConfConstants.QUERY_METRIC_DRIVER_STACK_NAME,
+          metricId + "-" + driver.getClass().getSimpleName());
+      }
       ctx.setQuery(userQuery);
       driverQueryContextMap.put(driver, ctx);
     }
@@ -72,18 +83,35 @@ public class DriverSelectorQueryContext {
     }
 
     /**
-     * Map of driver to query plan
+     * Driver's query cost
+     */
+    @Getter
+    @Setter
+    private QueryCost driverCost;
+
+    /**
+     * Driver's query plan
      */
     @Getter
     @Setter
     protected DriverQueryPlan driverQueryPlan;
 
     /**
-     * driver specific query conf
+     * Driver specific query conf
      */
     @Getter
     @Setter
     protected Configuration driverSpecificConf;
+
+    @Getter
+    @Setter
+    /** exceptions occurred while rewriting query for driver */
+    protected Exception driverQueryRewriteError;
+
+    @Getter
+    @Setter
+    /** exceptions occurred while trying to estimate cost */
+    protected Exception driverQueryCostEstimateError;
 
     @Getter
     @Setter
@@ -120,17 +148,48 @@ public class DriverSelectorQueryContext {
    * @param driverQueries
    * @throws LensException
    */
-  public void setDriverQueriesAndPlans(Map<LensDriver, String> driverQueries) throws LensException {
+  void setDriverQueries(Map<LensDriver, String> driverQueries) {
+    for (LensDriver driver : driverQueries.keySet()) {
+      final DriverQueryContext driverQueryContext = driverQueryContextMap.get(driver);
+      driverQueryContext.setQuery(driverQueries.get(driver));
+    }
+  }
+
+  /**
+   * Sets driver queries, generates plans for each driver by calling explain with respective queries,
+   * Sets driverQueryPlans
+   *
+   * @param driverQueries
+   * @throws LensException
+   */
+  public void setDriverQueryPlans(Map<LensDriver, String> driverQueries, AbstractQueryContext qctx)
+    throws LensException {
+    StringBuilder detailedFailureCause = new StringBuilder();
+    String failureCause = null;
+    boolean useBuilder = false;
+    boolean succeededOnAtleastOneDriver = false;
     for (LensDriver driver : driverQueries.keySet()) {
       final DriverQueryContext driverQueryContext = driverQueryContextMap.get(driver);
       driverQueryContext.setQuery(driverQueries.get(driver));
       try {
-        driverQueryContext.setDriverQueryPlan(driver.explain(driverQueries.get(driver),
-          driverQueryContext.getDriverSpecificConf()));
+        driverQueryContext.setDriverQueryPlan(driver.explain(qctx));
+        succeededOnAtleastOneDriver = true;
       } catch (Exception e) {
         LOG.error("Setting driver plan failed for driver " + driver, e);
+        String expMsg = LensUtil.getCauseMessage(e);
         driverQueryContext.setDriverQueryPlanGenerationError(e);
+        detailedFailureCause.append("\n Driver :").append(driver.getClass().getName());
+        detailedFailureCause.append(" Cause :" + expMsg);
+        if (failureCause != null && !failureCause.equals(expMsg)) {
+          useBuilder = true;
+        }
+        if (failureCause == null) {
+          failureCause = expMsg;
+        }
       }
+    }
+    if (!succeededOnAtleastOneDriver) {
+      throw new LensException(useBuilder ? detailedFailureCause.toString() : failureCause);
     }
   }
 
@@ -155,17 +214,43 @@ public class DriverSelectorQueryContext {
 
     if (driverQueryCtxs.get(getSelectedDriver()).getDriverQueryPlanGenerationError() != null) {
       throw new LensException("Driver Query Plan of the selected driver is null",
-        driverQueryCtxs.get(getSelectedDriver()).getDriverQueryPlanGenerationError());
+          driverQueryCtxs.get(getSelectedDriver()).getDriverQueryPlanGenerationError());
     }
     return driverQueryCtxs.get(getSelectedDriver()).getDriverQueryPlan();
   }
 
+  /**
+   * Return selected driver's query plan, but check for null conditions first.
+   *
+   * @return DriverQueryPlan of Selected Driver
+   * @throws LensException
+   */
+  public QueryCost getSelectedDriverQueryCost() throws LensException {
+    final Map<LensDriver, DriverQueryContext> driverQueryCtxs = getDriverQueryContextMap();
+    if (driverQueryCtxs == null) {
+      throw new LensException("No Driver query ctx. Check if re-write happened or not");
+    }
+    if (getSelectedDriver() == null) {
+      throw new LensException("Selected Driver is NULL.");
+    }
+
+    if (driverQueryCtxs.get(getSelectedDriver()) == null) {
+      throw new LensException("Could not find Driver Context for selected driver " + getSelectedDriver());
+    }
+
+    if (driverQueryCtxs.get(getSelectedDriver()).getDriverQueryCostEstimateError() != null) {
+      throw new LensException("Driver Query Cost of the selected driver is null",
+          driverQueryCtxs.get(getSelectedDriver()).getDriverQueryCostEstimateError());
+    }
+    return driverQueryCtxs.get(getSelectedDriver()).getDriverCost();
+  }
+
   public Configuration getSelectedDriverConf() {
-    return driverQueryContextMap.get(getSelectedDriver()).getDriverSpecificConf();
+    return getSelectedDriver() == null ? null : driverQueryContextMap.get(getSelectedDriver()).getDriverSpecificConf();
   }
 
   public String getSelectedDriverQuery() {
-    return driverQueryContextMap.get(getSelectedDriver()).getQuery();
+    return getSelectedDriver() == null ? null : driverQueryContextMap.get(getSelectedDriver()).getQuery();
   }
 
   public void setDriverConf(LensDriver driver, Configuration conf) {
@@ -195,16 +280,25 @@ public class DriverSelectorQueryContext {
 
   public DriverQueryPlan getDriverQueryPlan(LensDriver driver) {
     return driverQueryContextMap.get(driver) != null
-      ? driverQueryContextMap.get(driver).getDriverQueryPlan() : null;
+        ? driverQueryContextMap.get(driver).getDriverQueryPlan() : null;
   }
 
   public Configuration getDriverConf(LensDriver driver) {
     return driverQueryContextMap.get(driver) != null
-      ? driverQueryContextMap.get(driver).getDriverSpecificConf() : null;
+        ? driverQueryContextMap.get(driver).getDriverSpecificConf() : null;
   }
 
   public String getDriverQuery(LensDriver driver) {
     return driverQueryContextMap.get(driver) != null
-      ? driverQueryContextMap.get(driver).getQuery() : null;
+        ? driverQueryContextMap.get(driver).getQuery() : null;
+  }
+
+  public QueryCost getDriverQueryCost(LensDriver driver) {
+    return driverQueryContextMap.get(driver) != null
+        ? driverQueryContextMap.get(driver).getDriverCost() : null;
+  }
+
+  public void setDriverQueryPlan(LensDriver driver, DriverQueryPlan qp) {
+    driverQueryContextMap.get(driver).setDriverQueryPlan(qp);
   }
 }

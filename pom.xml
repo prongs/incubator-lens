@@ -26,7 +26,7 @@
   <parent>
     <groupId>org.apache</groupId>
     <artifactId>apache</artifactId>
-    <version>14</version>
+    <version>16</version>
   </parent>
 
   <properties>
@@ -47,7 +47,6 @@
     <hadoop.version>2.4.0</hadoop.version>
     <spark.version>1.1.0</spark.version>
     <hive.version>0.13.3-inm</hive.version>
-    <impala.frontend.version>0.1</impala.frontend.version>
 
     <!-- common library/framework versions -->
     <commons.logging.version>1.1.1</commons.logging.version>
@@ -67,12 +66,11 @@
     <jersey.version>2.3.1</jersey.version>
     <grizzly.version>2.3.6</grizzly.version>
     <metrics.version>3.0.2</metrics.version>
-    <lens.checkstyle.version>1.0-SNAPSHOT</lens.checkstyle.version>
     <subethasmtp.version>3.1.7</subethasmtp.version>
     <liquibase.version>3.0.7</liquibase.version>
     <spring.shell.version>1.0.0.RELEASE</spring.shell.version>
 
-    <c3p0.version>0.9.1.2</c3p0.version>
+    <c3p0.version>0.9.5</c3p0.version>
     <hsqldb.version>2.2.9</hsqldb.version>
     <dbcp.version>1.4</dbcp.version>
     <dbutils.version>1.5</dbutils.version>
@@ -97,21 +95,19 @@
     <war.plugin.version>2.1.1</war.plugin.version>
     <license.plugin.version>2.6</license.plugin.version>
     <buildnumber.plugin.version>1.0</buildnumber.plugin.version>
-
     <!-- debian -->
     <mvn.deb.build.dir>${project.build.directory}/debian</mvn.deb.build.dir>
 
     <!-- installation -->
     <mvn.lens.install.dir>/usr/local/lens</mvn.lens.install.dir>
-    <mvn.lens.bin.dir>${mvn.lens.install.dir}/bin</mvn.lens.bin.dir>
-    <mvn.lens.webapp.dir>${mvn.lens.install.dir}/webapp</mvn.lens.webapp.dir>
+    <mvn.lens.webapp.dir>${mvn.lens.install.dir}/server/webapp</mvn.lens.webapp.dir>
     <mvn.lens.server.dir>${mvn.lens.webapp.dir}/lens-server</mvn.lens.server.dir>
 
   </properties>
 
   <groupId>org.apache.lens</groupId>
-  <artifactId>lens-parent</artifactId>
-  <version>2.0.0-SNAPSHOT</version>
+  <artifactId>apache-lens</artifactId>
+  <version>2.1.0-beta-incubating-SNAPSHOT</version>
   <name>Lens</name>
   <packaging>pom</packaging>
   <description>Unified Analytics Platform</description>
@@ -357,34 +353,37 @@
           <useIdeaDefaultExcludes>true</useIdeaDefaultExcludes>
           <useEclipseDefaultExcludes>true</useEclipseDefaultExcludes>
           <excludes>
-            <exclude>**/*.txt</exclude>
+            <exclude>README.*</exclude>
+            <exclude>DEPENDENCIES</exclude>
+            <exclude>**/LICENSE*</exclude>
+            <!-- Local git repo -->
             <exclude>.git/**</exclude>
+            <!-- For connecting to ReviewBoard thru rbt tools-->
             <exclude>.reviewboardrc</exclude>
+            <!-- IDE files -->
             <exclude>.idea/**</exclude>
-            <exclude>**/*.twiki</exclude>
             <exclude>**/*.iml</exclude>
-            <exclude>**/target/**</exclude>
-            <exclude>**/activemq-data/**</exclude>
-            <exclude>**/build/**</exclude>
-            <exclude>*.patch</exclude>
-            <exclude>**/*.log</exclude>
-            <exclude>**/logs/**</exclude>
             <exclude>**/.classpath</exclude>
             <exclude>**/.project</exclude>
             <exclude>**/.checkstyle</exclude>
             <exclude>**/.settings/**</exclude>
-            <exclude>**/test-output/**</exclude>
             <exclude>**/maven-eclipse.xml</exclude>
             <exclude>**/.externalToolBuilders/**</exclude>
-            <exclude>.gitignore</exclude>
-            <exclude>README.*</exclude>
+            <!-- Build directories - target for maven build/ for other tools like sloccount -->
+            <exclude>**/target/**</exclude>
+            <exclude>**/build/**</exclude>
+            <!-- To make developer life easy. Source wont have these files -->
             <exclude>**/*.diff</exclude>
+            <exclude>*.patch</exclude>
+            <exclude>**/*.log</exclude>
+            <!-- .png files constitute images required for documentation. .pptx contain the sources for images -->
             <exclude>**/*.png</exclude>
             <exclude>**/*.pptx</exclude>
-            <exclude>**/*.jar</exclude>
+            <!-- .data files are used to hold data for loading into tables - used in tests and examples -->
             <exclude>**/*.data</exclude>
-            <exclude>**/control</exclude>
-            <exclude>**/query_logs/**</exclude>
+            <!-- Used on ui -->
+            <exclude>**/codemirror.min.*</exclude>
+            <exclude>**/*.js</exclude>
           </excludes>
         </configuration>
         <executions>
@@ -408,7 +407,10 @@
           <canUpdateCopyright>true</canUpdateCopyright>
           <canUpdateDescription>true</canUpdateDescription>
           <excludes>
-            <exclude>**/*.txt</exclude>
+            <exclude>**/*.diff</exclude>
+            <exclude>*.patch</exclude>
+            <exclude>**/*.log</exclude>
+            <exclude>**/*.data</exclude>
             <exclude>**/README.*</exclude>
           </excludes>
         </configuration>
@@ -428,7 +430,7 @@
           <dependency>
             <groupId>org.apache.lens</groupId>
             <artifactId>checkstyle</artifactId>
-            <version>${lens.checkstyle.version}</version>
+            <version>2.1.0-beta-incubating-SNAPSHOT</version>
           </dependency>
         </dependencies>
         <executions>
@@ -443,7 +445,7 @@
               <includeTestSourceDirectory>true</includeTestSourceDirectory>
               <configLocation>checkstyle.xml</configLocation>
               <headerLocation>checkstyle-java-header.txt</headerLocation>
-              <failOnViolation>false</failOnViolation>
+              <failOnViolation>true</failOnViolation>
             </configuration>
           </execution>
         </executions>
@@ -573,7 +575,82 @@
         <artifactId>guava</artifactId>
         <version>${guava.version}</version>
       </dependency>
-
+      <dependency>
+        <groupId>org.apache.hadoop</groupId>
+        <artifactId>hadoop-common</artifactId>
+        <version>${hadoop.version}</version>
+        <scope>provided</scope>
+        <exclusions>
+          <exclusion>
+            <groupId>com.sun.jersey</groupId>
+            <artifactId>jersey-core</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.sun.jersey</groupId>
+            <artifactId>jersey-json</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.sun.jersey</groupId>
+            <artifactId>jersey-server</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>tomcat</groupId>
+            <artifactId>jasper-compiler</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>tomcat</groupId>
+            <artifactId>jasper-runtime</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>javax.servlet.jsp</groupId>
+            <artifactId>jsp-api</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>net.java.dev.jets3t</groupId>
+            <artifactId>jets3t</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.mortbay.jetty</groupId>
+            <artifactId>jetty</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.mortbay.jetty</groupId>
+            <artifactId>jetty-util</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>javax.servlet</groupId>
+            <artifactId>servlet-api</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.avro</groupId>
+            <artifactId>avro</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.jcraft</groupId>
+            <artifactId>jsch</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.google.code.findbugs</groupId>
+            <artifactId>jsr305</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.zookeeper</groupId>
+            <artifactId>zookeeper</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>commons-cli</groupId>
+            <artifactId>commons-cli</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
       <dependency>
         <groupId>org.apache.hadoop</groupId>
         <artifactId>hadoop-client</artifactId>
@@ -611,6 +688,42 @@
           <exclusion>
             <groupId>com.sun.jersey.contribs</groupId>
             <artifactId>jersey-guice</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.mortbay.jetty</groupId>
+            <artifactId>jetty</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.mortbay.jetty</groupId>
+            <artifactId>jetty-util</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>javax.servlet</groupId>
+            <artifactId>servlet-api</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.avro</groupId>
+            <artifactId>avro</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.jcraft</groupId>
+            <artifactId>jsch</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.zookeeper</groupId>
+            <artifactId>zookeeper</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
@@ -718,6 +831,11 @@
         <scope>test</scope>
       </dependency>
       <dependency>
+        <groupId>org.glassfish.jersey.core</groupId>
+        <artifactId>jersey-server</artifactId>
+        <version>${jersey.version}</version>
+      </dependency>
+      <dependency>
         <groupId>org.glassfish.jersey.test-framework</groupId>
         <artifactId>jersey-test-framework-core</artifactId>
         <version>${jersey.version}</version>
@@ -736,6 +854,11 @@
       <dependency>
         <groupId>org.glassfish.jersey.media</groupId>
         <artifactId>jersey-media-json-jackson</artifactId>
+        <version>${jersey.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.glassfish.jersey.media</groupId>
+        <artifactId>jersey-media-moxy</artifactId>
         <version>${jersey.version}</version>
       </dependency>
 
@@ -810,9 +933,14 @@
         <artifactId>metrics-ganglia</artifactId>
         <version>${metrics.version}</version>
       </dependency>
+      <dependency>
+        <groupId>com.codahale.metrics</groupId>
+        <artifactId>metrics-graphite</artifactId>
+        <version>${metrics.version}</version>
+      </dependency>
 
       <dependency>
-        <groupId>c3p0</groupId>
+        <groupId>com.mchange</groupId>
         <artifactId>c3p0</artifactId>
         <version>${c3p0.version}</version>
       </dependency>
@@ -867,11 +995,6 @@
         <version>${hive.version}</version>
       </dependency>
       <dependency>
-        <groupId>com.cloudera</groupId>
-        <artifactId>impala-frontend</artifactId>
-        <version>${impala.frontend.version}</version>
-      </dependency>
-      <dependency>
         <groupId>org.apache.thrift</groupId>
         <artifactId>libthrift</artifactId>
         <version>${libthrift.version}</version>
@@ -892,15 +1015,14 @@
     <module>lens-storage-db</module>
     <module>lens-query-lib</module>
     <module>lens-driver-hive</module>
-    <module>lens-driver-impala</module>
     <module>lens-driver-jdbc</module>
     <module>lens-server</module>
     <module>lens-client</module>
     <module>lens-cli</module>
     <module>lens-examples</module>
     <module>lens-dist</module>
-    <module>lens-client-dist</module>
     <module>lens-ml-lib</module>
+    <module>lens-regression</module>
   </modules>
 
   <profiles>
@@ -934,7 +1056,68 @@
         </plugins>
       </build>
     </profile>
+    <profile>
+      <id>no-checkstyle</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-checkstyle-plugin</artifactId>
+            <dependencies>
+              <dependency>
+                <groupId>org.apache.lens</groupId>
+                <artifactId>checkstyle</artifactId>
+                <version>2.1.0-beta-incubating-SNAPSHOT</version>
+              </dependency>
+            </dependencies>
+            <executions>
+              <execution>
+                <id>checkstyle-check</id>
+                <goals>
+                  <goal>check</goal>
+                </goals>
+                <phase>package</phase>
+                <configuration>
+                  <consoleOutput>true</consoleOutput>
+                  <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                  <configLocation>checkstyle.xml</configLocation>
+                  <headerLocation>checkstyle-java-header.txt</headerLocation>
+                  <failOnViolation>false</failOnViolation>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>apache-release</id>
+      <dependencyManagement>
+        <dependencies>
+          <dependency>
+            <groupId>com.codahale.metrics</groupId>
+            <artifactId>metrics-ganglia</artifactId>
+            <version>${metrics.version}</version>
+            <exclusions>
+              <exclusion>
+                <groupId>org.acplt</groupId>
+                <artifactId>oncrpc</artifactId>
+              </exclusion>
+            </exclusions>
+          </dependency>
+        </dependencies>
+      </dependencyManagement>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <configuration>
+              <skip>false</skip>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
-
-
 </project>

@@ -22,17 +22,18 @@ import static org.testng.Assert.assertEquals;
 
 import java.util.List;
 
-import org.apache.lens.server.LensApplication;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.Application;
+import javax.ws.rs.core.Response;
+
 import org.apache.lens.server.api.metrics.MetricsService;
+import org.apache.lens.server.metrics.MetricsServiceImpl;
+
 import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 import com.codahale.metrics.ScheduledReporter;
-
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.Response;
 
 /**
  * The Class TestLensApplication.
@@ -42,7 +43,7 @@ public class TestLensApplication extends LensJerseyTest {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see org.glassfish.jersey.test.JerseyTest#configure()
    */
   @Override
@@ -53,8 +54,7 @@ public class TestLensApplication extends LensJerseyTest {
   /**
    * Setup.
    *
-   * @throws Exception
-   *           the exception
+   * @throws Exception the exception
    */
   @BeforeTest
   public void setup() throws Exception {
@@ -64,8 +64,7 @@ public class TestLensApplication extends LensJerseyTest {
   /**
    * Test ws resources loaded.
    *
-   * @throws InterruptedException
-   *           the interrupted exception
+   * @throws InterruptedException the interrupted exception
    */
   @Test
   public void testWSResourcesLoaded() throws InterruptedException {
@@ -81,9 +80,5 @@ public class TestLensApplication extends LensJerseyTest {
     List<ScheduledReporter> reporters = ((MetricsServiceImpl) metrics).getReporters();
 
     assertEquals(reporters.size(), 1, "mismatch in the number of reporters");
-  }
-  @Override
-  protected int getTestPort() {
-    return 19998;
   }
 }

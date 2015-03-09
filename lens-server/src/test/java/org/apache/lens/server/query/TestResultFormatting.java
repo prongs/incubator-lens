@@ -18,6 +18,8 @@
  */
 package org.apache.lens.server.query;
 
+import static org.testng.Assert.assertTrue;
+
 import java.io.IOException;
 import java.util.HashMap;
 
@@ -26,7 +28,6 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.MediaType;
 
-import org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe;
 import org.apache.lens.api.LensConf;
 import org.apache.lens.api.LensSessionHandle;
 import org.apache.lens.api.query.LensQuery;
@@ -40,8 +41,9 @@ import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.query.InMemoryOutputFormatter;
 import org.apache.lens.server.api.query.PersistedOutputFormatter;
 import org.apache.lens.server.api.query.QueryContext;
-import org.apache.lens.server.query.QueryApp;
-import org.apache.lens.server.query.QueryExecutionServiceImpl;
+
+import org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe;
+
 import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
@@ -58,7 +60,7 @@ import org.testng.annotations.Test;
 @Test(groups = "unit-test")
 public class TestResultFormatting extends LensJerseyTest {
 
-  private static final String TEST_DATA_FILE = "./testdata/testdata2.txt";
+  private static final String TEST_DATA_FILE = "./testdata/testdata2.data";
   /** The query service. */
   QueryExecutionServiceImpl queryService;
 
@@ -67,7 +69,7 @@ public class TestResultFormatting extends LensJerseyTest {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see org.glassfish.jersey.test.JerseyTest#setUp()
    */
   @BeforeTest
@@ -75,13 +77,14 @@ public class TestResultFormatting extends LensJerseyTest {
     super.setUp();
     queryService = (QueryExecutionServiceImpl) LensServices.get().getService("query");
     lensSessionId = queryService.openSession("foo", "bar", new HashMap<String, String>());
-    LensTestUtil.createTable(testTable, target(), lensSessionId, "(ID INT, IDSTR STRING, IDARR ARRAY<INT>, IDSTRARR ARRAY<STRING>)");
+    LensTestUtil.createTable(testTable, target(), lensSessionId,
+      "(ID INT, IDSTR STRING, IDARR ARRAY<INT>, IDSTRARR ARRAY<STRING>)");
     LensTestUtil.loadData(testTable, TEST_DATA_FILE, target(), lensSessionId);
   }
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see org.glassfish.jersey.test.JerseyTest#tearDown()
    */
   @AfterTest
@@ -93,7 +96,7 @@ public class TestResultFormatting extends LensJerseyTest {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see org.glassfish.jersey.test.JerseyTest#configure()
    */
   @Override
@@ -103,7 +106,7 @@ public class TestResultFormatting extends LensJerseyTest {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see org.glassfish.jersey.test.JerseyTest#configureClient(org.glassfish.jersey.client.ClientConfig)
    */
   @Override
@@ -114,19 +117,13 @@ public class TestResultFormatting extends LensJerseyTest {
   /** The test table. */
   private static String testTable = "RESULT_TEST_TABLE";
 
-  @Override
-  protected int getTestPort() {
-    return 8888;
-  }
-
   // test with execute async post with result formatter, get query, get results
+
   /**
    * Test result formatter in memory result.
    *
-   * @throws InterruptedException
-   *           the interrupted exception
-   * @throws IOException
-   *           Signals that an I/O exception has occurred.
+   * @throws InterruptedException the interrupted exception
+   * @throws IOException          Signals that an I/O exception has occurred.
    */
   @Test
   public void testResultFormatterInMemoryResult() throws InterruptedException, IOException {
@@ -141,13 +138,12 @@ public class TestResultFormatting extends LensJerseyTest {
   }
 
   // test with execute async post with result formatter, get query, get results
+
   /**
    * Test result formatter hdf spersistent result.
    *
-   * @throws InterruptedException
-   *           the interrupted exception
-   * @throws IOException
-   *           Signals that an I/O exception has occurred.
+   * @throws InterruptedException the interrupted exception
+   * @throws IOException          Signals that an I/O exception has occurred.
    */
   @Test
   public void testResultFormatterHDFSpersistentResult() throws InterruptedException, IOException {
@@ -162,10 +158,8 @@ public class TestResultFormatting extends LensJerseyTest {
   /**
    * Test persistent result with max size.
    *
-   * @throws InterruptedException
-   *           the interrupted exception
-   * @throws IOException
-   *           Signals that an I/O exception has occurred.
+   * @throws InterruptedException the interrupted exception
+   * @throws IOException          Signals that an I/O exception has occurred.
    */
   @Test
   public void testPersistentResultWithMaxSize() throws InterruptedException, IOException {
@@ -178,10 +172,8 @@ public class TestResultFormatting extends LensJerseyTest {
   /**
    * Test result formatter failure.
    *
-   * @throws InterruptedException
-   *           the interrupted exception
-   * @throws IOException
-   *           Signals that an I/O exception has occurred.
+   * @throws InterruptedException the interrupted exception
+   * @throws IOException          Signals that an I/O exception has occurred.
    */
   @Test
   public void testResultFormatterFailure() throws InterruptedException, IOException {
@@ -192,44 +184,39 @@ public class TestResultFormatting extends LensJerseyTest {
   }
 
   // test with execute async post with result formatter, get query, get results
+
   /**
    * Test result formatter.
    *
-   * @param conf
-   *          the conf
-   * @param status
-   *          the status
-   * @param isDir
-   *          the is dir
-   * @param reDirectUrl
-   *          the re direct url
-   * @throws InterruptedException
-   *           the interrupted exception
-   * @throws IOException
-   *           Signals that an I/O exception has occurred.
+   * @param conf        the conf
+   * @param status      the status
+   * @param isDir       the is dir
+   * @param reDirectUrl the re direct url
+   * @throws InterruptedException the interrupted exception
+   * @throws IOException          Signals that an I/O exception has occurred.
    */
   private void testResultFormatter(LensConf conf, Status status, boolean isDir, String reDirectUrl)
-      throws InterruptedException, IOException {
+    throws InterruptedException, IOException {
     // test post execute op
     final WebTarget target = target().path("queryapi/queries");
 
     final FormDataMultiPart mp = new FormDataMultiPart();
     conf.addProperty(LensConfConstants.QUERY_PERSISTENT_RESULT_SET, "true");
     mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("sessionid").build(), lensSessionId,
-        MediaType.APPLICATION_XML_TYPE));
+      MediaType.APPLICATION_XML_TYPE));
     mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("query").build(),
       "select ID, IDSTR, IDARR, IDSTRARR from " + testTable));
     mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("operation").build(), "execute"));
     mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("conf").fileName("conf").build(), conf,
-        MediaType.APPLICATION_XML_TYPE));
+      MediaType.APPLICATION_XML_TYPE));
     QueryHandle handle = target.request()
-        .post(Entity.entity(mp, MediaType.MULTIPART_FORM_DATA_TYPE), QueryHandle.class);
+      .post(Entity.entity(mp, MediaType.MULTIPART_FORM_DATA_TYPE), QueryHandle.class);
 
     Assert.assertNotNull(handle);
 
     // Get query
     LensQuery ctx = target.path(handle.toString()).queryParam("sessionid", lensSessionId).request()
-        .get(LensQuery.class);
+      .get(LensQuery.class);
     // wait till the query finishes
     QueryStatus stat = ctx.getStatus();
     while (!stat.isFinished()) {
@@ -242,7 +229,14 @@ public class TestResultFormatting extends LensJerseyTest {
 
     if (status.equals(QueryStatus.Status.SUCCESSFUL)) {
       QueryContext qctx = queryService.getQueryContext(handle);
-      if (!isDir) {
+      if (qctx == null) {
+        // This shouldn't occur. It is appearing when query gets purged. So adding extra logs
+        // for debugging in the future.
+        LOG.info("successful query's QueryContext is null");
+        LOG.info("query handle: " + handle);
+        LOG.info("allQueries: " + queryService.allQueries);
+        // not doing formatter validation if qctx is null
+      } else if (!isDir) {
         // isDir is true if the formatter is skipped due to result being the max size allowed
         if (qctx.isDriverPersistent()) {
           Assert.assertTrue(qctx.getQueryOutputFormatter() instanceof PersistedOutputFormatter);
@@ -259,6 +253,13 @@ public class TestResultFormatting extends LensJerseyTest {
       if (!isDir) {
         TestQueryService.validateHttpEndPoint(target(), lensSessionId, handle, reDirectUrl);
       }
+    } else {
+      assertTrue(ctx.getSubmissionTime() > 0);
+      assertTrue(ctx.getLaunchTime() > 0);
+      assertTrue(ctx.getDriverStartTime() > 0);
+      assertTrue(ctx.getDriverFinishTime() > 0);
+      assertTrue(ctx.getFinishTime() > 0);
+      Assert.assertEquals(ctx.getStatus().getStatus(), QueryStatus.Status.FAILED);
     }
   }
 

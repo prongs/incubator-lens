@@ -18,23 +18,6 @@
  */
 package org.apache.lens.server.session;
 
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hive.ql.processors.SetProcessor;
-import org.apache.hadoop.hive.ql.session.SessionState;
-import org.apache.hive.service.cli.*;
-import org.apache.lens.api.LensException;
-import org.apache.lens.api.LensSessionHandle;
-import org.apache.lens.server.LensService;
-import org.apache.lens.server.LensServices;
-import org.apache.lens.server.api.LensConfConstants;
-import org.apache.lens.server.api.session.SessionService;
-import org.apache.lens.server.query.QueryExecutionServiceImpl;
-
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.WebApplicationException;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
@@ -42,6 +25,34 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import javax.ws.rs.BadRequestException;
+import javax.ws.rs.ClientErrorException;
+import javax.ws.rs.NotFoundException;
+import javax.ws.rs.WebApplicationException;
+
+import org.apache.lens.api.LensException;
+import org.apache.lens.api.LensSessionHandle;
+import org.apache.lens.server.LensService;
+import org.apache.lens.server.LensServices;
+import org.apache.lens.server.api.LensConfConstants;
+import org.apache.lens.server.api.session.SessionService;
+import org.apache.lens.server.query.QueryExecutionServiceImpl;
+import org.apache.lens.server.session.LensSessionImpl.ResourceEntry;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.hadoop.hive.ql.metadata.Hive;
+import org.apache.hadoop.hive.ql.processors.SetProcessor;
+import org.apache.hadoop.hive.ql.session.SessionState;
+import org.apache.hive.service.cli.CLIService;
+import org.apache.hive.service.cli.HiveSQLException;
+
+import lombok.AccessLevel;
+import lombok.Getter;
 
 /**
  * The Class HiveSessionService.
@@ -61,11 +72,14 @@ public class HiveSessionService extends LensService implements SessionService {
   /** The session expiry runnable. */
   private Runnable sessionExpiryRunnable = new SessionExpiryRunnable();
 
+  /** Service to manage database specific resources */
+  @Getter(AccessLevel.PROTECTED)
+  private DatabaseResourceService databaseResourceService;
+
   /**
    * Instantiates a new hive session service.
    *
-   * @param cliService
-   *          the cli service
+   * @param cliService the cli service
    */
   public HiveSessionService(CLIService cliService) {
     super(NAME, cliService);
@@ -91,6 +105,25 @@ public class HiveSessionService extends LensService implements SessionService {
       getSession(sessionid).addResource(type, path);
     }
     return numAdded;
+  }
+
+  @Override
+  public List<String> listAllResources(LensSessionHandle sessionHandle, String type) {
+    if (!isValidResouceType(type)) {
+      throw new BadRequestException("Bad resource type is passed. Please pass jar or file as source type");
+    }
+    List<ResourceEntry> resources = getSession(sessionHandle).getResources();
+    List<String> allResources = new ArrayList<String>();
+    for (ResourceEntry resource : resources) {
+      if (type == null || resource.getType().equalsIgnoreCase(type)) {
+        allResources.add(resource.toString());
+      }
+    }
+    return allResources;
+  }
+
+  private boolean isValidResouceType(String type) {
+    return (type == null || type.equalsIgnoreCase("jar") || type.equalsIgnoreCase("file"));
   }
 
   /**
@@ -129,12 +162,9 @@ public class HiveSessionService extends LensService implements SessionService {
   /**
    * Gets the session param.
    *
-   * @param sessionConf
-   *          the session conf
-   * @param ss
-   *          the ss
-   * @param varname
-   *          the varname
+   * @param sessionConf the session conf
+   * @param ss          the ss
+   * @param varname     the varname
    * @return the session param
    */
   private String getSessionParam(Configuration sessionConf, SessionState ss, String varname) {
@@ -164,12 +194,42 @@ public class HiveSessionService extends LensService implements SessionService {
    * @inheritDoc
    */
   @Override
-  public LensSessionHandle openSession(String username, String password, Map<String, String> configuration)
-      throws LensException {
+  public LensSessionHandle openSession(String username, String password, String database,
+                                       Map<String, String> configuration)
+    throws LensException {
     LensSessionHandle sessionid = super.openSession(username, password, configuration);
     LOG.info("Opened session " + sessionid + " for user " + username);
+
+    // Set current database
+    if (StringUtils.isNotBlank(database)) {
+      try {
+        if (!Hive.get(getSession(sessionid).getHiveConf()).databaseExists(database)) {
+          closeSession(sessionid);
+          LOG.info("Closed session " + sessionid.getPublicId().toString() + " as db " + database + " does not exist");
+          throw new NotFoundException("Database " + database + " does not exist");
+        }
+      } catch (Exception e) {
+        if (!(e instanceof NotFoundException)) {
+          try {
+            closeSession(sessionid);
+          } catch (LensException e2) {
+            LOG.error("Error closing session " + sessionid.getPublicId().toString(), e2);
+          }
+
+          LOG.error("Error in checking if database exists " + database, e);
+          throw new LensException("Error in checking if database exists" + database, e);
+        } else {
+          throw (NotFoundException) e;
+        }
+      }
+
+      getSession(sessionid).setCurrentDatabase(database);
+      LOG.info("Set database to " + database + " for session " + sessionid.getPublicId());
+    }
+
     // add auxuiliary jars
     String[] auxJars = getSession(sessionid).getSessionConf().getStrings(LensConfConstants.AUX_JARS);
+
     if (auxJars != null) {
       LOG.info("Adding aux jars:" + auxJars);
       for (String jar : auxJars) {
@@ -184,7 +244,7 @@ public class HiveSessionService extends LensService implements SessionService {
    */
   @Override
   public List<String> getAllSessionParameters(LensSessionHandle sessionid, boolean verbose, String key)
-      throws LensException {
+    throws LensException {
     List<String> result = new ArrayList<String>();
     acquire(sessionid);
     try {
@@ -222,14 +282,10 @@ public class HiveSessionService extends LensService implements SessionService {
   /**
    * Sets the session parameter.
    *
-   * @param sessionid
-   *          the sessionid
-   * @param key
-   *          the key
-   * @param value
-   *          the value
-   * @param addToSession
-   *          the add to session
+   * @param sessionid    the sessionid
+   * @param key          the key
+   * @param value        the value
+   * @param addToSession the add to session
    */
   protected void setSessionParameter(LensSessionHandle sessionid, String key, String value, boolean addToSession) {
     LOG.info("Request to Set param key:" + key + " value:" + value);
@@ -260,7 +316,19 @@ public class HiveSessionService extends LensService implements SessionService {
 
   /*
    * (non-Javadoc)
-   * 
+   *
+   * @see org.apache.hive.service.CompositeService#init()
+   */
+  @Override
+  public synchronized void init(HiveConf hiveConf) {
+    this.databaseResourceService = new DatabaseResourceService(DatabaseResourceService.NAME);
+    addService(this.databaseResourceService);
+    super.init(hiveConf);
+  }
+
+  /*
+   * (non-Javadoc)
+   *
    * @see org.apache.hive.service.CompositeService#start()
    */
   @Override
@@ -292,7 +360,6 @@ public class HiveSessionService extends LensService implements SessionService {
             addResource(sessionHandle, resourceEntry.getType(), resourceEntry.getLocation());
           } catch (Exception e) {
             LOG.error("Failed to restore resource for session: " + session + " resource: " + resourceEntry);
-            throw new RuntimeException(e);
           }
         }
 
@@ -314,7 +381,7 @@ public class HiveSessionService extends LensService implements SessionService {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see org.apache.hive.service.CompositeService#stop()
    */
   @Override
@@ -327,7 +394,7 @@ public class HiveSessionService extends LensService implements SessionService {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see org.apache.lens.server.LensService#writeExternal(java.io.ObjectOutput)
    */
   @Override
@@ -343,7 +410,7 @@ public class HiveSessionService extends LensService implements SessionService {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see org.apache.lens.server.LensService#readExternal(java.io.ObjectInput)
    */
   @Override
@@ -395,7 +462,7 @@ public class HiveSessionService extends LensService implements SessionService {
           if (session.isActive()) {
             itr.remove();
           }
-        } catch (NotFoundException nfe) {
+        } catch (ClientErrorException nfe) {
           itr.remove();
         }
       }
@@ -406,8 +473,8 @@ public class HiveSessionService extends LensService implements SessionService {
           long lastAccessTime = getSession(sessionHandle).getLastAccessTime();
           closeSession(sessionHandle);
           LOG.info("Closed inactive session " + sessionHandle.getPublicId() + " last accessed at "
-              + new Date(lastAccessTime));
-        } catch (NotFoundException nfe) {
+            + new Date(lastAccessTime));
+        } catch (ClientErrorException nfe) {
           // Do nothing
         } catch (LensException e) {
           LOG.error("Error closing session " + sessionHandle.getPublicId() + " reason " + e.getMessage());
@@ -417,7 +484,7 @@ public class HiveSessionService extends LensService implements SessionService {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see java.lang.Runnable#run()
      */
     @Override

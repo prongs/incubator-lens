@@ -17,7 +17,7 @@
  * under the License.
  */
 /*
- * 
+ *
  */
 package org.apache.lens.api.query;
 
@@ -29,7 +29,7 @@ import javax.xml.bind.annotation.XmlSeeAlso;
  */
 @XmlRootElement
 @XmlSeeAlso({QueryHandle.class, QueryPrepareHandle.class, QueryHandleWithResultSet.class,
-  org.apache.lens.api.query.QueryPlan.class})
+  org.apache.lens.api.query.QueryPlan.class, EstimateResult.class})
 public abstract class QuerySubmitResult {
 
 }

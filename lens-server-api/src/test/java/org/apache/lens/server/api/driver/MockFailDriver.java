@@ -18,18 +18,23 @@
  */
 package org.apache.lens.server.api.driver;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.lens.api.LensException;
-
+import org.apache.lens.api.query.QueryCost;
+import org.apache.lens.server.api.query.AbstractQueryContext;
 
 public class MockFailDriver extends MockDriver {
+
+  @Override
+  public QueryCost estimate(AbstractQueryContext qctx) throws LensException {
+    throw new LensException("failing!");
+  }
 
   /*
    * (non-Javadoc)
    *
    * @see org.apache.lens.server.api.driver.MockDriver#explain(java.lang.String, org.apache.hadoop.conf.Configuration)
    */
-  public DriverQueryPlan explain(String query, Configuration conf) throws LensException {
+  public DriverQueryPlan explain(AbstractQueryContext explainCtx) throws LensException {
     throw new LensException("failing!");
   }
 }

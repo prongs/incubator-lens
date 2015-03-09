@@ -18,15 +18,18 @@
  */
 package org.apache.lens.server.api.driver;
 
-import org.apache.hadoop.conf.Configuration;
+import java.io.Externalizable;
+
 import org.apache.lens.api.LensException;
+import org.apache.lens.api.query.QueryCost;
 import org.apache.lens.api.query.QueryHandle;
 import org.apache.lens.api.query.QueryPrepareHandle;
 import org.apache.lens.server.api.events.LensEventListener;
+import org.apache.lens.server.api.query.AbstractQueryContext;
 import org.apache.lens.server.api.query.PreparedQueryContext;
 import org.apache.lens.server.api.query.QueryContext;
 
-import java.io.Externalizable;
+import org.apache.hadoop.conf.Configuration;
 
 /**
  * The Interface LensDriver.
@@ -47,14 +50,27 @@ public interface LensDriver extends Externalizable {
   void configure(Configuration conf) throws LensException;
 
   /**
+   * Estimate the cost of execution for given query.
+   *
+   * This should be returned with very less latency - should return within 10s of milli seconds.
+   *
+   * @param qctx The query context
+   *
+   * @return The QueryCost object
+   *
+   * @throws LensException the lens exception if driver cannot estimate
+   */
+  QueryCost estimate(AbstractQueryContext qctx) throws LensException;
+
+  /**
    * Explain the given query.
    *
-   * @param query The query should be in HiveQL(SQL like)
-   * @param conf  The query configuration
-   * @return The query plan object;
+   * @param explainCtx The explain context
+   *
+   * @return The query plan object
    * @throws LensException the lens exception
    */
-  DriverQueryPlan explain(String query, Configuration conf) throws LensException;
+  DriverQueryPlan explain(AbstractQueryContext explainCtx) throws LensException;
 
   /**
    * Prepare the given query.

@@ -167,6 +167,16 @@ public final class LensConfConstants {
   public static final long SESSION_TIMEOUT_SECONDS_DEFAULT = 1440 * 60; // Default is one day
 
   /**
+   * The Constant
+   */
+  public static final String SERVER_UI_ENABLE = SERVER_PFX + "ui.enable";
+
+  /**
+   * The Constant
+   */
+  public static final boolean DEFAULT_SERVER_UI_ENABLE = true;
+
+  /**
    * The Constant SERVER_UI_URI.
    */
   public static final String SERVER_UI_URI = SERVER_PFX + "ui.base.uri";
@@ -439,6 +449,12 @@ public final class LensConfConstants {
    */
   public static final String ENABLE_CONSOLE_METRICS = SERVER_PFX + "enable.console.metrics";
 
+  /** Whether to enable CSV metrics */
+  public static final String ENABLE_CSV_METRICS = SERVER_PFX + "enable.csv.metrics";
+
+  /** The directory in which to send CSV metrics */
+  public static final String CSV_METRICS_DIRECTORY_PATH = SERVER_PFX + "metrics.csv.directory.path";
+
   /**
    * The Constant ENABLE_GANGLIA_METRICS.
    */
@@ -453,6 +469,24 @@ public final class LensConfConstants {
    * The Constant GANGLIA_PORT.
    */
   public static final String GANGLIA_PORT = SERVER_PFX + "metrics.ganglia.port";
+
+  /** default ganglia port */
+  public static final int DEFAULT_GANGLIA_PORT = 8080;
+
+  /** whether to report metrics to graphite or not */
+  public static final String ENABLE_GRAPHITE_METRICS = SERVER_PFX + "enable.graphite.metrics";
+
+  /** graphite server hostname */
+  public static final String GRAPHITE_SERVERNAME = SERVER_PFX + "metrics.graphite.host";
+
+  /** graphite server port */
+  public static final String GRAPHITE_PORT = SERVER_PFX + "metrics.graphite.port";
+
+  /** default graphite port */
+  public static final int DEFAULT_GRAPHITE_PORT = 8080;
+
+  /** whether to enable per resource method metering */
+  public static final String ENABLE_RESOURCE_METHOD_METERING = SERVER_PFX + "enable.resource.method.metering";
 
   /**
    * The Constant REPORTING_PERIOD.
@@ -761,6 +795,13 @@ public final class LensConfConstants {
    */
   public static final String SERVER_DB_JDBC_PASS = SERVER_PFX + "db.jdbc.pass";
 
+  /** Validation query to check db pool is valid before passing to the application */
+  public static final String SERVER_DB_VALIDATION_QUERY = SERVER_PFX + "db.validation.query";
+
+  /** default value of the validation query */
+  public static final String DEFAULT_SERVER_DB_VALIDATION_QUERY = "select 1";
+
+
   /**
    * The Constant DEFAULT_SERVER_DB_PASS.
    */
@@ -770,4 +811,47 @@ public final class LensConfConstants {
    * The Constant SERVICE_PROVIDER_FACTORY.
    */
   public static final String SERVICE_PROVIDER_FACTORY = SERVER_PFX + "service.provider.factory";
+
+  /**
+   * Key for reading Output Stream Buffer Size used in writing lens server state to file system
+   */
+  public static final String STATE_PERSIST_OUT_STREAM_BUFF_SIZE = SERVER_PFX + "state.persist.out.stream.buffer.size";
+
+  /**
+   * Default Output Stream Buffer Size used in writing lens server state to file system: 1MB
+   */
+  public static final int DEFAULT_STATE_PERSIST_OUT_STREAM_BUFF_SIZE = 1048576;
+
+  /**
+   * Key for top level dir of database specific resources
+   */
+  public static final String DATABASE_RESOURCE_DIR = SERVER_PFX + "database.resource.dir";
+  /**
+   * Default value of top level dir for database specific resources
+   */
+  public static final String DEFAULT_DATABASE_RESOURCE_DIR = "/tmp/lens/resources";
+
+  /**
+   * Key for enabling metrics for each query to be different
+   */
+  public static final String ENABLE_QUERY_METRICS = QUERY_PFX + "enable.metrics.per.query";
+
+  /**
+   * Default value for query wise metrics
+   */
+  public static final boolean DEFAULT_ENABLE_QUERY_METRICS = false;
+
+  /**
+   * Key used to hold value of unique id for query metrics. This wont be passed by user, will be generated and set.
+   * This is to pass unique id for query across the code flow.
+   */
+  public static final String QUERY_METRIC_UNIQUE_ID_CONF_KEY = QUERY_PFX + "metric.unique.id";
+
+  /**
+   * Key used to hold value query metric name in the stack. This wont be passed by user, will be generated and set.
+   * When each query looked at by driver, the metric needs to be different for each driver. This name capture the stack
+   * from which driver the code reached there.
+   */
+  public static final String QUERY_METRIC_DRIVER_STACK_NAME = QUERY_PFX + "metric.driver.stack.name";
+
 }

@@ -23,15 +23,16 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lens.api.query.QueryCost;
+import org.apache.lens.api.query.QueryPrepareHandle;
+import org.apache.lens.server.api.LensConfConstants;
+import org.apache.lens.server.api.driver.DriverQueryPlan;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.metadata.Table;
-import org.apache.lens.api.query.QueryCost;
-import org.apache.lens.api.query.QueryPrepareHandle;
-import org.apache.lens.server.api.LensConfConstants;
-import org.apache.lens.server.api.driver.DriverQueryPlan;
 
 /**
  * The Class HiveQueryPlan.
@@ -43,6 +44,8 @@ public class HiveQueryPlan extends DriverQueryPlan {
 
   /** The partitions. */
   private Map<String, List<String>> partitions;
+
+  static final QueryCost HIVE_DRIVER_COST = new QueryCost(1, 1.0);
 
   /**
    * The Enum ParserState.
@@ -84,22 +87,21 @@ public class HiveQueryPlan extends DriverQueryPlan {
 
     /** The partition. */
     PARTITION,
-  };
+
+    /** CREATE TABLE if destination is a table */
+    CREATE
+  }
 
   /**
    * Instantiates a new hive query plan.
    *
-   * @param explainOutput
-   *          the explain output
-   * @param prepared
-   *          the prepared
-   * @param metastoreConf
-   *          the metastore conf
-   * @throws HiveException
-   *           the hive exception
+   * @param explainOutput the explain output
+   * @param prepared      the prepared
+   * @param metastoreConf the metastore conf
+   * @throws HiveException the hive exception
    */
   public HiveQueryPlan(List<String> explainOutput, QueryPrepareHandle prepared, HiveConf metastoreConf)
-      throws HiveException {
+    throws HiveException {
     setPrepareHandle(prepared);
     setExecMode(ExecMode.BATCH);
     setScanMode(ScanMode.PARTIAL_SCAN);
@@ -111,12 +113,9 @@ public class HiveQueryPlan extends DriverQueryPlan {
   /**
    * Extract plan details.
    *
-   * @param explainOutput
-   *          the explain output
-   * @param metastoreConf
-   *          the metastore conf
-   * @throws HiveException
-   *           the hive exception
+   * @param explainOutput the explain output
+   * @param metastoreConf the metastore conf
+   * @throws HiveException the hive exception
    */
   private void extractPlanDetails(List<String> explainOutput, HiveConf metastoreConf) throws HiveException {
     ParserState state = ParserState.BEGIN;
@@ -187,8 +186,13 @@ public class HiveQueryPlan extends DriverQueryPlan {
             String table = explainOutput.get(i).trim().substring("name:".length()).trim();
             // update tables queried and weights
             if (!tablesQueried.contains(table)) {
+              Table tbl = metastore.getTable(table, false);
+              if (tbl == null) {
+                // table not found, possible case if query is create table
+                HiveDriver.LOG.info("Table " + table + " not found while extracting plan details");
+                continue;
+              }
               tablesQueried.add(table);
-              Table tbl = metastore.getTable(table);
               String costStr = tbl.getParameters().get(LensConfConstants.STORAGE_COST);
 
               Double weight = 1d;
@@ -208,6 +212,10 @@ public class HiveQueryPlan extends DriverQueryPlan {
             }
             break;
           }
+          if (explainOutput.get(i).trim().startsWith("Stage: ")) {
+            // stage got changed
+            break;
+          }
         }
         break;
       }
@@ -217,10 +225,8 @@ public class HiveQueryPlan extends DriverQueryPlan {
   /**
    * Next state.
    *
-   * @param tr
-   *          the tr
-   * @param state
-   *          the state
+   * @param tr    the tr
+   * @param state the state
    * @return the parser state
    */
   private ParserState nextState(String tr, ParserState state) {
@@ -246,6 +252,8 @@ public class HiveQueryPlan extends DriverQueryPlan {
       return ParserState.PARTITION_LIST;
     } else if (tr.equals("Partition") && state == ParserState.PARTITION_LIST) {
       return ParserState.PARTITION;
+    } else if (tr.equals("Create Table Operator")) {
+      return ParserState.CREATE;
     }
     return state;
   }
@@ -260,7 +268,7 @@ public class HiveQueryPlan extends DriverQueryPlan {
     /*
      * Return query cost as 1 so that if JDBC storage and other storage is present, JDBC is given preference.
      */
-    return new QueryCost(1, 1);
+    return HIVE_DRIVER_COST;
   }
 
   @Override

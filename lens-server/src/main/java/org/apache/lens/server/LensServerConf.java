@@ -23,26 +23,28 @@ import org.apache.hadoop.hive.conf.HiveConf;
 /**
  * The Class LensServerConf.
  */
-public class LensServerConf {
+public final class LensServerConf {
+  private LensServerConf() {
 
-  /** The conf. */
-  public static HiveConf conf;
+  }
+
+  private static final class ConfHolder {
+    public static final HiveConf CONF = new HiveConf();
+
+    static {
+      CONF.addResource("lensserver-default.xml");
+      CONF.addResource("lens-site.xml");
+    }
+  }
 
   /**
-   * Gets the.
-   *
    * @return the hive conf
    */
   public static HiveConf get() {
-    if (conf == null) {
-      synchronized (LensServerConf.class) {
-        if (conf == null) {
-          conf = new HiveConf();
-          conf.addResource("lensserver-default.xml");
-          conf.addResource("lens-site.xml");
-        }
-      }
-    }
-    return conf;
+    return ConfHolder.CONF;
+  }
+
+  public static HiveConf create() {
+    return new HiveConf(ConfHolder.CONF);
   }
 }
