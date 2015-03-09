@@ -40,7 +40,7 @@ import lombok.NonNull;
  * @see org.apache.lens.cube.metadata.timeline.StoreAllPartitionTimeline
  */
 @Data
-public abstract class PartitionTimeline {
+public abstract class PartitionTimeline implements Iterable<TimePartition> {
   private final CubeMetastoreClient client;
   private final String storageTableName;
   private final UpdatePeriod updatePeriod;
@@ -102,7 +102,7 @@ public abstract class PartitionTimeline {
   /**
    * Commit all partitions that were added to batch addition queue. //TODO: improve batch addition implementation.
    *
-   * @return
+   * @return true if all the partitions were added successfully, or no partitions needed to be added
    * @throws LensException
    */
   public boolean commitBatchAdditions() throws LensException {

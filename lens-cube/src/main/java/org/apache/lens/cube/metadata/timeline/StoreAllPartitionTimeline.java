@@ -18,10 +18,7 @@
  */
 package org.apache.lens.cube.metadata.timeline;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TreeSet;
+import java.util.*;
 
 import org.apache.lens.api.LensException;
 import org.apache.lens.cube.metadata.CubeMetastoreClient;
@@ -32,11 +29,13 @@ import org.apache.commons.lang.StringUtils;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import lombok.Data;
 import lombok.NonNull;
 
 /**
  * Implementation of PartitionTimeline that stores all partitions as a tree set.
  */
+@Data
 public class StoreAllPartitionTimeline extends PartitionTimeline {
   TreeSet<TimePartition> allPartitions;
 
@@ -102,5 +101,10 @@ public class StoreAllPartitionTimeline extends PartitionTimeline {
   @Override
   public boolean exists(TimePartition partition) {
     return allPartitions.contains(partition);
+  }
+
+  @Override
+  public Iterator<TimePartition> iterator() {
+    return getAllPartitions().iterator();
   }
 }

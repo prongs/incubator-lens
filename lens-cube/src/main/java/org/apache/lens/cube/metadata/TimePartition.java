@@ -32,14 +32,16 @@ import lombok.NonNull;
 /** stores a partition's update period, date and string representation. Provides some utility methods around it */
 @Data
 public class TimePartition implements Comparable<TimePartition> {
-
+  private static final String updatePeriodWrongErrorMessage = "Update period %s not correct for parsing %s";
   private final UpdatePeriod updatePeriod;
   private final Date date;
   private final String dateString;
 
   private TimePartition(@NonNull UpdatePeriod updatePeriod, @NonNull Date date) {
     this.updatePeriod = updatePeriod;
-    this.date = DateUtils.truncate(date, updatePeriod.calendarField());
+    Calendar cal = Calendar.getInstance();
+    cal.setTime(date);
+    this.date = truncate(date, updatePeriod);
     this.dateString = updatePeriod.format().format(this.date);
   }
 
@@ -49,7 +51,10 @@ public class TimePartition implements Comparable<TimePartition> {
     try {
       this.date = updatePeriod.format().parse(dateString);
     } catch (ParseException e) {
-      throw new LensException(e);
+      throw new LensException(getWrongUpdatePeriodMessage(updatePeriod, dateString), e);
+    }
+    if (!updatePeriod.format().format(this.date).equals(this.dateString)) {
+      throw new LensException(getWrongUpdatePeriodMessage(updatePeriod, dateString));
     }
   }
 
@@ -61,7 +66,11 @@ public class TimePartition implements Comparable<TimePartition> {
   }
 
   public static TimePartition of(UpdatePeriod updatePeriod, String dateString) throws LensException {
-    return dateString == null || dateString.isEmpty() ? null : new TimePartition(updatePeriod, dateString);
+    if (dateString == null || dateString.isEmpty()) {
+      throw new LensException("time parition date string is null or blank");
+    } else {
+      return new TimePartition(updatePeriod, dateString);
+    }
   }
 
   public String toString() {
@@ -97,5 +106,21 @@ public class TimePartition implements Comparable<TimePartition> {
 
   public boolean after(TimePartition when) {
     return this.date.after(when.date);
+  }
+
+  private Date truncate(Date date, UpdatePeriod updatePeriod) {
+    if (updatePeriod.equals(UpdatePeriod.WEEKLY)) {
+      Date truncDate = DateUtils.truncate(date, Calendar.DAY_OF_MONTH);
+      Calendar cal = Calendar.getInstance();
+      cal.setTime(truncDate);
+      cal.set(Calendar.DAY_OF_WEEK, cal.getFirstDayOfWeek());
+      return cal.getTime();
+    } else {
+      return DateUtils.truncate(date, updatePeriod.calendarField());
+    }
+  }
+
+  protected static String getWrongUpdatePeriodMessage(UpdatePeriod up, String dateString) {
+    return String.format(updatePeriodWrongErrorMessage, up, dateString);
   }
 }

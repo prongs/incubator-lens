@@ -42,7 +42,7 @@ public class CaseInsensitiveStringHashMap<T> extends HashMap<String, T> {
     return super.containsKey(caseInsensitiveKey(key));
   }
 
-  public static String caseInsensitiveKey(Object key) {
+  private static String caseInsensitiveKey(Object key) {
     return key == null ? null : key.toString().toLowerCase();
   }
 

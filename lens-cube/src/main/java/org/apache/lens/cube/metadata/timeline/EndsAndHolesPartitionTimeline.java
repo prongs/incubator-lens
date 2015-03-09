@@ -37,7 +37,7 @@ import lombok.NonNull;
 
 /**
  * One implementation of PartitionTimeline that stores first partition, latest partition and a collection of holes in
- * between them, excluding the edges.
+ * between them, excluding the edges(start and end values).
  */
 @Data
 public class EndsAndHolesPartitionTimeline extends PartitionTimeline {
@@ -180,5 +180,33 @@ public class EndsAndHolesPartitionTimeline extends PartitionTimeline {
   @Override
   public boolean exists(TimePartition toCheck) {
     return !isEmpty() && !toCheck.before(first) && !toCheck.after(latest) && !holes.contains(toCheck);
+  }
+
+  @Override
+  public Iterator<TimePartition> iterator() {
+
+    return new Iterator<TimePartition>() {
+      TimePartition cur = getFirst();
+
+      @Override
+      public boolean hasNext() {
+        return cur != null && getLatest() != null && !cur.after(getLatest());
+      }
+
+      @Override
+      public TimePartition next() {
+        while (holes.contains(cur)) {
+          cur = cur.next();
+        }
+        TimePartition toReturn = cur;
+        cur = cur.next();
+        return toReturn;
+      }
+
+      @Override
+      public void remove() {
+        throw new UnsupportedOperationException();
+      }
+    };
   }
 }
