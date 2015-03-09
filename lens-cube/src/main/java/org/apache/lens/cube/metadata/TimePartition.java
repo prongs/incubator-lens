@@ -32,7 +32,7 @@ import lombok.NonNull;
 /** stores a partition's update period, date and string representation. Provides some utility methods around it */
 @Data
 public class TimePartition implements Comparable<TimePartition> {
-  private static final String updatePeriodWrongErrorMessage = "Update period %s not correct for parsing %s";
+  private static final String UPDATE_PERIOD_WRONG_ERROR_MESSAGE = "Update period %s not correct for parsing %s";
   private final UpdatePeriod updatePeriod;
   private final Date date;
   private final String dateString;
@@ -121,6 +121,6 @@ public class TimePartition implements Comparable<TimePartition> {
   }
 
   protected static String getWrongUpdatePeriodMessage(UpdatePeriod up, String dateString) {
-    return String.format(updatePeriodWrongErrorMessage, up, dateString);
+    return String.format(UPDATE_PERIOD_WRONG_ERROR_MESSAGE, up, dateString);
   }
 }
