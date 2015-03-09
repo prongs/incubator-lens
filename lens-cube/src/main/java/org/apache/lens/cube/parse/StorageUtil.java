@@ -62,7 +62,7 @@ public final class StorageUtil {
     String sep = "";
     for (String part : parts) {
       inClause.append(sep).append("'").append(part).append("'");
-      sep = ","
+      sep = ",";
     }
     return tableName + "." + timeDimName + " IN (" + inClause + ")";
   }
