@@ -37,7 +37,8 @@ import lombok.NonNull;
 
 /**
  * One implementation of PartitionTimeline that stores first partition, latest partition and a collection of holes in
- * between them, excluding the edges(start and end values).
+ * between them, excluding the edges(start and end values).  This is the default Timeline for tables that don't specify
+ * which Timeline Class to use in it's params.
  */
 @Data
 public class EndsAndHolesPartitionTimeline extends PartitionTimeline {

@@ -33,7 +33,8 @@ import lombok.Data;
 import lombok.NonNull;
 
 /**
- * Implementation of PartitionTimeline that stores all partitions as a tree set.
+ * Implementation of PartitionTimeline that stores all partitions as a tree set. Created for instrumentation purposes.
+ * Helps in test cases. In real life scenarios, this would be almost always end up causing out of memory error.
  */
 @Data
 public class StoreAllPartitionTimeline extends PartitionTimeline {

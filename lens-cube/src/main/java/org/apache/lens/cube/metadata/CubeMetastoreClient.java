@@ -279,7 +279,7 @@ public class CubeMetastoreClient {
     }
 
     /** check partition existence in the appropriate timeline if it exists */
-    public boolean partitionExists(String name, String storage, UpdatePeriod period, String partCol, Date partSpec)
+    public boolean partitionTimeExists(String name, String storage, UpdatePeriod period, String partCol, Date partSpec)
       throws HiveException, LensException {
       return get(name, storage, period, partCol) != null && get(name, storage, period, partCol).exists(TimePartition.of(
         period, partSpec));
@@ -882,7 +882,7 @@ public class CubeMetastoreClient {
   public boolean factPartitionExists(CubeFactTable fact, FactPartition part, String storageTableName)
     throws HiveException, LensException {
     String storage = extractStorageName(fact, storageTableName);
-    return partitionTimelineCache.partitionExists(fact.getName(), storage, part.getPeriod(), part.getPartCol(),
+    return partitionTimelineCache.partitionTimeExists(fact.getName(), storage, part.getPeriod(), part.getPartCol(),
       part.getPartSpec());
   }
 
