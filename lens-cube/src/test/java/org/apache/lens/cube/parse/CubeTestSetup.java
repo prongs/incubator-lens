@@ -959,45 +959,48 @@ public class CubeTestSetup {
     client.clearHiveTableCache();
     table = client.getTable(MetastoreUtil.getStorageTableName(fact.getName(),
       Storage.getPrefix(c4)));
-    Assert.assertEquals(table.getParameters().get("cube.storagetable.parition.timeline.cache.present"), "true");
-    Assert.assertEquals(table.getParameters().get("cube.storagetable.parition.timeline.cache.DAILY.ttd.storage.class"),
-      "org.apache.lens.cube.metadata.timeline.EndsAndHolesPartitionTimeline");
-    Assert.assertEquals(table.getParameters().get("cube.storagetable.parition.timeline.cache.DAILY.ttd2.storage.class"),
-      "org.apache.lens.cube.metadata.timeline.EndsAndHolesPartitionTimeline");
-    Assert.assertEquals(table.getParameters().get("cube.storagetable.parition.timeline.cache.HOURLY.ttd.storage.class"),
-      "org.apache.lens.cube.metadata.timeline.StoreAllPartitionTimeline");
+    Assert.assertEquals(table.getParameters().get(MetastoreUtil.getPartitoinTimelineCachePresenceKey()), "true");
+    Assert.assertEquals(table.getParameters().get(MetastoreUtil.getPartitionTimelineStorageClassKey(UpdatePeriod.DAILY,
+        "ttd")),
+      EndsAndHolesPartitionTimeline.class.getCanonicalName());
     Assert.assertEquals(table.getParameters().get(
-        "cube.storagetable.parition.timeline.cache.HOURLY.ttd2.storage.class"),
-      "org.apache.lens.cube.metadata.timeline.StoreAllPartitionTimeline");
+        MetastoreUtil.getPartitionTimelineStorageClassKey(UpdatePeriod.DAILY, "ttd2")),
+      EndsAndHolesPartitionTimeline.class.getCanonicalName());
     Assert.assertEquals(table.getParameters().get(
-        "cube.storagetable.parition.timeline.cache.MINUTELY.ttd.storage.class"),
-      "org.apache.lens.cube.metadata.timeline.EndsAndHolesPartitionTimeline");
+        MetastoreUtil.getPartitionTimelineStorageClassKey(UpdatePeriod.HOURLY, "ttd")),
+      StoreAllPartitionTimeline.class.getCanonicalName());
     Assert.assertEquals(table.getParameters().get(
-        "cube.storagetable.parition.timeline.cache.MINUTELY.ttd2.storage.class"),
-      "org.apache.lens.cube.metadata.timeline.EndsAndHolesPartitionTimeline");
+        MetastoreUtil.getPartitionTimelineStorageClassKey(UpdatePeriod.HOURLY, "ttd2")),
+      StoreAllPartitionTimeline.class.getCanonicalName());
     Assert.assertEquals(table.getParameters().get(
-        "cube.storagetable.parition.timeline.cache.MONTHLY.ttd.storage.class"),
-      "org.apache.lens.cube.metadata.timeline.EndsAndHolesPartitionTimeline");
+        MetastoreUtil.getPartitionTimelineStorageClassKey(UpdatePeriod.MINUTELY, "ttd")),
+      EndsAndHolesPartitionTimeline.class.getCanonicalName());
     Assert.assertEquals(table.getParameters().get(
-        "cube.storagetable.parition.timeline.cache.MONTHLY.ttd2.storage.class"),
-      "org.apache.lens.cube.metadata.timeline.EndsAndHolesPartitionTimeline");
+        MetastoreUtil.getPartitionTimelineStorageClassKey(UpdatePeriod.MINUTELY, "ttd2")),
+      EndsAndHolesPartitionTimeline.class.getCanonicalName());
     Assert.assertEquals(table.getParameters().get(
-        "cube.storagetable.parition.timeline.cache.QUARTERLY.ttd.storage.class"),
-      "org.apache.lens.cube.metadata.timeline.EndsAndHolesPartitionTimeline");
+        MetastoreUtil.getPartitionTimelineStorageClassKey(UpdatePeriod.MONTHLY, "ttd")),
+      EndsAndHolesPartitionTimeline.class.getCanonicalName());
     Assert.assertEquals(table.getParameters().get(
-        "cube.storagetable.parition.timeline.cache.QUARTERLY.ttd2.storage.class"),
-      "org.apache.lens.cube.metadata.timeline.EndsAndHolesPartitionTimeline");
+        MetastoreUtil.getPartitionTimelineStorageClassKey(UpdatePeriod.MONTHLY, "ttd2")),
+      EndsAndHolesPartitionTimeline.class.toString());
     Assert.assertEquals(table.getParameters().get(
-        "cube.storagetable.parition.timeline.cache.YEARLY.ttd.storage.class"),
-      "org.apache.lens.cube.metadata.timeline.EndsAndHolesPartitionTimeline");
+        MetastoreUtil.getPartitionTimelineStorageClassKey(UpdatePeriod.QUARTERLY, "ttd")),
+      EndsAndHolesPartitionTimeline.class.toString());
     Assert.assertEquals(table.getParameters().get(
-        "cube.storagetable.parition.timeline.cache.YEARLY.ttd2.storage.class"),
-      "org.apache.lens.cube.metadata.timeline.EndsAndHolesPartitionTimeline");
+        MetastoreUtil.getPartitionTimelineStorageClassKey(UpdatePeriod.QUARTERLY, "ttd2")),
+      EndsAndHolesPartitionTimeline.class.toString());
     Assert.assertEquals(table.getParameters().get(
-        "cube.storagetable.parition.timeline.cache.HOURLY.ttd.partitions"),
+        MetastoreUtil.getPartitionTimelineStorageClassKey(UpdatePeriod.YEARLY, "ttd")),
+      EndsAndHolesPartitionTimeline.class.toString());
+    Assert.assertEquals(table.getParameters().get(
+        MetastoreUtil.getPartitionTimelineStorageClassKey(UpdatePeriod.YEARLY, "tt2")),
+      EndsAndHolesPartitionTimeline.class.toString());
+    Assert.assertEquals(table.getParameters().get(
+        MetastoreUtil.getPartitionInfoKeyPrefix(UpdatePeriod.HOURLY, "ttd") + "partitions"),
       StringUtils.join(partitions, ","));
     Assert.assertEquals(table.getParameters().get(
-        "cube.storagetable.parition.timeline.cache.HOURLY.ttd2.partitions"),
+        MetastoreUtil.getPartitionInfoKeyPrefix(UpdatePeriod.HOURLY, "ttd2") + "partitions"),
       StringUtils.join(partitions, ","));
     // Add all hourly partitions for TWO_DAYS_RANGE_BEFORE_4_DAYS
     cal.setTime(BEFORE_4_DAYS_START);
