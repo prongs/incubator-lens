@@ -983,19 +983,19 @@ public class CubeTestSetup {
       EndsAndHolesPartitionTimeline.class.getCanonicalName());
     Assert.assertEquals(table.getParameters().get(
         MetastoreUtil.getPartitionTimelineStorageClassKey(UpdatePeriod.MONTHLY, "ttd2")),
-      EndsAndHolesPartitionTimeline.class.toString());
+      EndsAndHolesPartitionTimeline.class.getCanonicalName());
     Assert.assertEquals(table.getParameters().get(
         MetastoreUtil.getPartitionTimelineStorageClassKey(UpdatePeriod.QUARTERLY, "ttd")),
-      EndsAndHolesPartitionTimeline.class.toString());
+      EndsAndHolesPartitionTimeline.class.getCanonicalName());
     Assert.assertEquals(table.getParameters().get(
         MetastoreUtil.getPartitionTimelineStorageClassKey(UpdatePeriod.QUARTERLY, "ttd2")),
-      EndsAndHolesPartitionTimeline.class.toString());
+      EndsAndHolesPartitionTimeline.class.getCanonicalName());
     Assert.assertEquals(table.getParameters().get(
         MetastoreUtil.getPartitionTimelineStorageClassKey(UpdatePeriod.YEARLY, "ttd")),
-      EndsAndHolesPartitionTimeline.class.toString());
+      EndsAndHolesPartitionTimeline.class.getCanonicalName());
     Assert.assertEquals(table.getParameters().get(
         MetastoreUtil.getPartitionTimelineStorageClassKey(UpdatePeriod.YEARLY, "tt2")),
-      EndsAndHolesPartitionTimeline.class.toString());
+      EndsAndHolesPartitionTimeline.class.getCanonicalName());
     Assert.assertEquals(table.getParameters().get(
         MetastoreUtil.getPartitionInfoKeyPrefix(UpdatePeriod.HOURLY, "ttd") + "partitions"),
       StringUtils.join(partitions, ","));
