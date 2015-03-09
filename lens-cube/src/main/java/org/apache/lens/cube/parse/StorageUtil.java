@@ -54,6 +54,19 @@ public final class StorageUtil {
     return partStr.toString();
   }
 
+  public static String getWherePartClauseWithIn(String timeDimName, String tableName, List<String> parts) {
+    if (parts.size() == 0) {
+      return "";
+    }
+    StringBuilder inClause = new StringBuilder();
+    String sep = "";
+    for (String part : parts) {
+      inClause.append(sep).append("'").append(part).append("'");
+      sep = ","
+    }
+    return tableName + "." + timeDimName + " IN (" + inClause + ")";
+  }
+
   public static String getNotLatestClauseForDimensions(String alias, Set<String> timedDimensions, String partCol) {
     StringBuilder sb = new StringBuilder();
     String sep = "";

@@ -1196,6 +1196,10 @@ public class TestCubeRewriter extends TestQueryRewrite {
     conf.setClass(CubeQueryConfUtil.TIME_RANGE_WRITER_CLASS, AbridgedTimeRangeWriter.class, TimeRangeWriter.class);
     String hqlQuery = rewrite("select dim1, max(msr3)," + " msr2 from testCube" + " where " + twoDaysITRange, conf);
     System.out.println("Query With process time col:" + hqlQuery);
+    String expected = getExpectedQuery(cubeName, "select testcube.dim1, max(testcube.msr3), sum(testcube.msr2) FROM ",
+      null, " GROUP BY ( testcube . dim1 )",
+      getWhereForDailyAndHourly2daysWithTimeDim(cubeName, "it", "C2_summary1"),
+      getNotLatestConditions(cubeName, "it", "C2_summary1"));
     // TODO compare queries
     // compareQueries(expected, hqlQuery);
     hqlQuery =
