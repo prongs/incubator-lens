@@ -994,7 +994,7 @@ public class CubeTestSetup {
         MetastoreUtil.getPartitionTimelineStorageClassKey(UpdatePeriod.YEARLY, "ttd")),
       EndsAndHolesPartitionTimeline.class.getCanonicalName());
     Assert.assertEquals(table.getParameters().get(
-        MetastoreUtil.getPartitionTimelineStorageClassKey(UpdatePeriod.YEARLY, "tt2")),
+        MetastoreUtil.getPartitionTimelineStorageClassKey(UpdatePeriod.YEARLY, "ttd2")),
       EndsAndHolesPartitionTimeline.class.getCanonicalName());
     Assert.assertEquals(table.getParameters().get(
         MetastoreUtil.getPartitionInfoKeyPrefix(UpdatePeriod.HOURLY, "ttd") + "partitions"),
