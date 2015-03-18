@@ -22,6 +22,7 @@ import static org.testng.Assert.*;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -44,6 +45,8 @@ import org.apache.lens.server.api.query.PreparedQueryContext;
 import org.apache.lens.server.api.query.QueryContext;
 import org.apache.lens.server.api.util.LensUtil;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.session.SessionState;
@@ -56,15 +59,18 @@ import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 import com.codahale.metrics.MetricRegistry;
+import com.mchange.v2.c3p0.ComboPooledDataSource;
 
 /**
  * The Class TestJdbcDriver.
  */
 public class TestJdbcDriver {
+  public static final Log LOG = LogFactory.getLog(TestJdbcDriver.class);
 
   /** The base conf. */
   Configuration baseConf;
 
+  HiveConf hConf;
   /** The driver. */
   JDBCDriver driver;
 
@@ -83,6 +89,7 @@ public class TestJdbcDriver {
     baseConf.set(JDBCDriverConfConstants.JDBC_USER, "SA");
     baseConf.set(JDBCDriverConfConstants.JDBC_PASSWORD, "");
     baseConf.set(JDBCDriverConfConstants.JDBC_EXPLAIN_KEYWORD_PARAM, "explain plan for ");
+    hConf = new HiveConf(baseConf, this.getClass());
 
     driver = new JDBCDriver();
     driver.configure(baseConf);
@@ -114,7 +121,11 @@ public class TestJdbcDriver {
   }
 
   private QueryContext createQueryContext(final String query) throws LensException {
-    QueryContext context = new QueryContext(query, "SA", new LensConf(), baseConf, drivers);
+    return createQueryContext(query, baseConf);
+  }
+
+  private QueryContext createQueryContext(final String query, Configuration conf) throws LensException {
+    QueryContext context = new QueryContext(query, "SA", new LensConf(), conf, drivers);
     return context;
   }
 
@@ -130,10 +141,15 @@ public class TestJdbcDriver {
    * @throws Exception the exception
    */
   synchronized void createTable(String table) throws Exception {
-    Connection conn = null;
+    createTable(table, null);
+  }
+
+  synchronized void createTable(String table, Connection conn) throws Exception {
     Statement stmt = null;
     try {
-      conn = driver.getConnection();
+      if (conn == null) {
+        conn = driver.getConnection();
+      }
       stmt = conn.createStatement();
       stmt.execute("CREATE TABLE " + table + " (ID INT)");
 
@@ -148,17 +164,23 @@ public class TestJdbcDriver {
     }
   }
 
+
+  void insertData(String table) throws Exception {
+    insertData(table, null);
+  }
+
   /**
    * Insert data.
    *
    * @param table the table
    * @throws Exception the exception
    */
-  void insertData(String table) throws Exception {
-    Connection conn = null;
+  void insertData(String table, Connection conn) throws Exception {
     PreparedStatement stmt = null;
     try {
-      conn = driver.getConnection();
+      if (conn == null) {
+        conn = driver.getConnection();
+      }
       stmt = conn.prepareStatement("INSERT INTO " + table + " VALUES(?)");
 
       for (int i = 0; i < 10; i++) {
@@ -186,7 +208,7 @@ public class TestJdbcDriver {
 
     Throwable th = null;
     try {
-      driver.rewriteQuery(query, baseConf);
+      driver.rewriteQuery(createQueryContext(query));
     } catch (LensException e) {
       e.printStackTrace();
       th = e;
@@ -197,7 +219,7 @@ public class TestJdbcDriver {
 
     th = null;
     try {
-      driver.rewriteQuery(query, baseConf);
+      driver.rewriteQuery(createQueryContext(query));
     } catch (LensException e) {
       e.printStackTrace();
       th = e;
@@ -208,7 +230,7 @@ public class TestJdbcDriver {
 
     th = null;
     try {
-      driver.rewriteQuery(query, baseConf);
+      driver.rewriteQuery(createQueryContext(query));
     } catch (LensException e) {
       e.printStackTrace();
       th = e;
@@ -219,7 +241,7 @@ public class TestJdbcDriver {
 
     th = null;
     try {
-      driver.rewriteQuery(query, baseConf);
+      driver.rewriteQuery(createQueryContext(query));
     } catch (LensException e) {
       e.printStackTrace();
       th = e;
@@ -234,12 +256,15 @@ public class TestJdbcDriver {
    */
   @Test
   public void testEstimate() throws Exception {
-    createTable("estimate_test"); // Create table
-    insertData("estimate_test"); // Insert some data into table
+    createTable("estimate_test", driver.getEstimateConnection()); // Create table
+    insertData("estimate_test", driver.getEstimateConnection()); // Insert some data into table
     String query1 = "SELECT * FROM estimate_test"; // Select query against existing table
-    QueryCost cost = driver.estimate(createExplainContext(query1, baseConf));
+    ExplainQueryContext ctx = createExplainContext(query1, baseConf);
+    Assert.assertNull(ctx.getFinalDriverQuery(driver));
+    QueryCost cost = driver.estimate(ctx);
     Assert.assertEquals(cost.getEstimatedExecTimeMillis(), 0);
     Assert.assertEquals(cost.getEstimatedResourceUsage(), 0.0);
+    Assert.assertNotNull(ctx.getFinalDriverQuery(driver));
   }
 
   /**
@@ -265,8 +290,8 @@ public class TestJdbcDriver {
    */
   @Test
   public void testEstimateGauges() throws Exception {
-    createTable("estimate_test_gauge"); // Create table
-    insertData("estimate_test_gauge"); // Insert some data into table
+    createTable("estimate_test_gauge", driver.getEstimateConnection()); // Create table
+    insertData("estimate_test_gauge", driver.getEstimateConnection()); // Insert some data into table
     String query1 = "SELECT * FROM estimate_test_gauge"; // Select query against existing table
     Configuration metricConf = new Configuration(baseConf);
     metricConf.set(LensConfConstants.QUERY_METRIC_UNIQUE_ID_CONF_KEY, TestJdbcDriver.class.getSimpleName());
@@ -276,7 +301,22 @@ public class TestJdbcDriver {
     Assert.assertTrue(reg.getGauges().keySet().containsAll(Arrays.asList(
       "lens.MethodMetricGauge.TestJdbcDriver-JDBCDriver-columnar-sql-rewrite",
       "lens.MethodMetricGauge.TestJdbcDriver-JDBCDriver-jdbc-prepare-statement",
-      "lens.MethodMetricGauge.TestJdbcDriver-JDBCDriver-validate-thru-prepare")));
+      "lens.MethodMetricGauge.TestJdbcDriver-JDBCDriver-validate-thru-prepare",
+      "lens.MethodMetricGauge.TestJdbcDriver-JDBCDriver-jdbc-check-allowed-query")));
+  }
+
+  @Test
+  public void testMetricsEnabled() throws Exception {
+    createTable("test_metrics", driver.getEstimateConnection()); // Create table
+    insertData("test_metrics", driver.getEstimateConnection()); // Insert some data into table
+    createTable("test_metrics"); // Create table
+    insertData("test_metrics"); // Insert some data into table
+    String query1 = "SELECT * FROM test_metrics"; // Select query against existing table
+    Configuration metricConf = new Configuration(baseConf);
+    metricConf.setBoolean(LensConfConstants.ENABLE_QUERY_METRICS, true);
+    QueryContext ctx = createQueryContext(query1, metricConf);
+    driver.estimate(ctx);
+    driver.execute(ctx);
   }
 
   /**
@@ -290,7 +330,10 @@ public class TestJdbcDriver {
     insertData("explain_test"); // Insert some data into table
     String query1 = "SELECT * FROM explain_test"; // Select query against existing table
     String query2 = "SELECT * FROM explain_test1"; // Select query against non existing table
-    driver.explain(createExplainContext(query1, baseConf));
+    ExplainQueryContext ctx = createExplainContext(query1, baseConf);
+    Assert.assertNull(ctx.getFinalDriverQuery(driver));
+    driver.explain(ctx);
+    Assert.assertNotNull(ctx.getFinalDriverQuery(driver));
 
     try {
       driver.explain(createExplainContext(query2, baseConf));
@@ -346,8 +389,13 @@ public class TestJdbcDriver {
    */
   @Test
   public void testPrepare() throws Exception {
+    // In this test we are testing both prepare and validate. Since in the test config
+    // We are using different DBs for estimate pool and query pool, we have to create
+    // tables in both DBs.
     createTable("prepare_test");
+    createTable("prepare_test", driver.getEstimateConnection());
     insertData("prepare_test");
+    insertData("prepare_test", driver.getEstimateConnection());
 
     final String query = "SELECT * from prepare_test";
     PreparedQueryContext pContext = new PreparedQueryContext(query, "SA", baseConf, drivers);
@@ -624,6 +672,71 @@ public class TestJdbcDriver {
       e.printStackTrace();
     }
     driver.closeQuery(handle);
+  }
+
+  @Test
+  public void testEstimateConf() {
+    Configuration estimateConf = driver.getEstimateConnectionConf();
+    assertNotNull(estimateConf);
+    assertTrue(estimateConf != driver.getConf());
+
+    // Validate overridden conf
+    assertEquals(estimateConf.get(JDBCDriverConfConstants.JDBC_USER), "estimateUser");
+    assertEquals(estimateConf.get(JDBCDriverConfConstants.JDBC_POOL_MAX_SIZE), "50");
+    assertEquals(estimateConf.get(JDBCDriverConfConstants.JDBC_POOL_IDLE_TIME), "800");
+    assertEquals(estimateConf.get(JDBCDriverConfConstants.JDBC_GET_CONNECTION_TIMEOUT), "25000");
+    assertEquals(estimateConf.get(JDBCDriverConfConstants.JDBC_MAX_STATEMENTS_PER_CONNECTION),
+      "15");
+  }
+
+  @Test
+  public void testEstimateConnectionPool() throws Exception {
+    assertNotNull(driver.getEstimateConnectionProvider());
+    assertTrue(driver.getEstimateConnectionProvider() != driver.getConnectionProvider());
+
+    ConnectionProvider connectionProvider = driver.getEstimateConnectionProvider();
+    assertTrue(connectionProvider instanceof DataSourceConnectionProvider);
+
+    DataSourceConnectionProvider estimateCp = (DataSourceConnectionProvider) connectionProvider;
+    DataSourceConnectionProvider queryCp = (DataSourceConnectionProvider) driver.getConnectionProvider();
+
+    assertTrue(estimateCp != queryCp);
+
+    DataSourceConnectionProvider.DriverConfig estimateCfg =
+      estimateCp.getDriverConfigfromConf(driver.getEstimateConnectionConf());
+    DataSourceConnectionProvider.DriverConfig queryCfg =
+      queryCp.getDriverConfigfromConf(driver.getConf());
+
+    LOG.info("@@@ ESTIMATE_CFG " + estimateCfg);
+    LOG.info("@@@ QUERY CFG " + queryCfg);
+
+    // Get connection from each so that pools get initialized
+    try {
+      Connection estimateConn = estimateCp.getConnection(driver.getEstimateConnectionConf());
+      estimateConn.close();
+    } catch (SQLException e) {
+      // Ignore exception
+      LOG.error("Error getting connection from estimate pool", e);
+    }
+
+    try {
+      Connection queryConn = queryCp.getConnection(driver.getConf());
+      queryConn.close();
+    } catch (SQLException e) {
+      LOG.error("Error getting connection from query pool", e);
+    }
+
+
+    ComboPooledDataSource estimatePool = estimateCp.getDataSource(driver.getEstimateConnectionConf());
+    ComboPooledDataSource queryPool = queryCp.getDataSource(driver.getConf());
+
+    assertTrue(estimatePool != queryPool);
+
+    // Validate config on estimatePool
+    assertEquals(estimatePool.getMaxPoolSize(), 50);
+    assertEquals(estimatePool.getMaxIdleTime(), 800);
+    assertEquals(estimatePool.getCheckoutTimeout(), 25000);
+    assertEquals(estimatePool.getMaxStatementsPerConnection(), 15);
   }
 
 }

@@ -38,7 +38,6 @@ import org.apache.lens.api.query.QueryCost;
 import org.apache.lens.api.query.QueryHandle;
 import org.apache.lens.api.query.QueryPrepareHandle;
 import org.apache.lens.cube.parse.HQLParser;
-import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.driver.*;
 import org.apache.lens.server.api.driver.DriverQueryStatus.DriverQueryState;
 import org.apache.lens.server.api.events.LensEventListener;
@@ -49,7 +48,9 @@ import org.apache.lens.server.api.query.PreparedQueryContext;
 import org.apache.lens.server.api.query.QueryContext;
 import org.apache.lens.server.api.query.QueryRewriter;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.parse.ASTNode;
 import org.apache.hadoop.hive.ql.parse.HiveParser;
 import org.apache.hadoop.hive.ql.parse.ParseException;
@@ -86,6 +87,11 @@ public class JDBCDriver implements LensDriver {
 
   /** The conf. */
   private Configuration conf;
+
+  /** Configuration for estimate connection pool */
+  private Configuration estimateConf;
+  /** Estimate connection provider */
+  private ConnectionProvider estimateConnectionProvider;
 
   /**
    * Data related to a query submitted to JDBCDriver.
@@ -371,7 +377,7 @@ public class JDBCDriver implements LensDriver {
      * (java.lang.String, org.apache.hadoop.conf.Configuration)
      */
     @Override
-    public String rewrite(String query, Configuration queryConf) throws LensException {
+    public String rewrite(String query, Configuration queryConf, HiveConf metastoreConf) throws LensException {
       return query;
     }
 
@@ -426,6 +432,7 @@ public class JDBCDriver implements LensDriver {
       DataSourceConnectionProvider.class, ConnectionProvider.class);
     try {
       connectionProvider = cpClass.newInstance();
+      estimateConnectionProvider = cpClass.newInstance();
     } catch (Exception e) {
       LOG.error("Error initializing connection provider: " + e.getMessage(), e);
       throw new LensException(e);
@@ -502,10 +509,17 @@ public class JDBCDriver implements LensDriver {
    * @return the string
    * @throws LensException the lens exception
    */
-  protected String rewriteQuery(String query, Configuration conf) throws LensException {
+  protected String rewriteQuery(AbstractQueryContext ctx) throws LensException {
+    if (ctx.getFinalDriverQuery(this) != null) {
+      return ctx.getFinalDriverQuery(this);
+    }
+    String query = ctx.getDriverQuery(this);
+    Configuration driverQueryConf = ctx.getDriverConf(this);
+    MethodMetricsContext checkForAllowedQuery = MethodMetricsFactory.createMethodGauge(driverQueryConf, true,
+      CHECK_ALLOWED_QUERY);
     // check if it is select query
     try {
-      ASTNode ast = HQLParser.parseHQL(query);
+      ASTNode ast = HQLParser.parseHQL(query, ctx.getHiveConf());
       if (ast.getToken().getType() != HiveParser.TOK_QUERY) {
         throw new LensException("Not allowed statement:" + query);
       } else {
@@ -519,12 +533,11 @@ public class JDBCDriver implements LensDriver {
     } catch (ParseException e) {
       throw new LensException(e);
     }
+    checkForAllowedQuery.markSuccess();
 
     QueryRewriter rewriter = getQueryRewriter();
-    String rewrittenQuery = rewriter.rewrite(query, conf);
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("Query: " + query + " rewrittenQuery: " + rewrittenQuery);
-    }
+    String rewrittenQuery = rewriter.rewrite(query, driverQueryConf, ctx.getHiveConf());
+    ctx.setFinalDriverQuery(this, rewrittenQuery);
     return rewrittenQuery;
   }
 
@@ -548,6 +561,8 @@ public class JDBCDriver implements LensDriver {
   private static final String VALIDATE_GAUGE = "validate-thru-prepare";
   private static final String COLUMNAR_SQL_REWRITE_GAUGE = "columnar-sql-rewrite";
   private static final String JDBC_PREPARE_GAUGE = "jdbc-prepare-statement";
+  private static final String CHECK_ALLOWED_QUERY = "jdbc-check-allowed-query";
+
   @Override
   public QueryCost estimate(AbstractQueryContext qctx) throws LensException {
     MethodMetricsContext validateGauge = MethodMetricsFactory.createMethodGauge(qctx.getDriverConf(this), true,
@@ -575,10 +590,8 @@ public class JDBCDriver implements LensDriver {
     }
     checkConfigured();
     String explainQuery;
-    String rewrittenQuery = rewriteQuery(explainCtx.getDriverQuery(this), explainCtx.getDriverConf(this));
-    Configuration explainConf = new Configuration(explainCtx.getDriverConf(this));
-    explainConf.setBoolean(LensConfConstants.QUERY_PERSISTENT_RESULT_INDRIVER,
-      false);
+    String rewrittenQuery = rewriteQuery(explainCtx);
+    Configuration explainConf = explainCtx.getDriverConf(this);
     String explainKeyword = explainConf.get(JDBC_EXPLAIN_KEYWORD_PARAM,
       DEFAULT_JDBC_EXPLAIN_KEYWORD);
     boolean explainBeforeSelect = explainConf.getBoolean(JDBC_EXPLAIN_KEYWORD_BEFORE_SELECT,
@@ -592,7 +605,7 @@ public class JDBCDriver implements LensDriver {
     }
     LOG.info("Explain Query : " + explainQuery);
     QueryContext explainQueryCtx = QueryContext.createContextWithSingleDriver(explainQuery, null,
-      new LensConf(), explainConf, this, explainCtx.getLensSessionIdentifier());
+      new LensConf(), explainConf, this, explainCtx.getLensSessionIdentifier(), false);
     QueryResult result = null;
     try {
       result = executeInternal(explainQueryCtx, explainQuery);
@@ -622,7 +635,14 @@ public class JDBCDriver implements LensDriver {
     boolean validateThroughPrepare = pContext.getDriverConf(this).getBoolean(JDBC_VALIDATE_THROUGH_PREPARE,
         DEFAULT_JDBC_VALIDATE_THROUGH_PREPARE);
     if (validateThroughPrepare) {
-      PreparedStatement stmt = prepareInternal(pContext);
+      PreparedStatement stmt = null;
+      try {
+        // Estimate queries need to get connection from estimate pool to make sure
+        // we are not blocked by data queries.
+        stmt = prepareInternal(pContext, getEstimateConnection(), true);
+      } catch (SQLException e) {
+        throw new LensException(e);
+      }
       if (stmt != null) {
         try {
           stmt.close();
@@ -631,6 +651,66 @@ public class JDBCDriver implements LensDriver {
         }
       }
     }
+  }
+
+  // Get key used for estimate key config
+  protected String getEstimateKey(String jdbcKey) {
+    return JDBC_DRIVER_PFX + "estimate." + jdbcKey.substring(JDBC_DRIVER_PFX.length());
+  }
+
+  // If 'key' is set in conf, return its value.
+  // Otherwise, return value specified for fallBackKey
+  private String getKeyOrFallBack(Configuration conf, String key, String fallBackKey) {
+    String val = conf.get(key);
+    if (StringUtils.isBlank(val)) {
+      val = conf.get(fallBackKey);
+    }
+    return val;
+  }
+
+  // Get connection config used by estimate pool.
+  protected final Configuration getEstimateConnectionConf() {
+    if (estimateConf == null) {
+      Configuration tmpConf = new Configuration(conf);
+      // Override JDBC settings in estimate conf, if set by user explicitly. Otherwise fall back to default JDBC pool
+      // config
+      tmpConf.set(JDBC_DB_URI, getKeyOrFallBack(tmpConf, getEstimateKey(JDBC_DB_URI), JDBC_DB_URI));
+      tmpConf.set(JDBC_DRIVER_CLASS, getKeyOrFallBack(tmpConf, getEstimateKey(JDBC_DRIVER_CLASS), JDBC_DRIVER_CLASS));
+      tmpConf.set(JDBC_USER, getKeyOrFallBack(tmpConf, getEstimateKey(JDBC_USER), JDBC_USER));
+
+      String password = getKeyOrFallBack(tmpConf, getEstimateKey(JDBC_PASSWORD), JDBC_PASSWORD);
+      /* We need to set password as empty string if it is not provided. Setting null on conf is not allowed */
+      if (password == null) {
+        password = "";
+      }
+      tmpConf.set(JDBC_PASSWORD, password);
+
+      tmpConf.set(JDBC_POOL_MAX_SIZE, getKeyOrFallBack(tmpConf, getEstimateKey(JDBC_POOL_MAX_SIZE),
+        JDBC_POOL_MAX_SIZE));
+      tmpConf.set(JDBC_POOL_IDLE_TIME, getKeyOrFallBack(tmpConf, getEstimateKey(JDBC_POOL_IDLE_TIME),
+        JDBC_POOL_IDLE_TIME));
+      tmpConf.set(JDBC_MAX_STATEMENTS_PER_CONNECTION, getKeyOrFallBack(tmpConf,
+          getEstimateKey(JDBC_MAX_STATEMENTS_PER_CONNECTION), JDBC_MAX_STATEMENTS_PER_CONNECTION));
+      tmpConf.set(JDBC_GET_CONNECTION_TIMEOUT, getKeyOrFallBack(tmpConf,
+        getEstimateKey(JDBC_GET_CONNECTION_TIMEOUT), JDBC_GET_CONNECTION_TIMEOUT));
+
+      estimateConf = tmpConf;
+    }
+    return estimateConf;
+  }
+
+  protected final Connection getEstimateConnection() throws SQLException {
+    return estimateConnectionProvider.getConnection(getEstimateConnectionConf());
+  }
+
+  // For tests
+  protected final ConnectionProvider getEstimateConnectionProvider() {
+    return estimateConnectionProvider;
+  }
+
+  // For tests
+  protected final ConnectionProvider getConnectionProvider() {
+    return connectionProvider;
   }
 
   private final Map<QueryPrepareHandle, PreparedStatement> preparedQueries =
@@ -648,17 +728,30 @@ public class JDBCDriver implements LensDriver {
       throw new NullPointerException("Null driver query for " + pContext.getUserQuery());
     }
     checkConfigured();
+    return prepareInternal(pContext, getConnection(), false);
+  }
+
+
+  private PreparedStatement prepareInternal(AbstractQueryContext pContext, final Connection conn,
+                                            boolean checkConfigured) throws LensException {
+    // Caller might have already verified configured status and driver query, so we don't have
+    // to do this check twice. Caller must set checkConfigured to false in that case.
+    if (checkConfigured) {
+      if (pContext.getDriverQuery(this) == null) {
+        throw new NullPointerException("Null driver query for " + pContext.getUserQuery());
+      }
+      checkConfigured();
+    }
+
     // Only create a prepared statement and then close it
     MethodMetricsContext sqlRewriteGauge = MethodMetricsFactory.createMethodGauge(pContext.getDriverConf(this), true,
       COLUMNAR_SQL_REWRITE_GAUGE);
-    String rewrittenQuery = rewriteQuery(pContext.getDriverQuery(this), pContext.getDriverConf(this));
+    String rewrittenQuery = rewriteQuery(pContext);
     sqlRewriteGauge.markSuccess();
     MethodMetricsContext jdbcPrepareGauge = MethodMetricsFactory.createMethodGauge(pContext.getDriverConf(this), true,
       JDBC_PREPARE_GAUGE);
-    Connection conn = null;
     PreparedStatement stmt = null;
     try {
-      conn = getConnection();
       stmt = conn.prepareStatement(rewrittenQuery);
       if (stmt.getWarnings() != null) {
         throw new LensException(stmt.getWarnings());
@@ -739,8 +832,7 @@ public class JDBCDriver implements LensDriver {
   public LensResultSet execute(QueryContext context) throws LensException {
     checkConfigured();
 
-    String rewrittenQuery = rewriteQuery(context.getSelectedDriverQuery(), context
-      .getSelectedDriverConf());
+    String rewrittenQuery = rewriteQuery(context);
     LOG.info("Execute " + context.getQueryHandle());
     QueryResult result = executeInternal(context, rewrittenQuery);
     return result.getLensResultSet(true);
@@ -776,8 +868,7 @@ public class JDBCDriver implements LensDriver {
     checkConfigured();
     // Always use the driver rewritten query not user query. Since the
     // conf we are passing here is query context conf, we need to add jdbc xml in resource path
-    String rewrittenQuery = rewriteQuery(context.getSelectedDriverQuery(), context.getDriverContext()
-      .getSelectedDriverConf());
+    String rewrittenQuery = rewriteQuery(context);
     JdbcQueryContext jdbcCtx = new JdbcQueryContext(context);
     jdbcCtx.setRewrittenQuery(rewrittenQuery);
     try {
