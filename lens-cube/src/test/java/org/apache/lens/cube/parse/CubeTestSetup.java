@@ -106,12 +106,15 @@ public class CubeTestSetup {
   public static final String TWO_MONTHS_RANGE_UPTO_MONTH;
   public static final String TWO_MONTHS_RANGE_UPTO_HOURS;
   public static final String TWO_DAYS_RANGE_BEFORE_4_DAYS;
+  public static final String TWO_DAYS_RANGE_IN_BETWEEN_4_DAYS;
 
   private static boolean zerothHour;
   private static String c1 = "C1";
   private static String c2 = "C2";
   private static String c3 = "C3";
   private static String c4 = "C4";
+  private static String c5 = "C5";
+  private static String c6 = "C6";
   private static String c99 = "C99";
 
   static {
@@ -151,6 +154,8 @@ public class CubeTestSetup {
         + CubeTestSetup.getDateUptoHours(BEFORE_4_DAYS_END) + "')";
 
     TWO_DAYS_RANGE = "time_range_in(dt, '" + getDateUptoHours(TWODAYS_BACK) + "','" + getDateUptoHours(NOW) + "')";
+    TWO_DAYS_RANGE_IN_BETWEEN_4_DAYS = "time_range_in(dt, '" + getDateUptoHours(
+      BEFORE_4_DAYS_END) + "','" + getDateUptoHours(TWODAYS_BACK) + "')";
     TWO_MONTHS_RANGE_UPTO_MONTH =
       "time_range_in(dt, '" + getDateUptoMonth(TWO_MONTHS_BACK) + "','" + getDateUptoMonth(NOW) + "')";
     TWO_MONTHS_RANGE_UPTO_HOURS =
@@ -1155,9 +1160,13 @@ public class CubeTestSetup {
     s1.setTimePartCols(timePartCols);
 
     storageAggregatePeriods.put(c1, updates);
+    storageAggregatePeriods.put(c5, updates);
+    storageAggregatePeriods.put(c6, updates);
 
     Map<String, StorageTableDesc> storageTables = new HashMap<String, StorageTableDesc>();
     storageTables.put(c1, s1);
+    storageTables.put(c5, s1);
+    storageTables.put(c6, s1);
 
     // create cube fact
     client
@@ -1190,6 +1199,20 @@ public class CubeTestSetup {
       timeParts.put(TestCubeMetastoreClient.getDatePartitionKey(), temp);
       StoragePartitionDesc sPartSpec = new StoragePartitionDesc(fact2.getName(), timeParts, null, UpdatePeriod.HOURLY);
       client.addPartition(sPartSpec, c1);
+      cal.add(Calendar.HOUR_OF_DAY, 1);
+      temp = cal.getTime();
+    }
+
+    // add the in-between partitions in c5 and c6 storage.
+    boolean use_c5 = true;
+    cal.setTime(BEFORE_4_DAYS_END);
+    temp = cal.getTime();
+    while (!(temp.after(TWODAYS_BACK))) {
+      Map<String, Date> timeParts = new HashMap<String, Date>();
+      timeParts.put(TestCubeMetastoreClient.getDatePartitionKey(), temp);
+      StoragePartitionDesc sPartSpec = new StoragePartitionDesc(fact2.getName(), timeParts, null, UpdatePeriod.HOURLY);
+      client.addPartition(sPartSpec, use_c5 ? c5 : c6);
+      use_c5 = !use_c5;
       cal.add(Calendar.HOUR_OF_DAY, 1);
       temp = cal.getTime();
     }
@@ -1807,6 +1830,8 @@ public class CubeTestSetup {
       client.createStorage(new HDFSStorage(c2));
       client.createStorage(new HDFSStorage(c3));
       client.createStorage(new HDFSStorage(c4));
+      client.createStorage(new HDFSStorage(c5));
+      client.createStorage(new HDFSStorage(c6));
       client.createStorage(new HDFSStorage(c99));
       createCube(client);
       createBaseAndDerivedCubes(client);

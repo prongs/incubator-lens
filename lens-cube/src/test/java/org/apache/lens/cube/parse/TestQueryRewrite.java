@@ -47,6 +47,7 @@ public abstract class TestQueryRewrite {
     SessionState.start(hconf);
     setup = new CubeTestSetup();
     setup.createSources(hconf, TestQueryRewrite.class.getSimpleName());
+    log.info("setup succeeded");
   }
 
   @AfterSuite
