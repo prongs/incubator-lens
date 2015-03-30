@@ -149,7 +149,7 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
   /**
    * The all queries.
    */
-  protected ConcurrentMap<QueryHandle, QueryContext> allQueries = new ConcurrentHashMap<QueryHandle, QueryContext>();
+  protected final ConcurrentMap<QueryHandle, QueryContext> allQueries = new ConcurrentHashMap<QueryHandle, QueryContext>();
 
   /**
    * The conf.
