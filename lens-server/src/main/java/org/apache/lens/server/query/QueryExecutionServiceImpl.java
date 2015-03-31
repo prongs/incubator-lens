@@ -126,7 +126,7 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
   /**
    * The accepted queries.
    */
-  private PriorityBlockingQueue<QueryContext> acceptedQueries = new PriorityBlockingQueue<QueryContext>();
+  private PriorityBlockingQueue<QueryContext> queuedQueries = new PriorityBlockingQueue<QueryContext>();
 
   /**
    * The launched queries.
@@ -462,7 +462,7 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
       LOG.info("Starting QuerySubmitter thread");
       while (!pausedForTest && !stopped && !querySubmitter.isInterrupted()) {
         try {
-          QueryContext ctx = acceptedQueries.take();
+          QueryContext ctx = queuedQueries.take();
           synchronized (ctx) {
             if (ctx.getStatus().getStatus().equals(Status.QUEUED)) {
               LOG.info("Launching query:" + ctx.getUserQuery());
@@ -608,7 +608,7 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
     // before would be null in case of server restart
     if (before != null) {
       if (before.getStatus().equals(Status.QUEUED)) {
-        acceptedQueries.remove(ctx);
+        queuedQueries.remove(ctx);
       } else {
         launchedQueries.remove(ctx);
       }
@@ -873,7 +873,7 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
     module.addSerializer(ColumnDescriptor.class, new JsonSerializer<ColumnDescriptor>() {
       @Override
       public void serialize(ColumnDescriptor columnDescriptor, JsonGenerator jsonGenerator,
-                            SerializerProvider serializerProvider) throws IOException, JsonProcessingException {
+        SerializerProvider serializerProvider) throws IOException, JsonProcessingException {
         jsonGenerator.writeStartObject();
         jsonGenerator.writeStringField("name", columnDescriptor.getName());
         jsonGenerator.writeStringField("comment", columnDescriptor.getComment());
@@ -1471,7 +1471,7 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
     ctx.setLensSessionIdentifier(sessionHandle.getPublicId().toString());
     QueryStatus before = ctx.getStatus();
     ctx.setStatus(new QueryStatus(0.0, QueryStatus.Status.QUEUED, "Query is queued", false, null, null));
-    acceptedQueries.add(ctx);
+    queuedQueries.add(ctx);
     allQueries.put(ctx.getQueryHandle(), ctx);
     fireStatusChangeEvent(ctx, ctx.getStatus(), before);
     LOG.info("Returning handle " + ctx.getQueryHandle().getHandleId());
@@ -2135,7 +2135,7 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
         switch (ctx.getStatus().getStatus()) {
         case NEW:
         case QUEUED:
-          acceptedQueries.add(ctx);
+          queuedQueries.add(ctx);
           break;
         case LAUNCHED:
         case RUNNING:
@@ -2289,7 +2289,7 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
 
   @Override
   public long getQueuedQueriesCount() {
-    return acceptedQueries.size();
+    return queuedQueries.size();
   }
 
   @Override
