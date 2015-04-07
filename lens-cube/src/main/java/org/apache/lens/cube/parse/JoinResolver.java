@@ -35,6 +35,7 @@ import org.apache.hadoop.hive.ql.ErrorMsg;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.parse.*;
 
+import com.google.common.collect.Sets;
 import lombok.*;
 
 /**
@@ -612,7 +613,7 @@ class JoinResolver implements ContextRewriter {
     }
 
     public void pruneAllPaths(CubeInterface cube, final Set<CandidateFact> cfacts,
-      final Map<Dimension, CandidateDim> dimsToQuery) {
+      final Map<Dimension, Set<CandidateDim>> dimsToQuery) {
       // Remove join paths which cannot be satisfied by the resolved candidate
       // fact and dimension tables
       if (cfacts != null) {
@@ -713,23 +714,26 @@ class JoinResolver implements ContextRewriter {
       return prunedPaths;
     }
 
-    private void pruneAllPaths(final Map<Dimension, CandidateDim> dimsToQuery) {
+    private void pruneAllPaths(final Map<Dimension, Set<CandidateDim>> dimsToQuery) {
       // Remove join paths which cannot be satisfied by the resolved dimension
       // tables
       if (dimsToQuery != null && !dimsToQuery.isEmpty()) {
-        for (CandidateDim candidateDim : dimsToQuery.values()) {
-          Set<String> dimCols = candidateDim.dimtable.getAllFieldNames();
-          for (List<SchemaGraph.JoinPath> paths : allPaths.values()) {
-            for (int i = 0; i < paths.size(); i++) {
-              SchemaGraph.JoinPath jp = paths.get(i);
-              List<String> candidateDimCols = jp.getColumnsForTable(candidateDim.getBaseTable());
-              if (candidateDimCols != null && !dimCols.containsAll(candidateDimCols)) {
-                // This path requires some columns from the dimension which are
-                // not present in the candidate dim
-                // Remove this path
-                LOG.info("Removing join path:" + jp + " as columns :" + candidateDimCols + " dont exist");
-                paths.remove(i);
-                i--;
+        for (Set<CandidateDim> dims : dimsToQuery.values()) {
+          for (CandidateDim candidateDim : dims) {
+            Set<String> dimCols = candidateDim.dimtable.getAllFieldNames();
+            for (List<SchemaGraph.JoinPath> paths : allPaths.values()) {
+              for (int i = 0; i < paths.size(); i++) {
+                SchemaGraph.JoinPath jp = paths.get(i);
+                List<String> candidateDimCols = jp.getColumnsForTable(candidateDim.getBaseTable());
+                if (candidateDimCols != null && Sets.intersection(new HashSet<String>(candidateDimCols), dimCols)
+                  .isEmpty()) {
+                  // This path requires some columns from the dimension which are
+                  // not present in the candidate dim
+                  // Remove this path
+                  LOG.info("Removing join path:" + jp + " as columns :" + candidateDimCols + " dont exist");
+                  paths.remove(i);
+                  i--;
+                }
               }
             }
           }
@@ -870,7 +874,7 @@ class JoinResolver implements ContextRewriter {
       minCostClause.initChainColumns();
       // prune candidate dims of joiningOptionalTables wrt joinging columns
       for (Dimension dim : joiningOptionalTables) {
-        for (Iterator<CandidateDim> i = cubeql.getCandidateDimTables().get(dim).iterator(); i.hasNext();) {
+        for (Iterator<CandidateDim> i = cubeql.getCandidateDimTables().get(dim).iterator(); i.hasNext(); ) {
           CandidateDim cdim = i.next();
           CubeDimensionTable dimtable = cdim.dimtable;
           if (!cdim.getColumns().containsAll(minCostClause.chainColumns.get(dim))) {
@@ -1073,9 +1077,9 @@ class JoinResolver implements ContextRewriter {
         }
       } else if (dimensionInJoinChain.get(joinee).size() > 1) {
         throw new SemanticException("Table " + joinee.getName() + " has "
-          +dimensionInJoinChain.get(joinee).size() + " different paths through joinchains "
-          +"(" + dimensionInJoinChain.get(joinee) + ")"
-          +" used in query. Couldn't determine which one to use");
+          + dimensionInJoinChain.get(joinee).size() + " different paths through joinchains "
+          + "(" + dimensionInJoinChain.get(joinee) + ")"
+          + " used in query. Couldn't determine which one to use");
       } else {
         // the case when dimension is used only once in all joinchains.
         if (isJoinchainDestination(cubeql, joinee)) {

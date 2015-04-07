@@ -1714,6 +1714,7 @@ public class CubeTestSetup {
     dimAttrs.add(new BaseDimAttribute(new FieldSchema("code", "int", "code")));
     dimAttrs.add(new BaseDimAttribute(new FieldSchema("f1", "string", "name")));
     dimAttrs.add(new BaseDimAttribute(new FieldSchema("f2", "string", "name")));
+    dimAttrs.add(new BaseDimAttribute(new FieldSchema("f3", "string", "name")));
     Map<String, String> dimProps = new HashMap<String, String>();
     dimProps.put(MetastoreUtil.getDimTimedDimensionKey(dimName), TestCubeMetastoreClient.getDatePartitionKey());
     Dimension zipDim = new Dimension(dimName, dimAttrs, dimProps, 0L);
@@ -1740,6 +1741,11 @@ public class CubeTestSetup {
     Map<String, StorageTableDesc> storageTables = new HashMap<String, StorageTableDesc>();
     storageTables.put(c1, s1);
 
+    client.createCubeDimensionTable(dimName, dimTblName, dimColumns, 0L, dumpPeriods, dimProps, storageTables);
+    dimTblName = "ziptable_f3";
+    dimColumns.clear();
+    dimColumns.add(new FieldSchema("code", "int", "code"));
+    dimColumns.add(new FieldSchema("f3", "string", "field3"));
     client.createCubeDimensionTable(dimName, dimTblName, dimColumns, 0L, dumpPeriods, dimProps, storageTables);
   }
 

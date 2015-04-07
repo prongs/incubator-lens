@@ -37,7 +37,7 @@ class DimOnlyHQLContext extends DimHQLContext {
 
   public static final Log LOG = LogFactory.getLog(DimOnlyHQLContext.class.getName());
 
-  DimOnlyHQLContext(Map<Dimension, CandidateDim> dimsToQuery, CubeQueryContext query) throws SemanticException {
+  DimOnlyHQLContext(Map<Dimension, Set<CandidateDim>> dimsToQuery, CubeQueryContext query) throws SemanticException {
     super(query, dimsToQuery, dimsToQuery.keySet(), query.getSelectTree(),
       query.getWhereTree(), query.getGroupByTree(), query.getOrderByTree(),
       query.getHavingTree(), query.getLimitValue());

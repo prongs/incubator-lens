@@ -671,15 +671,15 @@ public class CubeQueryContext {
     return conf.get(CubeQueryConfUtil.NON_EXISTING_PARTITIONS);
   }
 
-  private Map<Dimension, CandidateDim> pickCandidateDimsToQuery(Set<Dimension> dimensions) throws SemanticException {
-    Map<Dimension, CandidateDim> dimsToQuery = new HashMap<Dimension, CandidateDim>();
+  private Map<Dimension, Set<CandidateDim>> pickCandidateDimsToQuery(Set<Dimension> dimensions) throws SemanticException {
+    Map<Dimension, Set<CandidateDim>> dimsToQuery = new HashMap<Dimension, Set<CandidateDim>>();
     if (!dimensions.isEmpty()) {
       for (Dimension dim : dimensions) {
         if (candidateDims.get(dim) != null && candidateDims.get(dim).size() > 0) {
           CandidateDim cdim = candidateDims.get(dim).iterator().next();
           LOG.info("Available candidate dims are:" + candidateDims.get(dim) + ", picking up " + cdim.dimtable
             + " for querying");
-          dimsToQuery.put(dim, cdim);
+          dimsToQuery.put(dim, candidateDims.get(dim));
         } else {
           String reason = "";
           if (dimPruningMsgs.get(dim) != null && !dimPruningMsgs.get(dim).isEmpty()) {
@@ -748,7 +748,7 @@ public class CubeQueryContext {
 
   public String toHQL() throws SemanticException {
     Set<CandidateFact> cfacts = pickCandidateFactToQuery();
-    Map<Dimension, CandidateDim> dimsToQuery = pickCandidateDimsToQuery(dimensions);
+    Map<Dimension, Set<CandidateDim>> dimsToQuery = pickCandidateDimsToQuery(dimensions);
     if (autoJoinCtx != null) {
       // prune join paths for picked fact and dimensions
       autoJoinCtx.pruneAllPaths(cube, cfacts, dimsToQuery);
@@ -811,7 +811,10 @@ public class CubeQueryContext {
       }
     }
     LOG.info("Picked Fact:" + cfacts + " dimsToQuery:" + dimsToQuery);
-    pickedDimTables = dimsToQuery.values();
+    pickedDimTables.clear();
+    for(Set<CandidateDim> set: dimsToQuery.values()) {
+      pickedDimTables.addAll(set);
+    }
     pickedFacts = cfacts;
     if (cfacts != null) {
       if (cfacts.size() > 1) {
@@ -825,7 +828,7 @@ public class CubeQueryContext {
     return hqlContext.toHQL();
   }
 
-  private HQLContextInterface createHQLContext(Set<CandidateFact> facts, Map<Dimension, CandidateDim> dimsToQuery,
+  private HQLContextInterface createHQLContext(Set<CandidateFact> facts, Map<Dimension, Set<CandidateDim>> dimsToQuery,
     Map<CandidateFact, Set<Dimension>> factDimMap, CubeQueryContext query) throws SemanticException {
     if (facts == null || facts.size() == 0) {
       return new DimOnlyHQLContext(dimsToQuery, query);

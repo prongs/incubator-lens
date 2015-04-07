@@ -19,6 +19,7 @@
 package org.apache.lens.cube.parse;
 
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.lens.cube.metadata.Dimension;
 
@@ -41,7 +42,7 @@ class SingleFactHQLContext extends DimOnlyHQLContext {
 
   private CandidateFact fact;
 
-  SingleFactHQLContext(CandidateFact fact, Map<Dimension, CandidateDim> dimsToQuery, CubeQueryContext query)
+  SingleFactHQLContext(CandidateFact fact, Map<Dimension, Set<CandidateDim>> dimsToQuery, CubeQueryContext query)
     throws SemanticException {
     super(dimsToQuery, query);
     this.fact = fact;

@@ -189,7 +189,7 @@ public class DenormalizationResolver implements ContextRewriter {
       return null;
     }
 
-    public Set<Dimension> rewriteDenormctx(CandidateFact cfact, Map<Dimension, CandidateDim> dimsToQuery,
+    public Set<Dimension> rewriteDenormctx(CandidateFact cfact, Map<Dimension, Set<CandidateDim>> dimsToQuery,
       boolean replaceFact) throws SemanticException {
       Set<Dimension> refTbls = new HashSet<Dimension>();
 
@@ -200,8 +200,10 @@ public class DenormalizationResolver implements ContextRewriter {
         }
         // pick referenced columns for dimensions
         if (dimsToQuery != null && !dimsToQuery.isEmpty()) {
-          for (CandidateDim cdim : dimsToQuery.values()) {
-            pickColumnsForTable(cdim.getName());
+          for (Set<CandidateDim> dims : dimsToQuery.values()) {
+            for (CandidateDim cdim : dims) {
+              pickColumnsForTable(cdim.getName());
+            }
           }
         }
         // Replace picked reference in all the base trees
@@ -218,14 +220,17 @@ public class DenormalizationResolver implements ContextRewriter {
     }
 
     // checks if the reference if picked for facts and dimsToQuery passed
-    private boolean isPickedFor(PickedReference picked, CandidateFact cfact, Map<Dimension, CandidateDim> dimsToQuery) {
+    private boolean isPickedFor(PickedReference picked, CandidateFact cfact,
+      Map<Dimension, Set<CandidateDim>> dimsToQuery) {
       if (cfact != null && picked.pickedFor.equalsIgnoreCase(cfact.getName())) {
         return true;
       }
       if (dimsToQuery != null) {
-        for (CandidateDim cdim : dimsToQuery.values()) {
-          if (picked.pickedFor.equalsIgnoreCase(cdim.getName())) {
-            return true;
+        for (Set<CandidateDim> dims : dimsToQuery.values()) {
+          for (CandidateDim cdim : dims) {
+            if (picked.pickedFor.equalsIgnoreCase(cdim.getName())) {
+              return true;
+            }
           }
         }
       }
@@ -357,7 +362,7 @@ public class DenormalizationResolver implements ContextRewriter {
       // candidate tables which require denorm fields and the refernces are no
       // more valid will be pruned
       if (cubeql.getCube() != null && !cubeql.getCandidateFactTables().isEmpty()) {
-        for (Iterator<CandidateFact> i = cubeql.getCandidateFactTables().iterator(); i.hasNext();) {
+        for (Iterator<CandidateFact> i = cubeql.getCandidateFactTables().iterator(); i.hasNext(); ) {
           CandidateFact cfact = i.next();
           if (denormCtx.tableToRefCols.containsKey(cfact.getName())) {
             for (ReferencedQueriedColumn refcol : denormCtx.tableToRefCols.get(cfact.getName())) {
@@ -377,7 +382,7 @@ public class DenormalizationResolver implements ContextRewriter {
       }
       if (cubeql.getDimensions() != null && !cubeql.getDimensions().isEmpty()) {
         for (Dimension dim : cubeql.getDimensions()) {
-          for (Iterator<CandidateDim> i = cubeql.getCandidateDimTables().get(dim).iterator(); i.hasNext();) {
+          for (Iterator<CandidateDim> i = cubeql.getCandidateDimTables().get(dim).iterator(); i.hasNext(); ) {
             CandidateDim cdim = i.next();
             if (denormCtx.tableToRefCols.containsKey(cdim.getName())) {
               for (ReferencedQueriedColumn refcol : denormCtx.tableToRefCols.get(cdim.getName())) {

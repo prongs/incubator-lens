@@ -365,6 +365,39 @@ public class TestCubeRewriter extends TestQueryRewrite {
       e.printStackTrace();
     }
   }
+  @Test
+  public void testCubeWhereQueryWithMultipleDimTables() throws Exception {
+    Configuration conf = getConf();
+    conf.setBoolean(CubeQueryConfUtil.DISABLE_AUTO_JOINS, false);
+    String hqlQuery = rewrite("select zipdim.f3, zipdim.f1, msr2 from testCube" + " where " + TWO_DAYS_RANGE, conf);
+
+    String expected = null;
+    if (!CubeTestSetup.isZerothHour()) {
+      expected =
+        getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null, null,
+          getWhereForDailyAndHourly2days(cubeName, "c1_testfact", "C2_testfact"));
+    } else {
+      expected =
+        getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null, null,
+          getWhereForDailyAndHourly2days(cubeName, "c1_testfact"));
+    }
+    compareQueries(expected, hqlQuery);
+
+    // Union query
+    conf.setBoolean(CubeQueryConfUtil.ENABLE_MULTI_TABLE_SELECT, false);
+    try {
+      // rewrite to union query
+      hqlQuery = rewrite("select SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE, conf);
+      System.out.println("Union hql query:" + hqlQuery);
+
+      // TODO: uncomment the following once union query
+      // rewriting has been done
+      // expected = // write expected union query
+      // compareQueries(expected, hqlQuery);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
 
   @Test
   public void testCubeWhereQueryWithMultipleTablesForMonth() throws Exception {

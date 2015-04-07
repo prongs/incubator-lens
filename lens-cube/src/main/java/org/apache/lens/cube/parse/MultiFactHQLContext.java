@@ -39,12 +39,12 @@ class MultiFactHQLContext extends SimpleHQLContext {
 
   public static final Log LOG = LogFactory.getLog(MultiFactHQLContext.class.getName());
 
-  private Map<Dimension, CandidateDim> dimsToQuery;
+  private Map<Dimension, Set<CandidateDim>> dimsToQuery;
   private Set<CandidateFact> facts;
   private CubeQueryContext query;
   private Map<CandidateFact, Set<Dimension>> factDimMap;
 
-  MultiFactHQLContext(Set<CandidateFact> facts, Map<Dimension, CandidateDim> dimsToQuery,
+  MultiFactHQLContext(Set<CandidateFact> facts, Map<Dimension, Set<CandidateDim>> dimsToQuery,
     Map<CandidateFact, Set<Dimension>> factDimMap, CubeQueryContext query) throws SemanticException {
     super();
     this.query = query;
@@ -106,10 +106,6 @@ class MultiFactHQLContext extends SimpleHQLContext {
       }
     }
     return select.toString();
-  }
-
-  public Map<Dimension, CandidateDim> getDimsToQuery() {
-    return dimsToQuery;
   }
 
   public Set<CandidateFact> getFactsToQuery() {

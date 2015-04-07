@@ -40,7 +40,7 @@ abstract class DimHQLContext extends SimpleHQLContext {
 
   public static final Log LOG = LogFactory.getLog(DimHQLContext.class.getName());
 
-  private final Map<Dimension, CandidateDim> dimsToQuery;
+  private final Map<Dimension, Set<CandidateDim>> dimsToQuery;
   private final Set<Dimension> queriedDims;
   private String where;
   protected final CubeQueryContext query;
@@ -49,7 +49,7 @@ abstract class DimHQLContext extends SimpleHQLContext {
     return query;
   }
 
-  DimHQLContext(CubeQueryContext query, Map<Dimension, CandidateDim> dimsToQuery,
+  DimHQLContext(CubeQueryContext query, Map<Dimension, Set<CandidateDim>> dimsToQuery,
     Set<Dimension> queriedDims, String select, String where,
     String groupby, String orderby, String having, Integer limit) throws SemanticException {
     super(select, groupby, orderby, having, limit);
@@ -85,7 +85,7 @@ abstract class DimHQLContext extends SimpleHQLContext {
 
   protected abstract String getFromTable() throws SemanticException;
 
-  public Map<Dimension, CandidateDim> getDimsToQuery() {
+  public Map<Dimension, Set<CandidateDim>> getDimsToQuery() {
     return dimsToQuery;
   }
 

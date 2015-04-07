@@ -37,7 +37,7 @@ public class FactHQLContext extends DimHQLContext {
   private final CandidateFact fact;
   private final Set<Dimension> factDims;
 
-  FactHQLContext(CandidateFact fact, Map<Dimension, CandidateDim> dimsToQuery, Set<Dimension> factDims,
+  FactHQLContext(CandidateFact fact, Map<Dimension, Set<CandidateDim>> dimsToQuery, Set<Dimension> factDims,
     CubeQueryContext query) throws SemanticException {
     super(query, dimsToQuery, factDims, fact.getSelectTree(), fact.getWhereTree(), fact.getGroupByTree(), null, fact
       .getHavingTree(), null);
