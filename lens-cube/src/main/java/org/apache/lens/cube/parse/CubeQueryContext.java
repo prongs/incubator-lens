@@ -111,6 +111,7 @@ public class CubeQueryContext {
 
   // query trees
   @Getter
+  @Setter
   private ASTNode havingAST;
   @Getter
   private ASTNode selectAST;

@@ -29,12 +29,13 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.ql.parse.ASTNode;
-import org.apache.hadoop.hive.ql.parse.HiveParser;
 import org.apache.hadoop.hive.ql.parse.ParseException;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
 
 import org.antlr.runtime.CommonToken;
 import org.antlr.runtime.tree.Tree;
+
+import com.google.common.collect.Lists;
 
 /**
  * Promotes groupby to select and select to groupby.
@@ -44,6 +45,7 @@ class GroupbyResolver implements ContextRewriter {
 
   private final boolean selectPromotionEnabled;
   private final boolean groupbyPromotionEnabled;
+  private final boolean whetherPushwhereToHaving;
 
   public GroupbyResolver(Configuration conf) {
     selectPromotionEnabled =
@@ -51,6 +53,9 @@ class GroupbyResolver implements ContextRewriter {
     groupbyPromotionEnabled =
       conf.getBoolean(CubeQueryConfUtil.ENABLE_GROUP_BY_TO_SELECT,
         CubeQueryConfUtil.DEFAULT_ENABLE_GROUP_BY_TO_SELECT);
+    whetherPushwhereToHaving =
+      conf.getBoolean(CubeQueryConfUtil.ENABLE_WHERE_TO_HAVING,
+        CubeQueryConfUtil.DEFAULT_ENABLE_WHERE_TO_HAVING);
   }
 
   private void promoteSelect(CubeQueryContext cubeql, List<String> nonMsrNonAggSelExprsWithoutAlias,
@@ -109,7 +114,7 @@ class GroupbyResolver implements ContextRewriter {
    */
   private boolean hasTableOrColumn(ASTNode node) {
     if (node.getToken() != null) {
-      if (node.getToken().getType() == HiveParser.TOK_TABLE_OR_COL) {
+      if (node.getToken().getType() == TOK_TABLE_OR_COL) {
         return true;
       }
     }
@@ -183,6 +188,80 @@ class GroupbyResolver implements ContextRewriter {
     }
     promoteSelect(cubeql, getNonMsrNonAggSelExprsWithoutAlias(cubeql.getSelectAST(), cubeql), groupByExprs);
     promoteGroupby(cubeql, selectExprs, groupByExprs);
+    pushWhereToHaving(cubeql);
+  }
+
+  private void pushWhereToHaving(CubeQueryContext cubeql) {
+    if (!whetherPushwhereToHaving) {
+      return;
+    }
+    ASTNode whereAST = cubeql.getWhereAST();
+    if (whereAST != null && whereAST.getChildCount() != 0) {
+      List<ASTNode> havingASTs = Lists.newArrayList();
+      ASTNode whereChildAST = extractHavingFromWhere((ASTNode) whereAST.getChild(0), havingASTs, cubeql);
+      if (whereChildAST == null) {
+        cubeql.setWhereAST(null);
+      } else {
+        whereAST.setChild(0, whereChildAST);
+        cubeql.setWhereAST(whereAST);
+      }
+      ASTNode joinedHavingAST = joinWithAnd(havingASTs);
+      if (cubeql.getHavingAST() == null) {
+        ASTNode newAST = new ASTNode(new CommonToken(TOK_HAVING));
+        newAST.addChild(joinedHavingAST);
+        cubeql.setHavingAST(newAST);
+      } else {
+        ASTNode existingHavingTree = (ASTNode) cubeql.getHavingAST().getChild(0);
+        while (existingHavingTree.getToken().getType() == KW_AND) {
+          existingHavingTree = (ASTNode) existingHavingTree.getChild(existingHavingTree.getChildCount() - 1);
+        }
+        ASTNode parent = (ASTNode) existingHavingTree.getParent();
+        ASTNode newAST = new ASTNode(new CommonToken(KW_AND, "and"));
+        newAST.addChild(existingHavingTree);
+        newAST.addChild(joinedHavingAST);
+        parent.setChild(parent.getChildCount() - 1, newAST);
+      }
+    }
+  }
+
+  private ASTNode joinWithAnd(List<ASTNode> nodes) {
+    if (nodes == null || nodes.size() == 0) {
+      return null;
+    }
+    ASTNode firstNode = nodes.remove(0);
+    ASTNode remaining = joinWithAnd(nodes);
+    if (remaining == null) {
+      return firstNode;
+    }
+    ASTNode newAST = new ASTNode(new CommonToken(KW_AND, "and"));
+    newAST.addChild(firstNode);
+    newAST.addChild(remaining);
+    return newAST;
+  }
+
+  private ASTNode extractHavingFromWhere(ASTNode ast, List<ASTNode> havingASTs, CubeQueryContext cubeql) {
+    if (ast.getToken().getType() == KW_AND) {
+      ASTNode left = extractHavingFromWhere((ASTNode) ast.getChild(0), havingASTs, cubeql);
+      ASTNode right = extractHavingFromWhere((ASTNode) ast.getChild(1), havingASTs, cubeql);
+      if (left == null && right == null) {
+        return null;
+      } else if (left == null) {
+        return right;
+      } else if (right == null) {
+        return left;
+      } else {
+        ast.setChild(0, left);
+        ast.setChild(1, right);
+        return ast;
+      }
+    } else {
+      if (hasMeasure(ast, cubeql) || HQLParser.hasAggregate(ast)) {
+        havingASTs.add(ast);
+        return null;
+      } else {
+        return ast;
+      }
+    }
   }
 
   private String getExpressionWithoutAlias(CubeQueryContext cubeql, String sel) {

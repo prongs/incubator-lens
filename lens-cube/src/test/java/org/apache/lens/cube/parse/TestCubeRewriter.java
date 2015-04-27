@@ -1552,6 +1552,42 @@ public class TestCubeRewriter extends TestQueryRewrite {
     Assert.assertTrue(largePartRewrittenQuery.contains("in"));
   }
 
+  @Test
+  public void testWhereToHaving() throws SemanticException, ParseException {
+    Configuration conf = getConf();
+//    conf.setBoolean(CubeQueryConfUtil.ENABLE_WHERE_TO_HAVING, true);
+    String hql, expected;
+    hql = rewrite("cube select msr3 from testcube where msr2 > 10 and " + TWO_DAYS_RANGE, conf);
+    expected =
+      getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null,
+        "having sum(testcube.msr2) > 10", getWhereForDailyAndHourly2days(cubeName, "C1_testfact2_raw"));
+//    compareQueries(hql, expected);
+    hql = rewrite("cube select msr2 from testcube where msr2 > 10 and dim1 = 'x' and " + TWO_DAYS_RANGE, conf);
+    expected =
+      getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null,
+        null, getWhereForDailyAndHourly2days(cubeName, "C1_testfact2_raw"));
+//    compareQueries(hql, expected);
+    hql = rewrite(
+      "cube select msr1, msr2 from testcube where msr2 > 10 and msr1 < 15 and dim1 = 'x' and " + TWO_DAYS_RANGE,
+      conf);
+    expected =
+      getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null,
+        null, getWhereForDailyAndHourly2days(cubeName, "C1_testfact2_raw"));
+//    compareQueries(hql, expected);
+    hql = rewrite("cube select msr2 from testcube where msr2 > 10 and dim1 = 'x' and " + TWO_DAYS_RANGE
+      + " having msr1 > 15", conf);
+    expected =
+      getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null,
+        null, getWhereForDailyAndHourly2days(cubeName, "C1_testfact2_raw"));
+//    compareQueries(hql, expected);
+    hql = rewrite("cube select msr2 from testcube where msr2 > 10 and dim1 = 'x' and " + TWO_DAYS_RANGE
+      + " having msr1 > 15 and msr1 < 20", conf);
+    expected =
+      getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null,
+        null, getWhereForDailyAndHourly2days(cubeName, "C1_testfact2_raw"));
+//    compareQueries(hql, expected);
+  }
+
   private CommandProcessorResponse runExplain(String hql, HiveConf conf) throws Exception {
     Driver hiveDriver = new Driver(conf, "anonymous");
     CommandProcessorResponse response = hiveDriver.run("EXPLAIN EXTENDED " + hql);
