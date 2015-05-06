@@ -18,6 +18,8 @@
  */
 package org.apache.lens.cube.parse;
 
+import static org.apache.lens.cube.error.LensCubeErrorCode.SYNTAX_ERROR;
+
 import static org.apache.hadoop.hive.ql.parse.HiveParser.*;
 import static org.apache.hadoop.hive.ql.parse.HiveParser.Number;
 
@@ -25,6 +27,8 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.regex.Pattern;
+
+import org.apache.lens.server.api.error.LensException;
 
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.Context;
@@ -67,6 +71,7 @@ public final class HQLParser {
   public static final Set<Integer> BINARY_OPERATORS;
   public static final Set<Integer> ARITHMETIC_OPERATORS;
   public static final Set<Integer> UNARY_OPERATORS;
+  public static final Set<Integer> PRIMITIVE_TYPES;
 
   static {
     HashSet<Integer> ops = new HashSet<Integer>();
@@ -105,13 +110,31 @@ public final class HQLParser {
     unaryOps.add(KW_NOT);
     unaryOps.add(TILDE);
     UNARY_OPERATORS = Collections.unmodifiableSet(unaryOps);
+
+    HashSet<Integer> primitiveTypes = new HashSet<Integer>();
+    primitiveTypes.add(TOK_TINYINT);
+    primitiveTypes.add(TOK_SMALLINT);
+    primitiveTypes.add(TOK_INT);
+    primitiveTypes.add(TOK_BIGINT);
+    primitiveTypes.add(TOK_BOOLEAN);
+    primitiveTypes.add(TOK_FLOAT);
+    primitiveTypes.add(TOK_DOUBLE);
+    primitiveTypes.add(TOK_DATE);
+    primitiveTypes.add(TOK_DATETIME);
+    primitiveTypes.add(TOK_TIMESTAMP);
+    primitiveTypes.add(TOK_STRING);
+    primitiveTypes.add(TOK_BINARY);
+    primitiveTypes.add(TOK_DECIMAL);
+    primitiveTypes.add(TOK_VARCHAR);
+    primitiveTypes.add(TOK_CHAR);
+    PRIMITIVE_TYPES = Collections.unmodifiableSet(primitiveTypes);
   }
 
   public static boolean isArithmeticOp(int tokenType) {
     return ARITHMETIC_OPERATORS.contains(tokenType);
   }
 
-  public static ASTNode parseHQL(String query, HiveConf conf) throws ParseException {
+  public static ASTNode parseHQL(String query, HiveConf conf) throws LensException {
     ParseDriver driver = new ParseDriver();
     ASTNode tree = null;
     Context ctx = null;
@@ -119,6 +142,8 @@ public final class HQLParser {
       ctx = new Context(conf);
       tree = driver.parse(query, ctx);
       tree = ParseUtils.findRootNonNullToken(tree);
+    } catch (ParseException e) {
+      throw new LensException(SYNTAX_ERROR.getValue(), e, e.getMessage());
     } catch (IOException e) {
       throw new RuntimeException(e);
     } finally {
@@ -382,7 +407,53 @@ public final class HQLParser {
       buf.append("[");
       toInfixString((ASTNode) root.getChild(1), buf);
       buf.append("]");
-
+    } else if (PRIMITIVE_TYPES.contains(rootType)) {
+      if (rootType == TOK_TINYINT) {
+        buf.append("tinyint");
+      } else if (rootType == TOK_SMALLINT) {
+        buf.append("smallint");
+      } else if (rootType == TOK_INT) {
+        buf.append("int");
+      } else if (rootType == TOK_BIGINT) {
+        buf.append("bigint");
+      } else if (rootType == TOK_BOOLEAN) {
+        buf.append("boolean");
+      } else if (rootType == TOK_FLOAT) {
+        buf.append("float");
+      } else if (rootType == TOK_DOUBLE) {
+        buf.append("double");
+      } else if (rootType == TOK_DATE) {
+        buf.append("date");
+      } else if (rootType == TOK_DATETIME) {
+        buf.append("datetime");
+      } else if (rootType == TOK_TIMESTAMP) {
+        buf.append("timestamp");
+      } else if (rootType == TOK_STRING) {
+        buf.append("string");
+      } else if (rootType == TOK_BINARY) {
+        buf.append("binary");
+      } else if (rootType == TOK_DECIMAL) {
+        buf.append("decimal");
+        if (root.getChildCount() >= 1) {
+          buf.append("(").append(root.getChild(0).getText());
+          if (root.getChildCount() == 2) {
+            buf.append(",").append(root.getChild(1).getText());
+          }
+          buf.append(")");
+        }
+      } else if (rootType == TOK_VARCHAR) {
+        buf.append("varchar");
+        if (root.getChildCount() >= 1) {
+          buf.append("(").append(root.getChild(0).getText()).append(")");
+        }
+      } else if (rootType == TOK_CHAR) {
+        buf.append("char");
+        if (root.getChildCount() >= 1) {
+          buf.append("(").append(root.getChild(0).getText()).append(")");
+        }
+      } else {
+        buf.append(rootText);
+      }
     } else if (TOK_FUNCTION == root.getToken().getType()) {
       // Handle UDFs, conditional operators.
       functionString(root, buf);
@@ -456,8 +527,13 @@ public final class HQLParser {
       }
 
     } else {
-      for (int i = 0; i < root.getChildCount(); i++) {
-        toInfixString((ASTNode) root.getChild(i), buf);
+      if (root.getChildCount() > 0) {
+        for (int i = 0; i < root.getChildCount(); i++) {
+          toInfixString((ASTNode) root.getChild(i), buf);
+        }
+      } else {
+        // for other types which are not handled above
+        buf.append(rootText);
       }
     }
   }
@@ -566,20 +642,35 @@ public final class HQLParser {
       }
 
       buf.append(")");
-
+    } else if (findNodeByPath(root, KW_CAST) != null) {
+      buf.append("cast");
+      toInfixString((ASTNode) root.getChild(1), buf);
+      buf.append(" as ");
+      toInfixString((ASTNode) root.getChild(0), buf);
     } else {
-      // Normal UDF
-      String fname = ((ASTNode) root.getChild(0)).getText();
-      // Function name
-      buf.append(fname.toLowerCase()).append("(");
-      // Arguments separated by comma
-      for (int i = 1; i < root.getChildCount(); i++) {
-        toInfixString((ASTNode) root.getChild(i), buf);
-        if (i != root.getChildCount() - 1) {
-          buf.append(", ");
+      int rootType = ((ASTNode) root.getChild(0)).getToken().getType();
+      if (PRIMITIVE_TYPES.contains(rootType)) {
+        // cast expression maps to the following ast
+        // KW_CAST LPAREN expression KW_AS primitiveType RPAREN -> ^(TOK_FUNCTION primitiveType expression)
+        buf.append("cast(");
+        toInfixString((ASTNode) root.getChild(1), buf);
+        buf.append(" as ");
+        toInfixString((ASTNode) root.getChild(0), buf);
+        buf.append(")");
+      } else {
+        // Normal UDF
+        String fname = ((ASTNode) root.getChild(0)).getText();
+        // Function name
+        buf.append(fname.toLowerCase()).append("(");
+        // Arguments separated by comma
+        for (int i = 1; i < root.getChildCount(); i++) {
+          toInfixString((ASTNode) root.getChild(i), buf);
+          if (i != root.getChildCount() - 1) {
+            buf.append(", ");
+          }
         }
+        buf.append(")");
       }
-      buf.append(")");
     }
   }
 
