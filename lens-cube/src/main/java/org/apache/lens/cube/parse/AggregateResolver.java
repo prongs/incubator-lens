@@ -19,10 +19,11 @@
 
 package org.apache.lens.cube.parse;
 
-import static org.apache.hadoop.hive.ql.parse.HiveParser.Identifier;
-import static org.apache.hadoop.hive.ql.parse.HiveParser.TOK_TABLE_OR_COL;
+import static org.apache.hadoop.hive.ql.parse.HiveParser.*;
+import static org.apache.hadoop.hive.ql.parse.HiveParser.KW_AND;
 
 import java.util.Iterator;
+import java.util.List;
 
 import org.apache.lens.cube.metadata.CubeMeasure;
 import org.apache.lens.cube.parse.CandidateTablePruneCause.CandidateTablePruneCode;
@@ -39,6 +40,8 @@ import org.apache.hadoop.hive.ql.parse.SemanticException;
 
 import org.antlr.runtime.CommonToken;
 
+import com.google.common.collect.Lists;
+
 /**
  * <p> Replace select and having columns with default aggregate functions on them, if default aggregate is defined and
  * if there isn't already an aggregate function specified on the columns. </p> <p/> <p> Expressions which already
@@ -47,8 +50,12 @@ import org.antlr.runtime.CommonToken;
  */
 class AggregateResolver implements ContextRewriter {
   public static final Log LOG = LogFactory.getLog(AggregateResolver.class.getName());
+  private final boolean whetherPushwhereToHaving;
 
   public AggregateResolver(Configuration conf) {
+    whetherPushwhereToHaving =
+      conf.getBoolean(CubeQueryConfUtil.ENABLE_WHERE_TO_HAVING,
+        CubeQueryConfUtil.DEFAULT_ENABLE_WHERE_TO_HAVING);
   }
 
   @Override
@@ -56,7 +63,7 @@ class AggregateResolver implements ContextRewriter {
     if (cubeql.getCube() == null) {
       return;
     }
-
+    pushWhereToHaving(cubeql);
     boolean nonDefaultAggregates = false;
     boolean aggregateResolverDisabled = cubeql.getConf().getBoolean(CubeQueryConfUtil.DISABLE_AGGREGATE_RESOLVER,
       CubeQueryConfUtil.DEFAULT_DISABLE_AGGREGATE_RESOLVER);
@@ -104,6 +111,78 @@ class AggregateResolver implements ContextRewriter {
       if (!hasMeasures(cubeql, cubeql.getSelectAST()) && !isDistinctClauseUsed(cubeql.getSelectAST())
         && !HQLParser.hasAggregate(cubeql.getSelectAST())) {
         cubeql.getSelectAST().getToken().setType(HiveParser.TOK_SELECTDI);
+      }
+    }
+  }
+  private ASTNode joinWithAnd(List<ASTNode> nodes) {
+    if (nodes == null || nodes.size() == 0) {
+      return null;
+    }
+    ASTNode firstNode = nodes.remove(0);
+    ASTNode remaining = joinWithAnd(nodes);
+    if (remaining == null) {
+      return firstNode;
+    }
+    ASTNode newAST = new ASTNode(new CommonToken(KW_AND, "and"));
+    newAST.addChild(firstNode);
+    newAST.addChild(remaining);
+    return newAST;
+  }
+
+  private void pushWhereToHaving(CubeQueryContext cubeql) {
+    if (!whetherPushwhereToHaving) {
+      return;
+    }
+    ASTNode whereAST = cubeql.getWhereAST();
+    if (whereAST != null && whereAST.getChildCount() != 0) {
+      List<ASTNode> havingASTs = Lists.newArrayList();
+      ASTNode whereChildAST = extractHavingFromWhere((ASTNode) whereAST.getChild(0), havingASTs, cubeql);
+      if (whereChildAST == null) {
+        cubeql.setWhereAST(null);
+      } else {
+        whereAST.setChild(0, whereChildAST);
+        cubeql.setWhereAST(whereAST);
+      }
+      ASTNode joinedHavingAST = joinWithAnd(havingASTs);
+      if (cubeql.getHavingAST() == null) {
+        ASTNode newAST = new ASTNode(new CommonToken(TOK_HAVING));
+        newAST.addChild(joinedHavingAST);
+        cubeql.setHavingAST(newAST);
+      } else {
+        ASTNode existingHavingTree = (ASTNode) cubeql.getHavingAST().getChild(0);
+        while (existingHavingTree.getToken().getType() == KW_AND) {
+          existingHavingTree = (ASTNode) existingHavingTree.getChild(existingHavingTree.getChildCount() - 1);
+        }
+        ASTNode parent = (ASTNode) existingHavingTree.getParent();
+        ASTNode newAST = new ASTNode(new CommonToken(KW_AND, "and"));
+        newAST.addChild(existingHavingTree);
+        newAST.addChild(joinedHavingAST);
+        parent.setChild(parent.getChildCount() - 1, newAST);
+      }
+    }
+  }
+
+  private ASTNode extractHavingFromWhere(ASTNode ast, List<ASTNode> havingASTs, CubeQueryContext cubeql) {
+    if (ast.getToken().getType() == KW_AND) {
+      ASTNode left = extractHavingFromWhere((ASTNode) ast.getChild(0), havingASTs, cubeql);
+      ASTNode right = extractHavingFromWhere((ASTNode) ast.getChild(1), havingASTs, cubeql);
+      if (left == null && right == null) {
+        return null;
+      } else if (left == null) {
+        return right;
+      } else if (right == null) {
+        return left;
+      } else {
+        ast.setChild(0, left);
+        ast.setChild(1, right);
+        return ast;
+      }
+    } else {
+      if (hasMeasures(cubeql, ast) || HQLParser.hasAggregate(ast)) {
+        havingASTs.add(ast);
+        return null;
+      } else {
+        return ast;
       }
     }
   }

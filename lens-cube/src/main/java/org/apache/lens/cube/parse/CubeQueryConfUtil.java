@@ -50,7 +50,7 @@ public final class CubeQueryConfUtil {
   public static final String LOOK_AHEAD_PT_PARTS_PFX = "lens.cube.query.lookahead.ptparts.forinterval.";
   public static final String ENABLE_GROUP_BY_TO_SELECT = "lens.cube.query.promote.groupby.toselect";
   public static final String ENABLE_SELECT_TO_GROUPBY = "lens.cube.query.promote.select.togroupby";
-  public static final String ENABLE_WHERE_TO_HAVING = "lens.cube.query.push.where.having";
+  public static final String ENABLE_WHERE_TO_HAVING = "lens.cube.query.push.where.to.having";
   public static final String ENABLE_ATTRFIELDS_ADD_DISTINCT = "lens.cube.query.enable.attrfields.add.distinct";
   public static final boolean DEFAULT_ATTR_FIELDS_ADD_DISTINCT = true;
 

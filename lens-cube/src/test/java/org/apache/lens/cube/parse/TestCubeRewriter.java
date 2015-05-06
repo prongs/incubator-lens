@@ -1550,32 +1550,41 @@ public class TestCubeRewriter extends TestQueryRewrite {
   }
 
   @Test
-  public void testWhereToHaving() throws SemanticException, ParseException {
+  public void testWhereToHaving() throws SemanticException, ParseException, LensException {
     Configuration conf = getConf();
-//    conf.setBoolean(CubeQueryConfUtil.ENABLE_WHERE_TO_HAVING, true);
+    conf.setBoolean(CubeQueryConfUtil.ENABLE_WHERE_TO_HAVING, true);
     String hql, expected;
     hql = rewrite("cube select msr3 from testcube where msr2 > 10 and " + TWO_DAYS_RANGE, conf);
     expected =
-      getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null,
-        "having sum(testcube.msr2) > 10", getWhereForDailyAndHourly2days(cubeName, "C1_testfact2_raw"));
-//    compareQueries(hql, expected);
+      getExpectedQuery(cubeName, "select max(testcube.msr3) FROM ", null,
+        "having sum(testcube.msr2) > 10", getWhereForHourly2days(cubeName, "C1_testfact2"));
+    compareQueries(hql, expected);
     hql = rewrite("cube select msr2 from testcube where msr2 > 10 and dim1 = 'x' and " + TWO_DAYS_RANGE, conf);
     expected =
-      getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null,
-        null, getWhereForDailyAndHourly2days(cubeName, "C1_testfact2_raw"));
-//    compareQueries(hql, expected);
+      getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", "testcube.dim1 = 'x'",
+        " having sum(testcube.msr2) > 10", getWhereForDailyAndHourly2days(cubeName, "C1_summary1"));
+    compareQueries(hql, expected);
     hql = rewrite(
-      "cube select msr1, msr2 from testcube where msr2 > 10 and msr1 < 15 and dim1 = 'x' and " + TWO_DAYS_RANGE,
+      "cube select msr2 from testcube where msr3 < 15 and dim1 = 'x' and " + TWO_DAYS_RANGE,
       conf);
     expected =
-      getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null,
-        null, getWhereForDailyAndHourly2days(cubeName, "C1_testfact2_raw"));
-//    compareQueries(hql, expected);
-    hql = rewrite("cube select msr2 from testcube where msr2 > 10 and dim1 = 'x' and " + TWO_DAYS_RANGE
-      + " having msr1 > 15", conf);
+      getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", "testcube.dim1 = 'x'",
+        "having max(testcube.msr3) < 15", getWhereForDailyAndHourly2days(cubeName, "C1_summary1"));
+        compareQueries(hql, expected);
+    hql = rewrite(
+      "cube select msr3, msr2 from testcube where msr2 > 10 and msr3 < 15 and dim1 = 'x' and " + TWO_DAYS_RANGE,
+      conf);
     expected =
-      getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null,
-        null, getWhereForDailyAndHourly2days(cubeName, "C1_testfact2_raw"));
+      getExpectedQuery(cubeName, "select max(testcube.msr3), sum(testcube.msr2) FROM ", "testcube.dim1 = 'x'",
+        "having sum(testcube.msr2) > 10 and max(testcube.msr3) < 15",
+        getWhereForDailyAndHourly2days(cubeName, "C1_summary1"));
+    compareQueries(hql, expected);
+    hql = rewrite("cube select msr2 from testcube where msr2 > 10 and dim1 = 'x' and " + TWO_DAYS_RANGE
+      + " having msr3 > 15", conf);
+    expected =
+      getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", "testcube.dim1 = 'x'",
+        "having max(testcube.msr3) < 15 and sum(testcube.msr2) > 10",
+        getWhereForDailyAndHourly2days(cubeName, "C1_summary1"));
 //    compareQueries(hql, expected);
     hql = rewrite("cube select msr2 from testcube where msr2 > 10 and dim1 = 'x' and " + TWO_DAYS_RANGE
       + " having msr1 > 15 and msr1 < 20", conf);
@@ -1583,6 +1592,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
       getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null,
         null, getWhereForDailyAndHourly2days(cubeName, "C1_testfact2_raw"));
 //    compareQueries(hql, expected);
+    System.out.println(hql);
   }
 
   private CommandProcessorResponse runExplain(String hql, HiveConf conf) throws Exception {
