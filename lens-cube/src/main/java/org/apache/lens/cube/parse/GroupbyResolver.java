@@ -35,8 +35,6 @@ import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.antlr.runtime.CommonToken;
 import org.antlr.runtime.tree.Tree;
 
-import com.google.common.collect.Lists;
-
 /**
  * Promotes groupby to select and select to groupby.
  */
