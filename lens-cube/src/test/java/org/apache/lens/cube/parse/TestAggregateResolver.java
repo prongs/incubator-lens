@@ -477,7 +477,7 @@ public class TestAggregateResolver extends TestQueryRewrite {
     hql = rewrite(cubeql.replace("msr2", "sum(msr2)"), conf);
     conf.setBoolean(CubeQueryConfUtil.ENABLE_WHERE_TO_HAVING, true);
 
-    hql = rewrite("cube select msr2 from testcube where msr2 > 10 or msr3 < 15 and " + TWO_DAYS_RANGE, conf);
+    hql = rewrite("cube select msr2 from testcube where (msr2 > 10 or msr3 < 15) and " + TWO_DAYS_RANGE, conf);
     expected =
       getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", "testcube.dim1 = 'x'",
         "having max(testcube.msr3) > 15 and max(testcube.msr3) < 20 and sum(testcube.msr2) > 10",
