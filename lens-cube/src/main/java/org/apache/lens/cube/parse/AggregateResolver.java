@@ -20,7 +20,6 @@
 package org.apache.lens.cube.parse;
 
 import static org.apache.hadoop.hive.ql.parse.HiveParser.*;
-import static org.apache.hadoop.hive.ql.parse.HiveParser.KW_AND;
 
 import java.util.Iterator;
 import java.util.List;
@@ -77,7 +76,8 @@ class AggregateResolver implements ContextRewriter {
       || hasMeasuresInDistinctClause(cubeql, cubeql.getHavingAST(), false)
       || hasMeasuresNotInDefaultAggregates(cubeql, cubeql.getSelectAST(), null, aggregateResolverDisabled)
       || hasMeasuresNotInDefaultAggregates(cubeql, cubeql.getHavingAST(), null, aggregateResolverDisabled)
-      || hasMeasures(cubeql, cubeql.getWhereAST()) || hasMeasures(cubeql, cubeql.getGroupByAST())
+      || hasMeasuresNotInDefaultAggregates(cubeql, cubeql.getWhereAST(), null, aggregateResolverDisabled)
+      || hasMeasures(cubeql, cubeql.getGroupByAST())
       || hasMeasures(cubeql, cubeql.getOrderByAST())) {
       Iterator<CandidateFact> factItr = cubeql.getCandidateFactTables().iterator();
       while (factItr.hasNext()) {
@@ -114,6 +114,7 @@ class AggregateResolver implements ContextRewriter {
       }
     }
   }
+
   private ASTNode joinWithAnd(List<ASTNode> nodes) {
     if (nodes == null || nodes.size() == 0) {
       return null;
@@ -131,39 +132,64 @@ class AggregateResolver implements ContextRewriter {
 
   private void pushWhereToHaving(CubeQueryContext cubeql) {
     if (!whetherPushwhereToHaving) {
+      // push to having disabled.
       return;
     }
     ASTNode whereAST = cubeql.getWhereAST();
-    if (whereAST != null && whereAST.getChildCount() != 0) {
-      List<ASTNode> havingASTs = Lists.newArrayList();
-      ASTNode whereChildAST = extractHavingFromWhere((ASTNode) whereAST.getChild(0), havingASTs, cubeql);
-      if (whereChildAST == null) {
-        cubeql.setWhereAST(null);
-      } else {
-        whereAST.setChild(0, whereChildAST);
-        cubeql.setWhereAST(whereAST);
-      }
-      ASTNode joinedHavingAST = joinWithAnd(havingASTs);
-      if (cubeql.getHavingAST() == null) {
-        ASTNode newAST = new ASTNode(new CommonToken(TOK_HAVING));
-        newAST.addChild(joinedHavingAST);
-        cubeql.setHavingAST(newAST);
-      } else {
-        ASTNode existingHavingTree = (ASTNode) cubeql.getHavingAST().getChild(0);
-        while (existingHavingTree.getToken().getType() == KW_AND) {
-          existingHavingTree = (ASTNode) existingHavingTree.getChild(existingHavingTree.getChildCount() - 1);
-        }
-        ASTNode parent = (ASTNode) existingHavingTree.getParent();
-        ASTNode newAST = new ASTNode(new CommonToken(KW_AND, "and"));
-        newAST.addChild(existingHavingTree);
-        newAST.addChild(joinedHavingAST);
-        parent.setChild(parent.getChildCount() - 1, newAST);
-      }
+    if (whereAST == null || whereAST.getChildCount() == 0) {
+      // nothing in where clause. Can't extract having clauses.
+      return;
     }
+    List<ASTNode> havingASTs = Lists.newArrayList();
+    // whereAST has TOK_WHERE and single child. the single child is where the clause starts.
+    ASTNode whereChildAST = (ASTNode) whereAST.getChild(0);
+    whereChildAST = extractHavingFromWhere(whereChildAST, havingASTs, cubeql);
+    if (havingASTs.isEmpty()) {
+      // could not find any clauses to be promoted to having. where clause would have been unchanged.
+      return;
+    }
+    // some where clauses have been extracted as having clauses. Have to put remaining where clauses as
+    // where and extracted where clauses as having.
+    if (whereChildAST == null) {
+      // all wheres extracted as having
+      cubeql.setWhereAST(null);
+    } else {
+      whereAST.setChild(0, whereChildAST);
+      cubeql.setWhereAST(whereAST);
+    }
+    // join the extracted having clauses with and, append them to existing having clauses.
+    ASTNode joinedHavingAST = joinWithAnd(havingASTs);
+    if (cubeql.getHavingAST() == null) {
+      ASTNode newAST = new ASTNode(new CommonToken(TOK_HAVING));
+      newAST.addChild(joinedHavingAST);
+      cubeql.setHavingAST(newAST);
+    } else {
+      ASTNode existingHavingTree = (ASTNode) cubeql.getHavingAST().getChild(0);
+      // existing having clause. Let's to to rightmost child(which would be last clause), and replace that
+      // by and clause on itself and the joined extracted having tree.
+      while (existingHavingTree.getToken().getType() == KW_AND) {
+        existingHavingTree = (ASTNode) existingHavingTree.getChild(existingHavingTree.getChildCount() - 1);
+      }
+      ASTNode parent = (ASTNode) existingHavingTree.getParent();
+      ASTNode newAST = new ASTNode(new CommonToken(KW_AND, "and"));
+      newAST.addChild(existingHavingTree);
+      newAST.addChild(joinedHavingAST);
+      parent.setChild(parent.getChildCount() - 1, newAST);
+    }
+
   }
 
+  /**
+   *
+   * @param ast         where ast.
+   * @param havingASTs  the list in which having asts are to be extracted.
+   * @param cubeql      cube query context
+   * @return            new where ast, after having asts have been extracted out. returns null if all where clauses
+   *                    were extracted as having clauses.
+   */
   private ASTNode extractHavingFromWhere(ASTNode ast, List<ASTNode> havingASTs, CubeQueryContext cubeql) {
     if (ast.getToken().getType() == KW_AND) {
+      // recursive case.
       ASTNode left = extractHavingFromWhere((ASTNode) ast.getChild(0), havingASTs, cubeql);
       ASTNode right = extractHavingFromWhere((ASTNode) ast.getChild(1), havingASTs, cubeql);
       if (left == null && right == null) {
@@ -178,6 +204,7 @@ class AggregateResolver implements ContextRewriter {
         return ast;
       }
     } else {
+      // base case
       if (hasMeasures(cubeql, ast) || HQLParser.hasAggregate(ast)) {
         havingASTs.add(ast);
         return null;
