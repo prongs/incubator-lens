@@ -491,6 +491,7 @@ public class HiveDriver implements LensDriver {
    *
    * @see org.apache.lens.server.api.driver.LensDriver#executeAsync(org.apache.lens.server.api.query.QueryContext)
    */
+  
   @Override
   public void executeAsync(QueryContext ctx) throws LensException {
     try {
