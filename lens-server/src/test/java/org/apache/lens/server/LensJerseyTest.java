@@ -193,7 +193,6 @@ public abstract class LensJerseyTest extends JerseyTest {
    * @param conf the conf
    */
   public void restartLensServer(HiveConf conf) {
-    new HiveConf()
     LensServices.get().stop();
     LensMetricsUtil.clearRegistry();
     System.out.println("Lens services stopped!");
