@@ -89,7 +89,6 @@ public class TestHiveDriver {
 
   protected String sessionid;
   protected SessionState ss;
-  public static final String TMP_DIR = "/tmp/hive/" + UUID.randomUUID();
   /**
    * Before test.
    *
