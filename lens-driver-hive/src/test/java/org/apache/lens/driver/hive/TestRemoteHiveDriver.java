@@ -209,7 +209,7 @@ public class TestRemoteHiveDriver extends TestHiveDriver {
                 }
                 Thread.sleep(POLL_DELAY);
               } catch (LensException e) {
-                LOG.error("Got Exception", e.getCause());
+                LOG.error("Got Exception", e);
                 e.printStackTrace();
                 errCount.incrementAndGet();
                 break;
