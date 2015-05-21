@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 import java.util.UUID;
 
 import org.apache.lens.server.api.LensConfConstants;
@@ -47,12 +48,12 @@ public class TestFilePersistentFormatter extends TestAbstractFileFormatter {
    * The part file dir.
    */
   private static final String RANDOM_PREFIX = UUID.randomUUID().toString();
-  private Path partFileDir = new Path("file:///tmp/" + RANDOM_PREFIX + "/partcsvfiles");
+  private Path partFileDir;
 
   /**
    * The part file text dir.
    */
-  private Path partFileTextDir = new Path("file:///tmp/" + RANDOM_PREFIX + "/parttextfiles");
+  private Path partFileTextDir;
 
   /**
    * Creates the part files.
@@ -61,9 +62,14 @@ public class TestFilePersistentFormatter extends TestAbstractFileFormatter {
    */
   @BeforeTest
   public void createPartFiles() throws IOException {
-
+    Properties props = new Properties();
+    props.load(TestFilePersistentFormatter.class.getResourceAsStream("/paths.properties"));
+    partFileDir = new Path("file://" + props.getProperty("build.tmp.path") + "/partcsvfiles");
+    partFileTextDir = new Path("file://" + props.getProperty("build.tmp.path") + "/parttextfiles");
     // create csv files
     FileSystem fs = partFileDir.getFileSystem(new Configuration());
+    fs.mkdirs(partFileDir);
+    fs.mkdirs(partFileTextDir);
     BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(fs.create(new Path(partFileDir, "000000_2"))));
     writer.write("\"1\",\"one\",\"one\",\"one\",\"1\",\"1:one\",\"1=one\"\n");
     writer.close();
