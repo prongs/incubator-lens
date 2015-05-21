@@ -74,8 +74,10 @@ public class TestRemoteHiveDriver extends TestHiveDriver {
     try {
       port = new ServerSocket(0).getLocalPort();
     } catch (IOException e) {
+      LOG.error("Got error while finding available port.", e);
       port = 12345;
     }
+    LOG.info("HiveDriver: Using port " + port);
     HS2_PORT = port;
   }
 
