@@ -18,7 +18,6 @@
  */
 package org.apache.lens.driver.hive;
 
-import org.apache.lens.server.api.LensServerConf;
 import org.apache.lens.server.api.error.LensException;
 
 import org.apache.commons.logging.Log;
@@ -52,7 +51,7 @@ public class RemoteThriftConnection implements ThriftConnection {
 
   public void init(HiveConf conf, String user) {
     // new HiveConf() is getting created because connection will be different for each user
-    this.conf = LensServerConf.createHiveConf();
+    this.conf = new HiveConf(conf);
     this.conf.setVar(HiveConf.ConfVars.HIVE_SERVER2_THRIFT_CLIENT_USER, user);
   }
 

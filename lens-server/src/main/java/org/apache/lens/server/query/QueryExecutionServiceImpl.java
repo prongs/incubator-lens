@@ -2313,7 +2313,7 @@ public class QueryExecutionServiceImpl extends LensService implements QueryExecu
   }
 
   // Used in test code
-  Collection<LensDriver> getDrivers() {
+  public Collection<LensDriver> getDrivers() {
     return drivers.values();
   }
 

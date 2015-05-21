@@ -26,11 +26,15 @@ import java.net.URI;
 
 import javax.ws.rs.core.UriBuilder;
 
+import org.apache.lens.driver.hive.HiveDriver;
 import org.apache.lens.driver.hive.TestRemoteHiveDriver;
 import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.LensServerConf;
+import org.apache.lens.server.api.driver.LensDriver;
 import org.apache.lens.server.api.metrics.LensMetricsUtil;
 import org.apache.lens.server.api.metrics.MetricsService;
+import org.apache.lens.server.api.query.QueryExecutionService;
+import org.apache.lens.server.query.QueryExecutionServiceImpl;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -64,10 +68,12 @@ public abstract class LensJerseyTest extends JerseyTest {
     LOG.info("setUp in class: " + this.getClass().getCanonicalName());
     super.setUp();
   }
+
   public void tearDown() throws Exception {
     LOG.info("tearDown in class: " + this.getClass().getCanonicalName());
     super.tearDown();
   }
+
   protected int getTestPort() {
     if (!isPortAlreadyFound()) {
       return port;
@@ -122,7 +128,12 @@ public abstract class LensJerseyTest extends JerseyTest {
 
     LensServices.get().init(hiveConf);
     LensServices.get().start();
-
+    for (LensDriver driver : ((QueryExecutionServiceImpl) LensServices.get().getService(QueryExecutionService.NAME))
+      .getDrivers()) {
+      if(driver instanceof HiveDriver) {
+        driver.configure(hiveConf);
+      }
+    }
     // Check if mock service is started
     Service mockSvc = LensServices.get().getService(MockNonLensService.NAME);
     assertNotNull(mockSvc);
