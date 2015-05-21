@@ -130,7 +130,7 @@ public abstract class LensJerseyTest extends JerseyTest {
     LensServices.get().start();
     for (LensDriver driver : ((QueryExecutionServiceImpl) LensServices.get().getService(QueryExecutionService.NAME))
       .getDrivers()) {
-      if(driver instanceof HiveDriver) {
+      if (driver instanceof HiveDriver) {
         driver.configure(hiveConf);
       }
     }
