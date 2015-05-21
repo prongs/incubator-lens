@@ -24,9 +24,9 @@ import java.net.URLClassLoader;
 import java.util.HashMap;
 
 import org.apache.lens.api.LensSessionHandle;
-import org.apache.lens.server.LensServerConf;
 import org.apache.lens.server.LensTestUtil;
 import org.apache.lens.server.api.LensConfConstants;
+import org.apache.lens.server.api.LensServerConf;
 import org.apache.lens.server.user.UserConfigLoaderFactory;
 
 import org.apache.commons.logging.Log;

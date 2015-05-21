@@ -20,7 +20,7 @@ package org.apache.lens.server.stats;
 
 import java.io.StringWriter;
 
-import org.apache.lens.server.LensServerConf;
+import org.apache.lens.server.api.LensServerConf;
 import org.apache.lens.server.stats.event.LoggableLensStatistics;
 import org.apache.lens.server.stats.store.log.LogStatisticsStore;
 import org.apache.lens.server.stats.store.log.StatisticsLogLayout;

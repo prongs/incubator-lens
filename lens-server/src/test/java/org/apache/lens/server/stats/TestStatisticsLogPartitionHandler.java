@@ -26,8 +26,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Set;
 
-import org.apache.lens.server.LensServerConf;
 import org.apache.lens.server.api.LensConfConstants;
+import org.apache.lens.server.api.LensServerConf;
 import org.apache.lens.server.stats.event.query.QueryExecutionStatistics;
 import org.apache.lens.server.stats.store.log.PartitionEvent;
 import org.apache.lens.server.stats.store.log.StatisticsLogPartitionHandler;

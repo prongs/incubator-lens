@@ -23,9 +23,9 @@ import static org.testng.Assert.*;
 import java.util.HashMap;
 
 import org.apache.lens.api.LensSessionHandle;
-import org.apache.lens.server.LensServerConf;
 import org.apache.lens.server.LensServices;
 import org.apache.lens.server.api.LensConfConstants;
+import org.apache.lens.server.api.LensServerConf;
 import org.apache.lens.server.api.metrics.MetricsService;
 
 import org.apache.hadoop.hive.conf.HiveConf;
