@@ -482,12 +482,14 @@
           <revisionOnScmFailure>release</revisionOnScmFailure>
           <doCheck>false</doCheck>
           <doUpdate>false</doUpdate>
+          <timestampFormat>{0,date,yyyy-MM-dd-HH-mm-ss}</timestampFormat>
         </configuration>
         <executions>
           <execution>
             <phase>validate</phase>
             <goals>
               <goal>create</goal>
+              <goal>create-timestamp</goal>
             </goals>
           </execution>
         </executions>

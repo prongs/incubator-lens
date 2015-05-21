@@ -32,7 +32,7 @@
 
   <property>
     <name>hive.metastore.warehouse.dir</name>
-    <value>/tmp/hive/warehouse/${buildNumber}</value>
+    <value>/tmp/hive/warehouse/${buildNumber}/${timestamp}</value>
   </property>
 
   <property>
