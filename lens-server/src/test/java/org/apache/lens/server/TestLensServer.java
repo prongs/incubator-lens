@@ -21,6 +21,7 @@ package org.apache.lens.server;
 import java.io.IOException;
 
 import org.apache.lens.server.api.LensConfConstants;
+import org.apache.lens.server.api.LensServerConf;
 
 import org.apache.hadoop.hive.conf.HiveConf;
 

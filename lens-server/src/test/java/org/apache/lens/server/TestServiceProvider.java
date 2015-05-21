@@ -19,6 +19,7 @@
 package org.apache.lens.server;
 
 import org.apache.lens.server.api.LensConfConstants;
+import org.apache.lens.server.api.LensServerConf;
 import org.apache.lens.server.api.ServiceProvider;
 import org.apache.lens.server.api.ServiceProviderFactory;
 import org.apache.lens.server.api.events.LensEventService;
