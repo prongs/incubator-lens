@@ -30,6 +30,7 @@ import javax.ws.rs.core.UriBuilder;
 
 import org.apache.lens.api.response.LensJAXBContextResolver;
 import org.apache.lens.server.api.LensConfConstants;
+import org.apache.lens.server.api.LensServerConf;
 import org.apache.lens.server.api.metrics.MetricsService;
 import org.apache.lens.server.error.LensExceptionMapper;
 import org.apache.lens.server.metrics.MetricsServiceImpl;

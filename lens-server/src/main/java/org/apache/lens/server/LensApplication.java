@@ -25,6 +25,7 @@ import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.core.Application;
 
 import org.apache.lens.server.api.LensConfConstants;
+import org.apache.lens.server.api.LensServerConf;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;

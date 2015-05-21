@@ -21,6 +21,8 @@ package org.apache.lens.server;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
+import org.apache.lens.server.api.LensServerConf;
+
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hive.service.CompositeService;
 import org.apache.log4j.BasicConfigurator;
@@ -29,7 +31,6 @@ import org.apache.log4j.PropertyConfigurator;
 /**
  * Initialize the webapp.
  *
- * @see LensServletContextEvent
  */
 public class LensServletContextListener implements ServletContextListener {
 
