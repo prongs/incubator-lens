@@ -249,6 +249,7 @@
       </testResource>
       <testResource>
         <directory>${project.basedir}/src/test/resources</directory>
+        <filtering>true</filtering>
       </testResource>
     </testResources>
     <plugins>
@@ -276,10 +277,6 @@
             </goals>
           </execution>
         </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>buildnumber-maven-plugin</artifactId>
       </plugin>
       <plugin>
         <groupId>org.mortbay.jetty</groupId>
