@@ -68,7 +68,7 @@ public class TestRemoteHiveDriver extends TestHiveDriver {
 
   /** The remote conf. */
 
-  public static HiveConf remoteConf = LensServerConf.createHiveConf();
+  private static HiveConf remoteConf = LensServerConf.createHiveConf();
 
   static {
     int port;
