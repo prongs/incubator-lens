@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lens.api.query.QueryHandle;
 import org.apache.lens.server.api.LensConfConstants;
+import org.apache.lens.server.api.LensServerConf;
 import org.apache.lens.server.api.driver.DriverQueryPlan;
 import org.apache.lens.server.api.driver.DriverQueryStatus.DriverQueryState;
 import org.apache.lens.server.api.driver.LensDriver;
@@ -67,12 +68,14 @@ public class TestRemoteHiveDriver extends TestHiveDriver {
 
   /** The remote conf. */
 
-  private static HiveConf remoteConf = new HiveConf();
+  public static HiveConf remoteConf = LensServerConf.createHiveConf();
 
   static {
     int port;
     try {
-      port = new ServerSocket(0).getLocalPort();
+      ServerSocket socket = new ServerSocket(0);
+      port = socket.getLocalPort();
+      socket.close();
     } catch (IOException e) {
       LOG.error("Got error while finding available port.", e);
       port = 12345;
@@ -97,7 +100,7 @@ public class TestRemoteHiveDriver extends TestHiveDriver {
    *
    * @throws Exception the exception
    */
-  public static void createHS2Service() throws Exception {
+  public static HiveConf createHS2Service() throws Exception {
     remoteConf.setClass(HiveDriver.HIVE_CONNECTION_CLASS, RemoteThriftConnection.class, ThriftConnection.class);
     remoteConf.set("hive.lock.manager", "org.apache.hadoop.hive.ql.lockmgr.EmbeddedLockManager");
     remoteConf.setVar(HiveConf.ConfVars.HIVE_SERVER2_THRIFT_BIND_HOST, HS2_HOST);
@@ -113,6 +116,7 @@ public class TestRemoteHiveDriver extends TestHiveDriver {
     server.start();
     // TODO figure out a better way to wait for thrift service to start
     Thread.sleep(7000);
+    return remoteConf;
   }
 
   /**

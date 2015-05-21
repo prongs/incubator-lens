@@ -28,6 +28,7 @@ import javax.ws.rs.core.UriBuilder;
 
 import org.apache.lens.driver.hive.TestRemoteHiveDriver;
 import org.apache.lens.server.api.LensConfConstants;
+import org.apache.lens.server.api.LensServerConf;
 import org.apache.lens.server.api.metrics.LensMetricsUtil;
 import org.apache.lens.server.api.metrics.MetricsService;
 
@@ -49,6 +50,7 @@ public abstract class LensJerseyTest extends JerseyTest {
   public static final Log LOG = LogFactory.getLog(LensJerseyTest.class);
 
   private int port = -1;
+  private static HiveConf hiveConf;
 
   protected URI getUri() {
     return UriBuilder.fromUri("http://localhost/").port(getTestPort()).build();
@@ -109,9 +111,8 @@ public abstract class LensJerseyTest extends JerseyTest {
   @BeforeSuite
   public void startAll() throws Exception {
     LOG.info("Before suite");
-    TestRemoteHiveDriver.createHS2Service();
+    hiveConf = TestRemoteHiveDriver.createHS2Service();
     System.out.println("Remote hive server started!");
-    HiveConf hiveConf = new HiveConf();
     hiveConf.setIntVar(HiveConf.ConfVars.HIVE_SERVER2_ASYNC_EXEC_THREADS, 5);
     hiveConf.setIntVar(HiveConf.ConfVars.HIVE_SERVER2_THRIFT_CLIENT_CONNECTION_RETRY_LIMIT, 3);
     hiveConf.setIntVar(HiveConf.ConfVars.HIVE_SERVER2_THRIFT_CLIENT_RETRY_LIMIT, 3);
@@ -119,7 +120,7 @@ public abstract class LensJerseyTest extends JerseyTest {
     LensTestUtil.createTestDatabaseResources(new String[]{LensTestUtil.DB_WITH_JARS, LensTestUtil.DB_WITH_JARS_2},
       hiveConf);
 
-    LensServices.get().init(LensServerConf.getHiveConf());
+    LensServices.get().init(hiveConf);
     LensServices.get().start();
 
     // Check if mock service is started
@@ -181,7 +182,7 @@ public abstract class LensJerseyTest extends JerseyTest {
    * Restart lens server.
    */
   public void restartLensServer() {
-    HiveConf h = getServerConf();
+    HiveConf h = new HiveConf(hiveConf);
     h.set(LensConfConstants.MAX_NUMBER_OF_FINISHED_QUERY, "0");
     restartLensServer(h);
   }
@@ -192,6 +193,7 @@ public abstract class LensJerseyTest extends JerseyTest {
    * @param conf the conf
    */
   public void restartLensServer(HiveConf conf) {
+    new HiveConf()
     LensServices.get().stop();
     LensMetricsUtil.clearRegistry();
     System.out.println("Lens services stopped!");
