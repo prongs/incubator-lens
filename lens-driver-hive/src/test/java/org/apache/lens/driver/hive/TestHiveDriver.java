@@ -89,7 +89,7 @@ public class TestHiveDriver {
 
   protected String sessionid;
   protected SessionState ss;
-
+  public static final String TMP_DIR = "/tmp/hive/" + UUID.randomUUID();
   /**
    * Before test.
    *
@@ -124,7 +124,7 @@ public class TestHiveDriver {
     conf.setClass(HiveDriver.HIVE_CONNECTION_CLASS, EmbeddedThriftConnection.class, ThriftConnection.class);
     conf.set("hive.lock.manager", "org.apache.hadoop.hive.ql.lockmgr.EmbeddedLockManager");
     conf.setBoolean(HiveDriver.HS2_CALCULATE_PRIORITY, true);
-    conf.setVar(HiveConf.ConfVars.METASTOREWAREHOUSE, "/tmp/hive/" + UUID.randomUUID());
+    conf.setVar(HiveConf.ConfVars.METASTOREWAREHOUSE, TMP_DIR);
     driver = new HiveDriver();
     driver.configure(conf);
     drivers = new ArrayList<LensDriver>() {

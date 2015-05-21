@@ -134,7 +134,7 @@ public class TestRemoteHiveDriver extends TestHiveDriver {
     dataBase = TestRemoteHiveDriver.class.getSimpleName().toLowerCase();
     conf = new HiveConf(remoteConf);
     conf.addResource("hivedriver-site.xml");
-    conf.setVar(HiveConf.ConfVars.METASTOREWAREHOUSE, "/tmp/hive/" + UUID.randomUUID());
+    conf.setVar(HiveConf.ConfVars.METASTOREWAREHOUSE, TMP_DIR);
     driver = new HiveDriver();
     conf.setBoolean(HiveDriver.HS2_CALCULATE_PRIORITY, true);
     driver.configure(conf);
