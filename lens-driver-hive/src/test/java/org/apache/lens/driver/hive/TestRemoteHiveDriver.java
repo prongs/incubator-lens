@@ -21,6 +21,7 @@ package org.apache.lens.driver.hive;
 import static org.testng.Assert.assertEquals;
 
 import java.io.*;
+import java.net.ServerSocket;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -59,7 +60,7 @@ public class TestRemoteHiveDriver extends TestHiveDriver {
   static final String HS2_HOST = "localhost";
 
   /** The Constant HS2_PORT. */
-  static final int HS2_PORT = 12345;
+  static final int HS2_PORT;
 
   /** The server. */
   private static HiveServer2 server;
@@ -67,6 +68,16 @@ public class TestRemoteHiveDriver extends TestHiveDriver {
   /** The remote conf. */
 
   private static HiveConf remoteConf = new HiveConf();
+
+  static {
+    int HS2_PORT1;
+    try {
+      HS2_PORT1 = new ServerSocket(0).getLocalPort();
+    } catch (IOException e) {
+      HS2_PORT1 = 12345;
+    }
+    HS2_PORT = HS2_PORT1;
+  }
 
   /**
    * Setup test.

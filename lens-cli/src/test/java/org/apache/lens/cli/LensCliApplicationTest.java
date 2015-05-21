@@ -33,11 +33,6 @@ import org.testng.annotations.BeforeTest;
 public class LensCliApplicationTest extends LensAllApplicationJerseyTest {
 
   @Override
-  protected int getTestPort() {
-    return 10057;
-  }
-
-  @Override
   protected URI getBaseUri() {
     return UriBuilder.fromUri(getUri()).path("lensapi").build();
   }

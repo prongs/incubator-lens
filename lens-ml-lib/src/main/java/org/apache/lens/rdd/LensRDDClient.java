@@ -106,7 +106,6 @@ public class LensRDDClient {
     HIVE_CONF.setVar(HiveConf.ConfVars.METASTOREURIS, "");
     HIVE_CONF.set("javax.jdo.option.ConnectionURL", "jdbc:derby:;databaseName=./metastore_db;create=true");
     HIVE_CONF.set("javax.jdo.option.ConnectionDriverName", "org.apache.derby.jdbc.EmbeddedDriver");
-    HIVE_CONF.setBoolean("hive.metastore.local", true);
     HIVE_CONF.set("hive.metastore.warehouse.dir", "file://${user.dir}/warehouse");
   }
 

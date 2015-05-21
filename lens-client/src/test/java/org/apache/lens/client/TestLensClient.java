@@ -39,11 +39,6 @@ public class TestLensClient extends LensAllApplicationJerseyTest {
   private static final String TEST_DB = TestLensClient.class.getSimpleName();
 
   @Override
-  protected int getTestPort() {
-    return 10056;
-  }
-
-  @Override
   protected URI getBaseUri() {
     return UriBuilder.fromUri("http://localhost/").port(getTestPort()).path("/lensapi").build();
   }
