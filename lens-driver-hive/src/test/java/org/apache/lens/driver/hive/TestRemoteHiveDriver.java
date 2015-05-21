@@ -24,7 +24,6 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lens.api.query.QueryHandle;
@@ -134,7 +133,6 @@ public class TestRemoteHiveDriver extends TestHiveDriver {
     dataBase = TestRemoteHiveDriver.class.getSimpleName().toLowerCase();
     conf = new HiveConf(remoteConf);
     conf.addResource("hivedriver-site.xml");
-    conf.setVar(HiveConf.ConfVars.METASTOREWAREHOUSE, TMP_DIR);
     driver = new HiveDriver();
     conf.setBoolean(HiveDriver.HS2_CALCULATE_PRIORITY, true);
     driver.configure(conf);

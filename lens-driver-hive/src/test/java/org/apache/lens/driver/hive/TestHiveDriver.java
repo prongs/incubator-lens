@@ -89,6 +89,7 @@ public class TestHiveDriver {
 
   protected String sessionid;
   protected SessionState ss;
+
   /**
    * Before test.
    *
@@ -123,7 +124,6 @@ public class TestHiveDriver {
     conf.setClass(HiveDriver.HIVE_CONNECTION_CLASS, EmbeddedThriftConnection.class, ThriftConnection.class);
     conf.set("hive.lock.manager", "org.apache.hadoop.hive.ql.lockmgr.EmbeddedLockManager");
     conf.setBoolean(HiveDriver.HS2_CALCULATE_PRIORITY, true);
-    conf.setVar(HiveConf.ConfVars.METASTOREWAREHOUSE, TMP_DIR);
     driver = new HiveDriver();
     driver.configure(conf);
     drivers = new ArrayList<LensDriver>() {
@@ -666,6 +666,7 @@ public class TestHiveDriver {
   }
 
   // explain
+
   /**
    * Test explain.
    *
@@ -745,8 +746,8 @@ public class TestHiveDriver {
     System.out.println("Parts:" + plan.getPartitions());
     assertFalse(plan.getPartitions().isEmpty());
     assertEquals(plan.getPartitions().size(), 1);
-    assertTrue(((String)plan.getPartitions().get(dataBase + ".test_part_table").iterator().next()).contains("today"));
-    assertTrue(((String)plan.getPartitions().get(dataBase + ".test_part_table").iterator().next()).contains("dt"));
+    assertTrue(((String) plan.getPartitions().get(dataBase + ".test_part_table").iterator().next()).contains("today"));
+    assertTrue(((String) plan.getPartitions().get(dataBase + ".test_part_table").iterator().next()).contains("dt"));
   }
 
   /**
