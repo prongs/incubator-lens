@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.query.PersistedOutputFormatter;
@@ -45,12 +46,13 @@ public class TestFilePersistentFormatter extends TestAbstractFileFormatter {
   /**
    * The part file dir.
    */
-  private Path partFileDir = new Path("file:///tmp/partcsvfiles");
+  private static final String RANDOM_PREFIX = UUID.randomUUID().toString();
+  private Path partFileDir = new Path("file:///tmp/" + RANDOM_PREFIX + "/partcsvfiles");
 
   /**
    * The part file text dir.
    */
-  private Path partFileTextDir = new Path("file:///tmp/parttextfiles");
+  private Path partFileTextDir = new Path("file:///tmp/" + RANDOM_PREFIX + "/parttextfiles");
 
   /**
    * Creates the part files.
