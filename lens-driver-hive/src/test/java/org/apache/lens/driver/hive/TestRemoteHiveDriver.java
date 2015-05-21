@@ -70,13 +70,13 @@ public class TestRemoteHiveDriver extends TestHiveDriver {
   private static HiveConf remoteConf = new HiveConf();
 
   static {
-    int HS2_PORT1;
+    int port;
     try {
-      HS2_PORT1 = new ServerSocket(0).getLocalPort();
+      port = new ServerSocket(0).getLocalPort();
     } catch (IOException e) {
-      HS2_PORT1 = 12345;
+      port = 12345;
     }
-    HS2_PORT = HS2_PORT1;
+    HS2_PORT = port;
   }
 
   /**
