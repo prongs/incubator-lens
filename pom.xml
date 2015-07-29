@@ -336,30 +336,24 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
         <version>${javadoc.plugin.version}</version>
-        <configuration>
-          <verbose>true</verbose>
-          <sourcepath>${basedir}/target/generated-sources/delombok</sourcepath>
-        </configuration>
         <inherited>false</inherited>
         <reportSets>
           <reportSet>
             <id>aggregate</id>
             <configuration>
+              <sourcepath>${basedir}/lens-api/target/generated-sources/xjc;${basedir}/lens-api/target/generated-sources/delombok</sourcepath>
               <quiet>true</quiet>
               <verbose>false</verbose>
               <includeDependencySources>false</includeDependencySources>
-              <sourcepath>/etc</sourcepath>
               <show>public</show>
               <groups>
                 <group>
                   <title>Client api</title>
                   <packages>org.apache.lens.api*:org.apache.lens.client*</packages>
-                  <sourcepath>/etc</sourcepath>
                 </group>
                 <group>
                   <title>Developer api</title>
                   <packages>org.apache.lens.server.api*</packages>
-                  <sourcepath>/etc</sourcepath>
                 </group>
               </groups>
             </configuration>
