@@ -337,6 +337,10 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
         <version>${javadoc.plugin.version}</version>
+        <configuration>
+          <verbose>true</verbose>
+          <sourcepath>${basedir}/target/generated-sources/delombok</sourcepath>
+        </configuration>
         <inherited>false</inherited>
         <reportSets>
           <reportSet>
@@ -345,18 +349,18 @@
               <quiet>true</quiet>
               <verbose>false</verbose>
               <includeDependencySources>false</includeDependencySources>
-              <sourcepath>${basedir}/*/target/generated-sources/delombok</sourcepath>
+              <sourcepath>/etc</sourcepath>
               <show>public</show>
               <groups>
                 <group>
                   <title>Client api</title>
                   <packages>org.apache.lens.api*:org.apache.lens.client*</packages>
-                  <sourcepath>${basedir}/*/target/generated-sources/delombok</sourcepath>
+                  <sourcepath>/etc</sourcepath>
                 </group>
                 <group>
                   <title>Developer api</title>
                   <packages>org.apache.lens.server.api*</packages>
-                  <sourcepath>${basedir}/*/target/generated-sources/delombok</sourcepath>
+                  <sourcepath>/etc</sourcepath>
                 </group>
               </groups>
             </configuration>
@@ -632,7 +636,7 @@
         <executions>
           <execution>
             <id>delombok</id>
-            <phase>generate-sources</phase>
+            <phase>pre-site</phase>
             <goals>
               <goal>delombok</goal>
             </goals>
@@ -647,7 +651,7 @@
           </execution>
           <execution>
             <id>test-delombok</id>
-            <phase>generate-sources</phase>
+            <phase>pre-site</phase>
             <goals>
               <goal>testDelombok</goal>
             </goals>
@@ -656,6 +660,16 @@
               <addOutputDirectory>false</addOutputDirectory>
             </configuration>
           </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>${javadoc.plugin.version}</version>
+        <configuration>
+          <sourcepath>${basedir}/target/generated-sources/xjc;${basedir}/target/generated-sources/delombok</sourcepath>
+        </configuration>
+        <executions>
         </executions>
       </plugin>
     </plugins>
