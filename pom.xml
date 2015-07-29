@@ -110,7 +110,7 @@
     <mvn.lens.install.dir>/usr/local/lens</mvn.lens.install.dir>
     <mvn.lens.webapp.dir>${mvn.lens.install.dir}/server/webapp</mvn.lens.webapp.dir>
     <mvn.lens.server.dir>${mvn.lens.webapp.dir}/lens-server</mvn.lens.server.dir>
-
+    <src.dir>src/main/java</src.dir>
   </properties>
 
   <groupId>org.apache.lens</groupId>
@@ -341,7 +341,6 @@
           <reportSet>
             <id>aggregate</id>
             <configuration>
-              <sourcepath>${basedir}/lens-api/target/generated-sources/xjc;${basedir}/lens-api/target/generated-sources/delombok</sourcepath>
               <quiet>true</quiet>
               <verbose>false</verbose>
               <includeDependencySources>false</includeDependencySources>
@@ -367,7 +366,7 @@
   </reporting>
 
   <build>
-
+    <sourceDirectory>${src.dir}</sourceDirectory>
     <resources>
       <resource>
         <directory>${basedir}/src/deb/control</directory>
@@ -620,38 +619,6 @@
               <goal>check</goal>
             </goals>
             <phase>verify</phase>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.projectlombok</groupId>
-        <artifactId>lombok-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>delombok</id>
-            <phase>pre-site</phase>
-            <goals>
-              <goal>delombok</goal>
-            </goals>
-            <configuration>
-              <formatPreferences>
-                <javaLangAsFQN>skip</javaLangAsFQN>
-              </formatPreferences>
-              <verbose>true</verbose>
-              <sourceDirectory>${project.basedir}/src/main/java</sourceDirectory>
-              <addOutputDirectory>false</addOutputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>test-delombok</id>
-            <phase>pre-site</phase>
-            <goals>
-              <goal>testDelombok</goal>
-            </goals>
-            <configuration>
-              <verbose>true</verbose>
-              <addOutputDirectory>false</addOutputDirectory>
-            </configuration>
           </execution>
         </executions>
       </plugin>
@@ -1475,6 +1442,48 @@
                 <systemPath>${java.home}/../lib/tools.jar</systemPath>
               </dependency>
             </dependencies>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>javadoc</id>
+      <properties>
+        <src.dir>target/generated-sources/delombok</src.dir>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>delombok</id>
+                <phase>generate-sources</phase>
+                <goals>
+                  <goal>delombok</goal>
+                </goals>
+                <configuration>
+                  <formatPreferences>
+                    <javaLangAsFQN>skip</javaLangAsFQN>
+                  </formatPreferences>
+                  <verbose>true</verbose>
+                  <sourceDirectory>${project.basedir}/src/main/java</sourceDirectory>
+                  <addOutputDirectory>true</addOutputDirectory>
+                </configuration>
+              </execution>
+              <execution>
+                <id>test-delombok</id>
+                <phase>generate-sources</phase>
+                <goals>
+                  <goal>testDelombok</goal>
+                </goals>
+                <configuration>
+                  <verbose>true</verbose>
+                  <addOutputDirectory>true</addOutputDirectory>
+                </configuration>
+              </execution>
+            </executions>
           </plugin>
         </plugins>
       </build>
