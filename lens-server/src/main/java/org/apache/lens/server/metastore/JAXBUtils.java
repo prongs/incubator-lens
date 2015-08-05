@@ -18,9 +18,13 @@
  */
 package org.apache.lens.server.metastore;
 
+import static org.apache.commons.lang3.StringUtils.isBlank;
+
 import java.lang.reflect.Constructor;
 import java.util.*;
 
+import javax.ws.rs.BadRequestException;
+import javax.ws.rs.NotFoundException;
 import javax.ws.rs.WebApplicationException;
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeFactory;
@@ -57,6 +61,12 @@ public final class JAXBUtils {
 
   private static final ObjectFactory XCF = new ObjectFactory();
 
+  private static void nullCheck(Object o) {
+    if (o == null) {
+      throw new NotFoundException();
+    }
+  }
+
   /**
    * Create a hive ql cube obejct from corresponding JAXB object
    *
@@ -67,6 +77,12 @@ public final class JAXBUtils {
   public static CubeInterface hiveCubeFromXCube(XCube cube, Cube parent) throws ParseException {
     if (cube instanceof XDerivedCube) {
       XDerivedCube dcube = (XDerivedCube) cube;
+      if (parent == null) {
+        if (isBlank(dcube.getParent())) {
+          throw new BadRequestException("Parent can't be null for derived cubes");
+        }
+        throw new NotFoundException("Parent Cube: " + dcube.getParent() + " doesn't exist");
+      }
       Set<String> dims = new LinkedHashSet<String>();
       dims.addAll(dcube.getDimAttrNames().getAttrName());
 
@@ -115,6 +131,7 @@ public final class JAXBUtils {
    * @return {@link XCube}
    */
   public static XCube xCubeFromHiveCube(CubeInterface c) {
+    nullCheck(c);
     XCube xc;
     if (c.isDerivedCube()) {
       XDerivedCube xdc = XCF.createXDerivedCube();
@@ -577,10 +594,7 @@ public final class JAXBUtils {
   }
 
   public static XStorage xstorageFromStorage(Storage storage) {
-    if (storage == null) {
-      return null;
-    }
-
+    nullCheck(storage);
     XStorage xstorage = null;
     xstorage = XCF.createXStorage();
     xstorage.setProperties(new XProperties());
@@ -591,10 +605,7 @@ public final class JAXBUtils {
   }
 
   public static XDimensionTable dimTableFromCubeDimTable(CubeDimensionTable cubeDimTable) {
-    if (cubeDimTable == null) {
-      return null;
-    }
-
+    nullCheck(cubeDimTable);
     XDimensionTable dimTab = XCF.createXDimensionTable();
     dimTab.setDimensionName(cubeDimTable.getDimName());
     dimTab.setTableName(cubeDimTable.getName());
@@ -654,6 +665,7 @@ public final class JAXBUtils {
   }
 
   public static XFactTable factTableFromCubeFactTable(CubeFactTable cFact) {
+    nullCheck(cFact);
     XFactTable fact = XCF.createXFactTable();
     fact.setName(cFact.getName());
     fact.setColumns(new XColumns());
@@ -916,6 +928,7 @@ public final class JAXBUtils {
   }
 
   public static XDimension xdimensionFromDimension(Dimension dimension) {
+    nullCheck(dimension);
     XDimension xd = XCF.createXDimension();
     xd.setName(dimension.getName());
     xd.setAttributes(new XDimAttributes());
@@ -940,6 +953,7 @@ public final class JAXBUtils {
   }
 
   public static XNativeTable nativeTableFromMetaTable(Table table) {
+    nullCheck(table);
     XNativeTable xtable = XCF.createXNativeTable();
     xtable.setColumns(new XColumns());
     xtable.setName(table.getTableName());

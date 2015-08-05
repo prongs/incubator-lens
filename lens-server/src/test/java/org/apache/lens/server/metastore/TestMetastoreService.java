@@ -19,7 +19,6 @@
 package org.apache.lens.server.metastore;
 
 import static org.apache.lens.cube.metadata.UpdatePeriod.*;
-
 import static org.testng.Assert.*;
 
 import java.util.*;
@@ -57,6 +56,7 @@ import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
+import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -2101,6 +2101,16 @@ public class TestMetastoreService extends LensJerseyTest {
     } finally {
       setCurrentDatabase(prevDb);
       dropDatabase(DB);
+    }
+  }
+
+  @Test
+  public void testNonExistingEntities() {
+    String nonExistingTableName = UUID.randomUUID().toString();
+    for (String s : Lists.newArrayList("dimtables", "facts", "dimensions", "nativetables", "cubes")) {
+      Response resp = target().path("metastore").path(s).path(nonExistingTableName)
+        .queryParam("sessionid", lensSessionId).request(mediaType).get();
+      Assert.assertEquals(resp.getStatus(), Response.Status.NOT_FOUND.getStatusCode());
     }
   }
 
