@@ -65,10 +65,28 @@ Lens User Guide
 
 
 	While adding resources through client, you have to provide a path to the resource file and type. The type can either
-	be <<<jar>>> or <<<file>>>. The path has to
-	be a path on the lens server's file system. While it <is> counter intuitive, uploading jars in every session has
-	its own problems, and hence not implemented. So the user is supposed to know paths to relevant resources on the
-	server fs. Now since paths are on server file system, the server provides a service to automatically determine them
+	be <<<jar>>> or <<<file>>>. The path has to be a path on the lens server's file system. The path can be a a path
+	to a file/jar, a path to a directory or a regex path. Given path will be converted to a list of paths of the
+	provided type and all those resources will be added.
+
+		** If Given path is a path to a file which exists, the list will be a singleton list containing only that file.
+
+		** If Given path is a directory path, server will see if a <<<jar_order>>>(for type jar) or a <<<glob_order>>>(for type file) file exists.
+
+	  		*** If yes, that file is read. The order file is supposed to list the order for adding resources. Resources will be
+	  added in that order.
+
+	  		*** else, the directory is globbed and resources will be added in glob order.
+
+		** If given path is a regex path, regex path is resolved to list of paths. Each path is then resolved to a list of
+	  paths since they can either be file or directory.
+
+		** order file can also contain regexes which are handled like the above point.
+
+
+* Database Resource Service
+
+	Lens server provides a service which automatically adds jars to a session
 	depending on which database the user is using. The idea is, that each database can store one collection of schemas
 	in it, and might have some required resources for them to work properly. So all the resources for the database
 	can be provided to the server at deployment time and server will automatically add all those to every session that
@@ -80,15 +98,7 @@ Lens User Guide
 	is <<</tmp/lens/resources>>>. I'll explain the workings using the default directory. so /tmp/lens/resources/dbname
 	is supposed to store all jars for db <dbname>. After the user switches to <dbname>, the first command after the
 	switch will add all jars to the session. Now sometimes the order in which jars are to be added can also be
-	important. So to handle that, you can provide a <<<jar_order>>> file in <<</tmp/lens/resources/dbname>>>.
-	The file will be read and one by one the jars matching each line will be added in session. The jar_order file
-	can supply regex instead of full file name in its lines. It can also supply a directory path, which will again
-	be scanned using similar mechanism and the <sub>-jars will be added.
-
-	Similar to db resources, the {{{../resource_SessionResource.html#path__session_resources_add.html}/session/resources}}
-	api can also take a directorypath. Which can contain <<<jar_order>>> file, or a <<<glob_order>>> file. If not present,
-	The whole directory will be <glob>ed and resources added in that order. <<<jar_order>>> file is used if <<<type>>>
-	is <<<jar>>>. <<<glob_order>>> file is used if the <<<type>>> is <<<file>>>. Both default to <glob>>ing the directory.
+	important. For that, you can supply a <<<jar_order>>> file as described in previous section. 
 
 
 []
