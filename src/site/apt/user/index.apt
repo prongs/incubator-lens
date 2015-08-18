@@ -65,7 +65,9 @@ Lens User Guide
 
 
 	While adding resources through client, you have to provide a path to the resource file and type. The type can either
-	be <<<jar>>> or <<<file>>>. The path has to be a path on the lens server's file system. The path can be a a path
+	be <<<jar>>> or <<<file>>>. The path has to be a path accessible by the lens server. E.g. It can be
+	a hdfs path or a local path on lens server's file system. But it can't be a path only accessible on the client
+	machine. Lens client doesn't upload the jar to the server, just passes the path through. The path can be a a path
 	to a file/jar, a path to a directory or a regex path. Given path will be converted to a list of paths of the
 	provided type and all those resources will be added.
 
@@ -98,7 +100,7 @@ Lens User Guide
 	is <<</tmp/lens/resources>>>. I'll explain the workings using the default directory. so /tmp/lens/resources/dbname
 	is supposed to store all jars for db <dbname>. After the user switches to <dbname>, the first command after the
 	switch will add all jars to the session. Now sometimes the order in which jars are to be added can also be
-	important. For that, you can supply a <<<jar_order>>> file as described in previous section. 
+	important. For that, you can supply a <<<jar_order>>> file as described in previous section.
 
 
 []
