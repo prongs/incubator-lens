@@ -19,16 +19,14 @@
   under the License.
 
 -->
-<x_storage_table_element xmlns="uri:lens:cube:0.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<x_dimension name="test_detail" xmlns="uri:lens:cube:0.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="uri:lens:cube:0.1 cube-0.1.xsd ">
-  <update_periods>
-    <update_period>DAILY</update_period>
-  </update_periods>
-  <storage_name>dim_local</storage_name>
-  <table_desc external="true" field_delimiter="," table_location="${project.build.directory}/metastore/examples/local">
-    <part_cols>
-      <column comment="Time column" name="dt" type="STRING"/>
-    </part_cols>
-    <time_part_cols>dt</time_part_cols>
-  </table_desc>
-</x_storage_table_element>
+  <attributes>
+    <dim_attribute name="id" type="INT" />
+    <dim_attribute name="name" type="STRING" />
+  </attributes>
+
+  <properties>
+    <property name="dimension.test_dim.timed.dimension" value="dt" />
+  </properties>
+</x_dimension>

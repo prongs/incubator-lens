@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -16,22 +16,21 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+package org.apache.lens.client;
 
-[
-  {
-    "name" : "Ambiguous column selection",
-    "hql" : "select r, count(d), sum(z), r from a.x group by r"
-  },
-  {
-    "name" : "Order by cannot be used with group by as of now",
-    "hql" : "select count(d), sum(z), r from a.x group by r order by z"
-  },
-  {
-    "name" : "Group by col not selected",
-    "hql" : "select count(d), sum(z) from a.x group by r"
-  },
-  {
-    "name" : "Invalid columns in select and group by",
-    "hql" : "select a, b from a.x group by r"
+import java.io.IOException;
+
+import javax.ws.rs.client.ClientRequestContext;
+import javax.ws.rs.client.ClientRequestFilter;
+
+
+/**
+ * Manage Client Request.
+ */
+
+public class RequestFilter implements ClientRequestFilter {
+  @Override
+  public void filter(ClientRequestContext requestContext) throws IOException {
+    // manage your request parameters here
   }
-]
+}
