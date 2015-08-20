@@ -44,9 +44,10 @@ All Apache Lens releases
 
   * LENS-681 : Passing a malformed xml doesn't succeed anymore.
 
-  * LENS-666 : Log4j to Logback migration: log4j.xml is not used anymore, use logback.xml for logging settings
+  * LENS-666 : Log4j to Logback migration: log4j.properties files are not used anymore,
+    use logback.xml for specifying loggers.
 
-  * LENS-700 : Syntax errors in query no longer generate a query id, they fail at submission itself
+  * LENS-700 : Syntax and semantic errors in query no longer generate a query id, they fail at submission itself
 
   * LENS-686 : Adding same partition will fail if the partition is already added. Adding multiple partitions
     gives succeess or partial result depending on whether all the partitions were added or not.
