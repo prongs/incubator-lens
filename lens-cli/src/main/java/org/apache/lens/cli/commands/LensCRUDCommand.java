@@ -25,6 +25,7 @@ import java.util.List;
 import org.apache.lens.api.APIResult;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.Sets;
 
 public abstract class LensCRUDCommand<T> extends BaseLensCommand {
 
@@ -35,7 +36,7 @@ public abstract class LensCRUDCommand<T> extends BaseLensCommand {
     if (all == null || all.isEmpty()) {
       return "No " + getSingleObjectName() + " found";
     }
-    return Joiner.on("\n").join(all);
+    return Joiner.on("\n").join(Sets.newTreeSet(all));
   }
 
   public String create(File path, boolean ignoreIfExists) {
