@@ -52,4 +52,13 @@ public class PartitionRangesForPartitionColumns extends HashMap<String, RangesPa
   public void add(FactPartition part) throws LensException {
     add(part.getPartCol(), part.getTimePartition());
   }
+
+
+  public void add(PartitionRangesForPartitionColumns timePartitions) throws LensException {
+    for (Map.Entry<String, RangesPartitionTimeline> entry : timePartitions.entrySet()) {
+      for (TimePartition partition : entry.getValue()) {
+        add(entry.getKey(), partition);
+      }
+    }
+  }
 }
