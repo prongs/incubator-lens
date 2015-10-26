@@ -18,8 +18,12 @@
  */
 package org.apache.lens.cube.parse;
 
+import static org.apache.lens.cube.parse.CandidateTablePruneCause.columnNotFound;
+
 import java.util.*;
 
+import org.apache.lens.cube.error.ConflictingFields;
+import org.apache.lens.cube.error.FieldsCannotBeQueriedTogetherException;
 import org.apache.lens.cube.error.LensCubeErrorCode;
 import org.apache.lens.cube.metadata.*;
 import org.apache.lens.cube.parse.CandidateTablePruneCause.CandidateTablePruneCode;
@@ -231,7 +235,7 @@ class CandidateTableResolver implements ContextRewriter {
             // check if it available as reference, if not remove the candidate
             if (!cubeql.getDeNormCtx().addRefUsage(cfact, col, cubeql.getCube().getName())) {
               log.info("Not considering fact table:{} as column {} is not available", cfact, col);
-              cubeql.addFactPruningMsgs(cfact.fact, CandidateTablePruneCause.columnNotFound(col));
+              cubeql.addFactPruningMsgs(cfact.fact, columnNotFound(col));
               toRemove = true;
               break;
             }
@@ -246,7 +250,7 @@ class CandidateTableResolver implements ContextRewriter {
             if (optdim == null) {
               log.info("Not considering fact table:{} as columns {} are not available", cfact,
                 chain.getSourceColumns());
-              cubeql.addFactPruningMsgs(cfact.fact, CandidateTablePruneCause.columnNotFound(chain.getSourceColumns()));
+              cubeql.addFactPruningMsgs(cfact.fact, columnNotFound(chain.getSourceColumns()));
               toRemove = true;
               break;
             }
@@ -273,7 +277,7 @@ class CandidateTableResolver implements ContextRewriter {
           && (cubeql.getQueriedExprsWithMeasures().isEmpty()
             || cubeql.getExprCtx().allNotEvaluable(cubeql.getQueriedExprsWithMeasures(), cfact))) {
           log.info("Not considering fact table:{} as columns {} is not available", cfact, queriedMsrs);
-          cubeql.addFactPruningMsgs(cfact.fact, CandidateTablePruneCause.columnNotFound(queriedMsrs,
+          cubeql.addFactPruningMsgs(cfact.fact, columnNotFound(queriedMsrs,
             cubeql.getQueriedExprsWithMeasures()));
           toRemove = true;
         }
@@ -283,10 +287,10 @@ class CandidateTableResolver implements ContextRewriter {
       }
       Set<String> dimExprs = new HashSet<String>(cubeql.getQueriedExprs());
       dimExprs.removeAll(cubeql.getQueriedExprsWithMeasures());
+      String queriedDimAttrsString = (!queriedDimAttrs.isEmpty() ? queriedDimAttrs.toString() : "")
+        + (!dimExprs.isEmpty() ? dimExprs.toString() : "");
       if (cubeql.getCandidateFacts().size() == 0) {
-        throw new LensException(LensCubeErrorCode.NO_FACT_HAS_COLUMN.getLensErrorInfo(),
-          (!queriedDimAttrs.isEmpty() ? queriedDimAttrs.toString() : "")
-          +  (!dimExprs.isEmpty() ? dimExprs.toString() : ""));
+        throw new LensException(LensCubeErrorCode.NO_FACT_HAS_COLUMN.getLensErrorInfo(), queriedDimAttrsString);
       }
       Set<Set<CandidateFact>> cfactset;
       if (queriedMsrs.isEmpty() && cubeql.getQueriedExprsWithMeasures().isEmpty()) {
@@ -308,12 +312,15 @@ class CandidateTableResolver implements ContextRewriter {
         String msrString = (!queriedMsrs.isEmpty() ? queriedMsrs.toString() : "")
           + (!cubeql.getQueriedExprsWithMeasures().isEmpty() ? cubeql.getQueriedExprsWithMeasures().toString() : "");
         if (cfactset.isEmpty()) {
-          throw new LensException(LensCubeErrorCode.NO_FACT_HAS_COLUMN.getLensErrorInfo(), msrString);
+          SortedSet<String> unqueryableFields = new TreeSet<>();
+          unqueryableFields.addAll(queriedDimAttrs);
+          unqueryableFields.addAll(dimExprs);
+          unqueryableFields.addAll(queriedMsrs);
+          unqueryableFields.addAll(cubeql.getQueriedExprsWithMeasures());
+          throw new FieldsCannotBeQueriedTogetherException(new ConflictingFields(unqueryableFields));
         }
         cubeql.getCandidateFactSets().addAll(cfactset);
-        cubeql.pruneCandidateFactWithCandidateSet(CandidateTablePruneCause.columnNotFound(queriedMsrs,
-          cubeql.getQueriedExprsWithMeasures()));
-
+        cubeql.pruneCandidateFactWithCandidateSet(columnNotFound(queriedMsrs, cubeql.getQueriedExprsWithMeasures()));
         if (cubeql.getCandidateFacts().size() == 0) {
           throw new LensException(LensCubeErrorCode.NO_FACT_HAS_COLUMN.getLensErrorInfo(), msrString);
         }
@@ -555,14 +562,14 @@ class CandidateTableResolver implements ContextRewriter {
                   log.info("Not considering fact:{} as its required optional dims are not reachable", candidate);
                   cubeql.getCandidateFacts().remove(candidate);
                   cubeql.addFactPruningMsgs(((CandidateFact) candidate).fact,
-                    CandidateTablePruneCause.columnNotFound(col));
+                    columnNotFound(col));
                 }
               } else if (cubeql.getCandidateDimTables().containsKey(((CandidateDim) candidate).getBaseTable())) {
                 log.info("Not considering dimtable:{} as its required optional dims are not reachable", candidate);
                 cubeql.getCandidateDimTables().get(((CandidateDim) candidate).getBaseTable()).remove(candidate);
                 cubeql.addDimPruningMsgs((Dimension) candidate.getBaseTable(),
                   (CubeDimensionTable) candidate.getTable(),
-                  CandidateTablePruneCause.columnNotFound(col));
+                  columnNotFound(col));
               }
             }
           }
@@ -659,7 +666,7 @@ class CandidateTableResolver implements ContextRewriter {
                   // check if it available as reference, if not remove the
                   // candidate
                   log.info("Not considering dimtable: {} as column {} is not available", cdim, col);
-                  cubeql.addDimPruningMsgs(dim, cdim.getTable(), CandidateTablePruneCause.columnNotFound(col));
+                  cubeql.addDimPruningMsgs(dim, cdim.getTable(), columnNotFound(col));
                   i.remove();
                   break;
                 }

@@ -36,23 +36,20 @@ public class FieldsCannotBeQueriedTogetherException extends LensException {
   private final ConflictingFields conflictingFields;
 
   public FieldsCannotBeQueriedTogetherException(@NonNull final ConflictingFields conflictingFields) {
-
-    super(FIELDS_CANNOT_BE_QUERIED_TOGETHER.getLensErrorInfo());
+    super(FIELDS_CANNOT_BE_QUERIED_TOGETHER.getLensErrorInfo(), conflictingFields.getConflictingFieldsString());
     this.conflictingFields = conflictingFields;
   }
 
   @Override
   public String getFormattedErrorMsg(LensError lensError) {
-
     final String conflictingFieldsStr = conflictingFields.getConflictingFieldsString();
     return lensError.getFormattedErrorMsg(conflictingFieldsStr);
   }
 
   @Override
   protected LensErrorTO buildLensErrorTO(final ErrorCollection errorCollection, final String errorMsg,
-      final String stackTrace) {
-
+    final String stackTrace) {
     return LensErrorTO.composedOf(FIELDS_CANNOT_BE_QUERIED_TOGETHER.getLensErrorInfo().getErrorCode(),
-        errorMsg, stackTrace, conflictingFields);
+      errorMsg, stackTrace, conflictingFields);
   }
 }

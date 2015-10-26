@@ -58,8 +58,18 @@ public class FieldsCannotBeQueriedTogetherTest extends TestQueryRewrite {
     exception. */
 
     testFieldsCannotBeQueriedTogetherError("select dim2, SUM(msr1) from basecube where " + TWO_DAYS_RANGE,
-        Arrays.asList("dim2", "d_time", "msr1"));
+      Arrays.asList("dim2", "d_time", "msr1"));
   }
+  @Test
+  public void testUnQueryabilityThroughFacts() throws ParseException, LensException {
+
+    /* Even if  no derived cube poses any restrictions on queryability, The conflict should be evident
+    * from the availability(or lack, thereof) of dim attributes and measures in one fact. */
+
+    testFieldsCannotBeQueriedTogetherError("select dim2, absentmsr from basecube where " + TWO_DAYS_RANGE,
+      Arrays.asList("zipcode", "d_time", "msr12"));
+  }
+
 
   @Test
   public void testQueryWithDimensionAndMeasureInExpression() throws ParseException, LensException {
@@ -193,7 +203,7 @@ public class FieldsCannotBeQueriedTogetherTest extends TestQueryRewrite {
     same derived cube, hence query shall be disallowed with appropriate exception. */
 
     testFieldsCannotBeQueriedTogetherError(
-        "select sum(roundedmsr1) from basecube where cubestatename = 'foo' and " + TWO_DAYS_RANGE,
+      "select sum(roundedmsr1) from basecube where cubestatename = 'foo' and " + TWO_DAYS_RANGE,
         Arrays.asList("cubestate.name", "d_time", "msr1"));
   }
 

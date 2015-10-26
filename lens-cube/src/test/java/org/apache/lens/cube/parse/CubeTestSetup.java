@@ -762,6 +762,8 @@ public class CubeTestSetup {
       null));
     cubeMeasures2.add(new ColumnMeasure(new FieldSchema("msr14", "bigint", "fourth measure"), "Measure4", null,
       "COUNT", null));
+    cubeMeasures2.add(new ColumnMeasure(new FieldSchema("absentmsr", "bigint", "fourth measure"), "Measure4", null,
+      "COUNT", null));
 
     cubeDimensions2.add(new BaseDimAttribute(new FieldSchema("dim11", "string", "basedim")));
     cubeDimensions2.add(new ReferencedDimAtrribute(new FieldSchema("dim12", "int", "ref dim"), "Dim2 refer",
