@@ -61,7 +61,14 @@ public class TestLensUtil {
     }
     Assert.assertEquals(LensUtil.getCauseMessage(th), "run time exception");
   }
-
+  public static Configuration getConfiguration(Configuration baseConf, Object... args) {
+    Configuration conf = new Configuration(baseConf);
+    Assert.assertEquals(args.length % 2, 0, "Odd number of arguments not supported");
+    for (int i = 0; i < args.length; i += 2) {
+      conf.set(args[i].toString(), args[i + 1].toString());
+    }
+    return conf;
+  }
   public static Configuration getConfiguration(Object... args) {
     Configuration conf = new Configuration();
     Assert.assertEquals(args.length % 2, 0, "Odd number of arguments not supported");

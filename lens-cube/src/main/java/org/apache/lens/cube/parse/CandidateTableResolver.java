@@ -268,12 +268,14 @@ class CandidateTableResolver implements ContextRewriter {
             cubeql.addFactPruningMsgs(cfact.fact, CandidateTablePruneCause.expressionNotEvaluable(expr));
             toRemove = true;
             break;
+          } else {
+            System.out.println(cfact);
           }
         }
         // check if the candidate fact has atleast one measure queried
         // if expression has measures, they should be considered along with other measures and see if the fact can be
         // part of measure covering set
-        if (!checkForColumnExists(cfact, queriedMsrs)
+        if (!(!queriedMsrs.isEmpty() && checkForColumnExists(cfact, queriedMsrs))
           && (cubeql.getQueriedExprsWithMeasures().isEmpty()
             || cubeql.getExprCtx().allNotEvaluable(cubeql.getQueriedExprsWithMeasures(), cfact))) {
           log.info("Not considering fact table:{} as columns {} is not available", cfact, queriedMsrs);
@@ -290,6 +292,7 @@ class CandidateTableResolver implements ContextRewriter {
       String queriedDimAttrsString = (!queriedDimAttrs.isEmpty() ? queriedDimAttrs.toString() : "")
         + (!dimExprs.isEmpty() ? dimExprs.toString() : "");
       if (cubeql.getCandidateFacts().size() == 0) {
+        cubeql.getFactPruningMsgs().
         throw new LensException(LensCubeErrorCode.NO_FACT_HAS_COLUMN.getLensErrorInfo(), queriedDimAttrsString);
       }
       Set<Set<CandidateFact>> cfactset;

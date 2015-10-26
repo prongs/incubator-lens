@@ -22,6 +22,9 @@ import static org.apache.lens.cube.parse.CandidateTablePruneCause.CandidateTable
 
 import java.util.*;
 
+import org.apache.lens.cube.error.LensCubeErrorCode;
+import org.apache.lens.server.api.error.LensException;
+
 import org.codehaus.jackson.annotate.JsonWriteNullProperties;
 
 import com.google.common.collect.Lists;
@@ -60,7 +63,12 @@ public class CandidateTablePruneCause {
     // cube table has more partitions
     MORE_PARTITIONS("Picked table has more partitions than minimum"),
     // invalid cube table
-    INVALID("Invalid cube table provided in query"),
+    INVALID("Invalid cube table provided in query"){
+      @Override
+      LensException toLensException(Set<CandidateTablePruneCause> causes) {
+        return new LensException(LensCubeErrorCode.NEITHER_CUBE_NOR_DIMENSION.getLensErrorInfo());
+      }
+    },
     // expression is not evaluable in the candidate
     EXPRESSION_NOT_EVALUABLE("%s expressions not evaluable") {
       Object[] getFormatPlaceholders(Set<CandidateTablePruneCause> causes) {
@@ -69,6 +77,12 @@ public class CandidateTablePruneCause {
           columns.addAll(cause.getMissingExpressions());
         }
         return new String[]{columns.toString()};
+      }
+
+      @Override
+      LensException toLensException(Set<CandidateTablePruneCause> causes) {
+        return new LensException(LensCubeErrorCode.EXPRESSION_NOT_IN_ANY_FACT.getLensErrorInfo(),
+          getFormatPlaceholders(causes));
       }
     },
     // candidate table tries to get denormalized field from dimension and the
@@ -106,7 +120,7 @@ public class CandidateTablePruneCause {
       @Override
       Object[] getFormatPlaceholders(Set<CandidateTablePruneCause> causes) {
         Set<String> dims = Sets.newHashSet();
-        for(CandidateTablePruneCause cause: causes){
+        for (CandidateTablePruneCause cause : causes) {
           dims.addAll(cause.getUnsupportedTimeDims());
         }
         return new Object[]{
@@ -154,6 +168,10 @@ public class CandidateTablePruneCause {
     }
 
     Object[] getFormatPlaceholders(Set<CandidateTablePruneCause> causes) {
+      return null;
+    }
+
+    LensException toLensException(Set<CandidateTablePruneCause> causes) {
       return null;
     }
 
@@ -255,6 +273,7 @@ public class CandidateTablePruneCause {
     cause.invalidRanges = ranges;
     return cause;
   }
+
   public static CandidateTablePruneCause timeDimNotSupported(Set<String> unsupportedTimeDims) {
     CandidateTablePruneCause cause = new CandidateTablePruneCause(TIMEDIM_NOT_SUPPORTED);
     cause.unsupportedTimeDims = unsupportedTimeDims;
