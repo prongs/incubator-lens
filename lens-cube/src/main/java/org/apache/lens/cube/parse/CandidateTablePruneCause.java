@@ -22,6 +22,8 @@ import static org.apache.lens.cube.parse.CandidateTablePruneCause.CandidateTable
 
 import java.util.*;
 
+import org.apache.lens.cube.error.ConflictingFields;
+import org.apache.lens.cube.error.FieldsCannotBeQueriedTogetherException;
 import org.apache.lens.cube.error.LensCubeErrorCode;
 import org.apache.lens.server.api.error.LensException;
 
@@ -88,8 +90,6 @@ public class CandidateTablePruneCause {
     // candidate table tries to get denormalized field from dimension and the
     // referred dimension is invalid.
     INVALID_DENORM_TABLE("Referred dimension is invalid in one of the candidate tables"),
-    // column not valid in cube table
-    COLUMN_NOT_VALID("Column not valid in cube table"),
     // column not found in cube table
     COLUMN_NOT_FOUND("%s are not %s") {
       Object[] getFormatPlaceholders(Set<CandidateTablePruneCause> causes) {
@@ -109,12 +109,34 @@ public class CandidateTablePruneCause {
           };
         }
       }
+
+      @Override
+      LensException toLensException(Set<CandidateTablePruneCause> causes) {
+        if(causes.size() == 1) {
+          return new LensException(LensCubeErrorCode.COLUMN_NOT_FOUND.getLensErrorInfo(), causes.iterator().next().getMissingColumns());
+        } else {
+          TreeSet<String> conflictingFields = new TreeSet<>();
+          for(CandidateTablePruneCause cause: causes) {
+            conflictingFields.addAll(cause.getMissingColumns());
+          }
+          return new FieldsCannotBeQueriedTogetherException(new ConflictingFields(conflictingFields));
+        }
+      }
     },
     // missing storage tables for cube table
     MISSING_STORAGES("Missing storage tables for the cube table"),
     // no candidate storges for cube table, storage cause will have why each
     // storage is not a candidate
-    NO_CANDIDATE_STORAGES("No candidate storages for any table"),
+    NO_CANDIDATE_STORAGES("No candidate storages for any table"){
+      @Override
+      LensException toLensException(Set<CandidateTablePruneCause> causes) {
+        Set<SkipStorageCause> skipStorageCauses = Sets.newHashSet();
+        for(CandidateTablePruneCause cause: causes) {
+            skipStorageCauses.addAll(cause.getStorageCauses().values());
+        }
+        return new LensException(LensCubeErrorCode.NO_STORAGE_TABLE_AVAIABLE.getLensErrorInfo(), skipStorageCauses);
+      }
+    },
     // time dimension not supported. Either directly or indirectly.
     TIMEDIM_NOT_SUPPORTED("Queried data not available for time dimensions: %s") {
       @Override
@@ -126,6 +148,12 @@ public class CandidateTablePruneCause {
         return new Object[]{
           dims.toString(),
         };
+      }
+
+      @Override
+      LensException toLensException(Set<CandidateTablePruneCause> causes) {
+        return new LensException(LensCubeErrorCode.TIME_DIM_UNSUPPORTED.getLensErrorInfo(),
+          getFormatPlaceholders(causes));
       }
     },
     NO_FACT_UPDATE_PERIODS_FOR_GIVEN_RANGE("No fact update periods for given range"),

@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.apache.lens.cube.metadata.AbstractCubeTable;
 import org.apache.lens.cube.parse.CandidateTablePruneCause.CandidateTablePruneCode;
+import org.apache.lens.server.api.error.LensException;
 
 import org.apache.commons.lang.StringUtils;
 
@@ -41,6 +42,8 @@ public class PruneCauses<T extends AbstractCubeTable> extends HashMap<T, List<Ca
   private final HashMap<CandidateTablePruneCause, List<T>> reversed = reverse();
   @Getter(lazy = true)
   private final HashMap<String, List<CandidateTablePruneCause>> compact = computeCompact();
+  @Getter(lazy = true)
+  private final Map<CandidateTablePruneCause, String> maxCauseMap = maxCauseMap();
 
   private HashMap<String, List<CandidateTablePruneCause>> computeCompact() {
     HashMap<String, List<CandidateTablePruneCause>> detailedMessage = Maps.newHashMap();
@@ -82,6 +85,16 @@ public class PruneCauses<T extends AbstractCubeTable> extends HashMap<T, List<Ca
   }
 
   public String getBriefCause() {
+    Map<CandidateTablePruneCause, String> maxCauseMap = getMaxCauseMap();
+    return maxCauseMap.keySet().iterator().next().getCause().getBriefError(maxCauseMap.keySet());
+  }
+
+  public LensException toLensException() {
+    Map<CandidateTablePruneCause, String> maxCauseMap = getMaxCauseMap();
+    return maxCauseMap.keySet().iterator().next().getCause().toLensException(maxCauseMap.keySet());
+  }
+
+  public Map<CandidateTablePruneCause, String> maxCauseMap() {
     CandidateTablePruneCode maxCause = CandidateTablePruneCode.values()[0];
     for (CandidateTablePruneCause cause : getReversed().keySet()) {
       if (cause.getCause().compareTo(maxCause) > 0) {
@@ -89,12 +102,12 @@ public class PruneCauses<T extends AbstractCubeTable> extends HashMap<T, List<Ca
       }
     }
     Map<CandidateTablePruneCause, String> maxCauseMap = Maps.newHashMap();
-    for (Map.Entry<CandidateTablePruneCause, List<T>> entry: getReversed().entrySet()) {
+    for (Map.Entry<CandidateTablePruneCause, List<T>> entry : getReversed().entrySet()) {
       if (entry.getKey().getCause().equals(maxCause)) {
         maxCauseMap.put(entry.getKey(), StringUtils.join(entry.getValue(), ","));
       }
     }
-    return maxCause.getBriefError(maxCauseMap.keySet());
+    return maxCauseMap;
   }
 
   public static void main(String[] args) {

@@ -97,7 +97,7 @@ class CandidateTableResolver implements ContextRewriter {
         List<CubeFactTable> factTables = cubeql.getMetastoreClient().getAllFacts(cubeql.getCube());
         if (factTables.isEmpty()) {
           throw new LensException(LensCubeErrorCode.NO_CANDIDATE_FACT_AVAILABLE.getLensErrorInfo(),
-              cubeql.getCube().getName() + " does not have any facts");
+            cubeql.getCube().getName() + " does not have any facts");
         }
         for (CubeFactTable fact : factTables) {
           CandidateFact cfact = new CandidateFact(fact, cubeql.getCube());
@@ -211,7 +211,7 @@ class CandidateTableResolver implements ContextRewriter {
       Set<String> queriedMsrs = cubeql.getQueriedMsrs();
 
       // Remove fact tables based on columns in the query
-      for (Iterator<CandidateFact> i = cubeql.getCandidateFacts().iterator(); i.hasNext();) {
+      for (Iterator<CandidateFact> i = cubeql.getCandidateFacts().iterator(); i.hasNext(); ) {
         CandidateFact cfact = i.next();
 
         if (validFactTables != null) {
@@ -277,7 +277,7 @@ class CandidateTableResolver implements ContextRewriter {
         // part of measure covering set
         if (!(!queriedMsrs.isEmpty() && checkForColumnExists(cfact, queriedMsrs))
           && (cubeql.getQueriedExprsWithMeasures().isEmpty()
-            || cubeql.getExprCtx().allNotEvaluable(cubeql.getQueriedExprsWithMeasures(), cfact))) {
+          || cubeql.getExprCtx().allNotEvaluable(cubeql.getQueriedExprsWithMeasures(), cfact))) {
           log.info("Not considering fact table:{} as columns {} is not available", cfact, queriedMsrs);
           cubeql.addFactPruningMsgs(cfact.fact, columnNotFound(queriedMsrs,
             cubeql.getQueriedExprsWithMeasures()));
@@ -287,12 +287,17 @@ class CandidateTableResolver implements ContextRewriter {
           i.remove();
         }
       }
+      if (cubeql.getCandidateFacts().isEmpty()) {
+        LensException exc = cubeql.getFactPruningMsgs().toLensException();
+        if (exc != null) {
+          throw exc;
+        }
+      }
       Set<String> dimExprs = new HashSet<String>(cubeql.getQueriedExprs());
       dimExprs.removeAll(cubeql.getQueriedExprsWithMeasures());
       String queriedDimAttrsString = (!queriedDimAttrs.isEmpty() ? queriedDimAttrs.toString() : "")
         + (!dimExprs.isEmpty() ? dimExprs.toString() : "");
       if (cubeql.getCandidateFacts().size() == 0) {
-        cubeql.getFactPruningMsgs().
         throw new LensException(LensCubeErrorCode.NO_FACT_HAS_COLUMN.getLensErrorInfo(), queriedDimAttrsString);
       }
       Set<Set<CandidateFact>> cfactset;
@@ -335,7 +340,7 @@ class CandidateTableResolver implements ContextRewriter {
     Set<String> msrs, Set<String> exprsWithMeasures) {
     Set<Set<CandidateFact>> cfactset = new HashSet<Set<CandidateFact>>();
     List<CandidateFact> cfacts = new ArrayList<CandidateFact>(cfactsPassed);
-    for (Iterator<CandidateFact> i = cfacts.iterator(); i.hasNext();) {
+    for (Iterator<CandidateFact> i = cfacts.iterator(); i.hasNext(); ) {
       CandidateFact cfact = i.next();
       i.remove();
       // cfact does not contain any of msrs and none of exprsWithMeasures are evaluable.
@@ -379,7 +384,7 @@ class CandidateTableResolver implements ContextRewriter {
     allDims.addAll(cubeql.getOptionalDimensions());
     for (Dimension dim : allDims) {
       if (cubeql.getCandidateDimTables().get(dim) != null && !cubeql.getCandidateDimTables().get(dim).isEmpty()) {
-        for (Iterator<CandidateDim> i = cubeql.getCandidateDimTables().get(dim).iterator(); i.hasNext();) {
+        for (Iterator<CandidateDim> i = cubeql.getCandidateDimTables().get(dim).iterator(); i.hasNext(); ) {
           CandidateDim cdim = i.next();
           CubeDimensionTable dimtable = cdim.dimtable;
           // go over the join columns accessed in the query and find out which tables
@@ -442,7 +447,7 @@ class CandidateTableResolver implements ContextRewriter {
           if ((cubeql.getDimensions() != null && cubeql.getDimensions().contains(dim))
             || (optdim != null && optdim.isRequiredInJoinChain)) {
             throw new LensException(LensCubeErrorCode.NO_DIM_HAS_COLUMN.getLensErrorInfo(), dim.getName(),
-                cubeql.getAutoJoinCtx().getAllJoinPathColumnsOfTable(dim).toString());
+              cubeql.getAutoJoinCtx().getAllJoinPathColumnsOfTable(dim).toString());
           } else {
             // remove it from optional tables
             log.info("Not considering optional dimension {} as, No dimension table has the queried columns:{}"
@@ -460,7 +465,7 @@ class CandidateTableResolver implements ContextRewriter {
     }
     Collection<String> colSet = null;
     if (cubeql.getCube() != null && !cubeql.getCandidateFacts().isEmpty()) {
-      for (Iterator<CandidateFact> i = cubeql.getCandidateFacts().iterator(); i.hasNext();) {
+      for (Iterator<CandidateFact> i = cubeql.getCandidateFacts().iterator(); i.hasNext(); ) {
         CandidateFact cfact = i.next();
         CubeFactTable fact = cfact.fact;
 
@@ -485,7 +490,7 @@ class CandidateTableResolver implements ContextRewriter {
       }
       if (cubeql.getCandidateFacts().size() == 0) {
         throw new LensException(LensCubeErrorCode.NO_FACT_HAS_COLUMN.getLensErrorInfo(),
-            colSet == null ? "NULL" : colSet.toString());
+          colSet == null ? "NULL" : colSet.toString());
       }
     }
   }
@@ -649,7 +654,7 @@ class CandidateTableResolver implements ContextRewriter {
       for (Dimension dim : cubeql.getDimensions()) {
         // go over the columns accessed in the query and find out which tables
         // can answer the query
-        for (Iterator<CandidateDim> i = cubeql.getCandidateDimTables().get(dim).iterator(); i.hasNext();) {
+        for (Iterator<CandidateDim> i = cubeql.getCandidateDimTables().get(dim).iterator(); i.hasNext(); ) {
           CandidateDim cdim = i.next();
           if (cubeql.getColumnsQueried(dim.getName()) != null) {
             for (String col : cubeql.getColumnsQueried(dim.getName())) {
