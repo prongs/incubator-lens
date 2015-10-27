@@ -18,33 +18,36 @@
  */
 package org.apache.lens.api.util;
 
+import static org.apache.lens.api.util.CommonUtils.parseMapFromString;
+import static org.testng.Assert.assertEquals;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class CommonUtils {
-  private CommonUtils() {
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
+public class CommonUtilsTest {
+  @DataProvider(name = "parse-data-provider")
+  public Object[][] provideParseTestData() {
+    return new Object[][]{
+      {"", getMap()},
+      {"a=b\n,\n\nc=d", getMap("a", "b", "c", "d")},
+      {"a=b\\,b, c=d", getMap("a", "b,b", "c", "d")},
+    };
   }
 
-  public static Map<String, String> parseMapFromString(String s) {
+  private Object getMap(String... strings) {
+    assertEquals(strings.length % 2, 0);
     Map<String, String> map = new HashMap<>();
-    if (s != null) {
-      for (String kv : s.split("(?<!\\\\),")) {
-        if (!kv.isEmpty()) {
-          String[] kvArray = kv.split("=");
-          String key = "";
-          String value = "";
-          if (kvArray.length > 0) {
-            key = kvArray[0].replaceAll("\\\\,", ",").trim();
-          }
-          if (kvArray.length > 1) {
-            value = kvArray[1].replaceAll("\\\\,", ",").trim();
-          }
-          map.put(key, value);
-        }
-      }
+    for (int i = 0; i < strings.length; i += 2) {
+      map.put(strings[i], strings[i + 1]);
     }
     return map;
+  }
+
+  @Test(dataProvider = "parse-data-provider")
+  public void testParseMapFromString(String str, Map<String, String> expected) throws Exception {
+    assertEquals(parseMapFromString(str), expected);
   }
 }
