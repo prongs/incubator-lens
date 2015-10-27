@@ -822,6 +822,10 @@ public class CubeQueryContext implements TrackQueriedColumns {
       } else {
         String reason = "";
         if (!factPruningMsgs.isEmpty()) {
+          LensException lensException = factPruningMsgs.toLensException();
+          if(lensException != null) {
+            throw lensException;
+          }
           ByteArrayOutputStream out = null;
           try {
             ObjectMapper mapper = new ObjectMapper();

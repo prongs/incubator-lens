@@ -65,7 +65,7 @@ public class CandidateTablePruneCause {
     // cube table has more partitions
     MORE_PARTITIONS("Picked table has more partitions than minimum"),
     // invalid cube table
-    INVALID("Invalid cube table provided in query"){
+    INVALID("Invalid cube table provided in query") {
       @Override
       LensException toLensException(Set<CandidateTablePruneCause> causes) {
         return new LensException(LensCubeErrorCode.NEITHER_CUBE_NOR_DIMENSION.getLensErrorInfo());
@@ -112,27 +112,29 @@ public class CandidateTablePruneCause {
 
       @Override
       LensException toLensException(Set<CandidateTablePruneCause> causes) {
-        if(causes.size() == 1) {
-          return new LensException(LensCubeErrorCode.COLUMN_NOT_FOUND.getLensErrorInfo(), causes.iterator().next().getMissingColumns());
-        } else {
-          TreeSet<String> conflictingFields = new TreeSet<>();
-          for(CandidateTablePruneCause cause: causes) {
-            conflictingFields.addAll(cause.getMissingColumns());
-          }
+        TreeSet<String> conflictingFields = new TreeSet<>();
+        for (CandidateTablePruneCause cause : causes) {
+          conflictingFields.addAll(cause.getMissingColumns());
+        }
+        if (conflictingFields.size() == 1) {
+          return new LensException(LensCubeErrorCode.COLUMN_NOT_FOUND.getLensErrorInfo(),
+            conflictingFields.iterator().next());
+        } else if (conflictingFields.size() > 1) {
           return new FieldsCannotBeQueriedTogetherException(new ConflictingFields(conflictingFields));
         }
+        return super.toLensException(causes);
       }
     },
     // missing storage tables for cube table
     MISSING_STORAGES("Missing storage tables for the cube table"),
     // no candidate storges for cube table, storage cause will have why each
     // storage is not a candidate
-    NO_CANDIDATE_STORAGES("No candidate storages for any table"){
+    NO_CANDIDATE_STORAGES("No candidate storages for any table") {
       @Override
       LensException toLensException(Set<CandidateTablePruneCause> causes) {
         Set<SkipStorageCause> skipStorageCauses = Sets.newHashSet();
-        for(CandidateTablePruneCause cause: causes) {
-            skipStorageCauses.addAll(cause.getStorageCauses().values());
+        for (CandidateTablePruneCause cause : causes) {
+          skipStorageCauses.addAll(cause.getStorageCauses().values());
         }
         return new LensException(LensCubeErrorCode.NO_STORAGE_TABLE_AVAIABLE.getLensErrorInfo(), skipStorageCauses);
       }

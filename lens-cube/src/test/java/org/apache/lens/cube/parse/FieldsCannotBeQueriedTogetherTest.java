@@ -66,7 +66,7 @@ public class FieldsCannotBeQueriedTogetherTest extends TestQueryRewrite {
     /* Even if  no derived cube poses any restrictions on queryability, The conflict should be evident
     * from the availability(or lack, thereof) of dim attributes and measures in one fact. */
 
-    testFieldsCannotBeQueriedTogetherError("select dim2, absentmsr from basecube where " + TWO_DAYS_RANGE,
+    testFieldsCannotBeQueriedTogetherError("select zipcode, msr2 from basecube where " + TWO_DAYS_RANGE,
       Arrays.asList("zipcode", "d_time", "msr12"));
   }
 
