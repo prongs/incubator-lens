@@ -328,6 +328,16 @@ public class CandidateTablePruneCause {
     return columnNotFound(colList);
   }
 
+  public static CandidateTablePruneCause expressionNotEvaluable(Collection<String> exprs) {
+    List<String> colList = new ArrayList<String>();
+    for (String column : exprs) {
+      colList.add(column);
+    }
+    CandidateTablePruneCause cause = new CandidateTablePruneCause(EXPRESSION_NOT_EVALUABLE);
+    cause.setMissingExpressions(colList);
+    return cause;
+  }
+
   public static CandidateTablePruneCause expressionNotEvaluable(String... exprs) {
     List<String> colList = new ArrayList<String>();
     for (String column : exprs) {

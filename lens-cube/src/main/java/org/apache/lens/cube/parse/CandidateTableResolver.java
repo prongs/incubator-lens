@@ -38,7 +38,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 
 import com.google.common.collect.Sets;
-
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -275,13 +274,23 @@ class CandidateTableResolver implements ContextRewriter {
         // check if the candidate fact has atleast one measure queried
         // if expression has measures, they should be considered along with other measures and see if the fact can be
         // part of measure covering set
-        if (!(!queriedMsrs.isEmpty() && checkForColumnExists(cfact, queriedMsrs))
-          && (cubeql.getQueriedExprsWithMeasures().isEmpty()
-          || cubeql.getExprCtx().allNotEvaluable(cubeql.getQueriedExprsWithMeasures(), cfact))) {
-          log.info("Not considering fact table:{} as columns {} is not available", cfact, queriedMsrs);
-          cubeql.addFactPruningMsgs(cfact.fact, columnNotFound(queriedMsrs,
-            cubeql.getQueriedExprsWithMeasures()));
-          toRemove = true;
+        if ((queriedMsrs.isEmpty() || checkForColumnExists(cfact, queriedMsrs))
+          && cubeql.getQueriedExprsWithMeasures().isEmpty()
+          || cubeql.getExprCtx().allNotEvaluable(cubeql.getQueriedExprsWithMeasures(), cfact)) {
+          if (!queriedMsrs.isEmpty()) {
+            cubeql.addFactPruningMsgs(cfact.fact, columnNotFound(queriedMsrs,
+              cubeql.getQueriedExprsWithMeasures()));
+            toRemove = true;
+          }
+          if (!cubeql.getQueriedExprsWithMeasures().isEmpty()) {
+            cubeql.addFactPruningMsgs(cfact.fact, CandidateTablePruneCause.expressionNotEvaluable(cubeql
+              .getQueriedExprs()));
+            toRemove = true;
+          }
+          if (toRemove) {
+            log.info("Not considering fact table:{} as it's not useful for covering measures: {} and expressions: {} ",
+              cfact, queriedMsrs, cubeql.getQueriedExprsWithMeasures());
+          }
         }
         if (toRemove) {
           i.remove();
@@ -290,7 +299,10 @@ class CandidateTableResolver implements ContextRewriter {
       if (cubeql.getCandidateFacts().isEmpty()) {
         LensException exc = cubeql.getFactPruningMsgs().toLensException();
         if (exc != null) {
+          exc.setStackTrace(Thread.currentThread().getStackTrace());
           throw exc;
+        } else {
+          System.out.println("What to throw???");
         }
       }
       Set<String> dimExprs = new HashSet<String>(cubeql.getQueriedExprs());
