@@ -142,6 +142,7 @@ public class TestColumnarSQLRewriter {
     factColumns.add(new FieldSchema("item_key", "int", ""));
     factColumns.add(new FieldSchema("branch_key", "int", ""));
     factColumns.add(new FieldSchema("location_key", "int", ""));
+    factColumns.add(new FieldSchema("other_location_key", "int", ""));
     factColumns.add(new FieldSchema("dollars_sold", "double", ""));
     factColumns.add(new FieldSchema("units_sold", "int", ""));
 
@@ -231,6 +232,25 @@ public class TestColumnarSQLRewriter {
       + "(( location_dim__db_location_dim_location_dim . id ) = ( time_dim___time_dim . id ))";
     compareQueries(expected4, actual4);
 
+  }
+
+  @Test
+  public void testPushDownFilterWithCommonDim() throws LensException {
+    String query = "select fact.time_key, time_dim.day_of_week, location_dim_a.location_name, "
+      + "other_location_dim.location_name, sum(fact.dollars_sold) from sales_fact fact inner join "
+      + "time_dim time_dim on fact.time_key = time_dim.time_key inner join location_dim location_dim_a "
+      + "on fact.location_key = location_dim_a.location_key inner join location_dim other_location_dim "
+      + "on fact.other_location_key = other_location_dim.location_key where time_dim.time_key "
+      + "between '2013-01-01' and '2013-01-31' and location_dim_a.location_key = 'some-loc' "
+      + "group by fact.time_key, location_dim_a.location_key, other_location_dim.location_key";
+
+    SessionState.start(hconf);
+    qtest.rewrite(query, conf, hconf);
+    String expected = "sales_fact___fact.time_key in  (  select time_dim .time_key from time_dim "
+      + "where ( time_dim. time_key ) between  '2013-01-01'  and  '2013-01-31'  ) and "
+      + "sales_fact___fact.location_key in  (  select location_dim .location_key from "
+      + "location_dim where (( location_dim. location_key ) =  'some-loc' ) ) and ";
+    Assert.assertEquals(qtest.allSubQueries.toString().trim(), expected.trim());
   }
 
   /**
@@ -415,9 +435,9 @@ public class TestColumnarSQLRewriter {
     String actual = qtest.rewrite(query, conf, hconf);
 
     String expected = "select ( sales_fact___fact . time_key ), ( time_dim___time_dim . day_of_week ), "
-            + "week((time_dim__time_dim . day )), "
+            + "week((time_dim___time_dim . day )), "
             + "date(( time_dim___time_dim . day )), ( item_dim___item_dim . item_key ),  "
-            + "case  when (sum(alias2) =  0 ) then  0.0  else sum(alias2) end  dollars_sold , "
+            + "case  when (sum(alias2) =  0 ) then  0.0  else sum(alias2) end  as `dollars_sold` , "
             + "format(sum(alias3),  4 ), format(avg(alias4),  '##################.###' ), "
             + "min(alias5), max(alias6) from  (select sales_fact___fact.time_key, "
             + "sales_fact___fact.location_key, sales_fact___fact.item_key,sum(( sales_fact___fact . "
@@ -485,7 +505,7 @@ public class TestColumnarSQLRewriter {
     String actual = qtest.rewrite(query, conf, hconf);
     String expected = "select ( sales_fact___fact . time_key ), ( time_dim___time_dim . day_of_week ), "
             + "( time_dim___time_dim . day ),  case  when (sum(alias2) =  0 ) then  0.0  "
-            + "else sum(alias2) end  dollars_sold  from  (select sales_fact___fact.time_key, "
+            + "else sum(alias2) end  as `dollars_sold`  from  (select sales_fact___fact.time_key, "
             + "sales_fact___fact.location_key,sum(( sales_fact___fact . dollars_sold )) as alias1, "
             + "sum(( sales_fact___fact . dollars_sold )) as alias2 from sales_fact sales_fact___fact "
             + "where sales_fact___fact.time_key in  (  select time_dim .time_key from time_dim where "
@@ -503,7 +523,7 @@ public class TestColumnarSQLRewriter {
             + "( time_dim___time_dim . day_of_week ), ( time_dim___time_dim . day ) "
             + "order by dollars_sold  asc  union all select ( sales_fact___fact . time_key ), "
             + "( time_dim___time_dim . day_of_week ), ( time_dim___time_dim . day ),  "
-            + "case  when (sum(alias2) =  0 ) then  0.0  else sum(alias2) end  dollars_sold  "
+            + "case  when (sum(alias2) =  0 ) then  0.0  else sum(alias2) end  as `dollars_sold`  "
             + "from  (select sales_fact___fact.time_key, sales_fact___fact.location_key,"
             + "sum(( sales_fact___fact . dollars_sold )) as alias1, sum(( sales_fact___fact . dollars_sold )) "
             + "as alias2 from sales_fact sales_fact___fact where sales_fact___fact.time_key in  "
@@ -521,7 +541,7 @@ public class TestColumnarSQLRewriter {
             + "( time_dim___time_dim . day ) order by dollars_sold  asc  union all select "
             + "( sales_fact___fact . time_key ), ( time_dim___time_dim . day_of_week ), "
             + "( time_dim___time_dim . day ),  case  when (sum(alias2) =  0 ) then  0.0  "
-            + "else sum(alias2) end  dollars_sold  from  (select sales_fact___fact.time_key, "
+            + "else sum(alias2) end  as `dollars_sold`  from  (select sales_fact___fact.time_key, "
             + "sales_fact___fact.location_key,sum(( sales_fact___fact . dollars_sold )) as alias1, "
             + "sum(( sales_fact___fact . dollars_sold )) as alias2 from sales_fact sales_fact___fact "
             + "where sales_fact___fact.time_key in  (  select time_dim .time_key from time_dim where "
@@ -578,7 +598,7 @@ public class TestColumnarSQLRewriter {
 
     String actual = qtest.rewrite(query, conf, hconf);
     String expected = "select ( sales_fact___fact . time_key ), ( time_dim___time_dim . day_of_week ), "
-            + "( time_dim___time_dim . day ), ( item_dim___item_dim . item_key ), sum(alias1) dollars_sold , "
+            + "( time_dim___time_dim . day ), ( item_dim___item_dim . item_key ), sum(alias1) as `dollars_sold` , "
             + "round(sum(alias2),  2 ), avg(alias3), min(alias4), max(alias5),  location_name  "
             + "from  (select sales_fact___fact.time_key, sales_fact___fact.location_key, "
             + "sales_fact___fact.item_key,sum( case  when (( sales_fact___fact . dollars_sold ) =  0 ) "
@@ -633,8 +653,9 @@ public class TestColumnarSQLRewriter {
     String actual = qtest.rewrite(query, conf, hconf);
     String expected = "select ( sales_fact___fact . time_key ), ( time_dim___time_dim . day_of_week ), "
             + "( time_dim___time_dim . day ), ( item_dim___item_dim . item_key ), "
-            + "sum(alias1) dollars_sold , round(sum(alias2),  2 ), avg(alias6) avg_dollars_sold , min(alias4), "
-            + "max(alias5) max_dollars_sold ,  location_name , (avg(alias6) /  1.0 ) from  "
+            + "sum(alias1) as `dollars_sold` , round(sum(alias2),  2 ), avg(alias6) as `avg_dollars_sold` ,"
+            + " min(alias4), "
+            + "max(alias5) as `max_dollars_sold` ,  location_name , (avg(alias6) /  1.0 ) from  "
             + "(select sales_fact___fact.time_key, sales_fact___fact.location_key, "
             + "sales_fact___fact.item_key,sum( case  when (( sales_fact___fact . dollars_sold ) =  0 ) "
             + "then  0.0  end ) as alias1, sum(( sales_fact___fact . units_sold )) as alias2, "
@@ -743,7 +764,8 @@ public class TestColumnarSQLRewriter {
     String actual = qtest.rewrite(query, conf, hconf);
     String expected = "select ( sales_fact__db_sales_fact_fact . time_key ), ( time_dim___time_dim . day_of_week ), "
             + "( time_dim___time_dim . day ),  case  when (sum(alias2) =  0 ) "
-            + "then  0.0  else sum(alias2) end  dollars_sold  from  (select sales_fact__db_sales_fact_fact.time_key, "
+            + "then  0.0  else sum(alias2) end  as `dollars_sold`  from  (select sales_fact__db_sales_fact_fact"
+            + ".time_key, "
             + "sales_fact__db_sales_fact_fact.location_key,sum(( sales_fact__db_sales_fact_fact . dollars_sold )) "
             + "as alias1, sum(( sales_fact__db_sales_fact_fact . dollars_sold )) as alias2 from db.sales_fact "
             + "sales_fact__db_sales_fact_fact where sales_fact__db_sales_fact_fact.time_key in  "
@@ -779,8 +801,9 @@ public class TestColumnarSQLRewriter {
     SessionState.start(hconf);
 
     String actual = qtest.rewrite(query, conf, hconf);
-    String expected = "select ( dim1___dim1 . date ) date , sum(alias1) msr1 , ( dim2___dim2 . name ) dim2_name , "
-        + "( dim3___dim3 . name ) dim3_name , ( dim4___dim4 . name ) dim4_name  "
+    String expected = "select ( dim1___dim1 . date ) as `date` , sum(alias1) as `msr1` , ( dim2___dim2 . name ) "
+        + "as `dim2_name` , "
+        + "( dim3___dim3 . name ) as `dim3_name` , ( dim4___dim4 . name ) as `dim4_name`  "
         + "from  (select fact___f.dim1_id, fact___f.dim2_id, fact___f.dim3_id,sum(( fact___f . msr1 )) "
         + "as alias1 from fact fact___f where fact___f.dim1_id in  (  select dim1 .id from dim1 where "
         + "(( dim1. date ) =  '2014-11-25 00:00:00' ) )  "
@@ -810,8 +833,8 @@ public class TestColumnarSQLRewriter {
     SessionState.start(hconf);
 
     String actual = qtest.rewrite(query, conf, hconf);
-    String expected = "select ( dim1___dim1 . date ) date , sum(alias1) msr1 , ( dim2___dim2 . name ) "
-        + "dim2_name  from  (select fact___f.dim1_id, fact___f.m2, fact___f.dim2_id, fact___f.m3, fact___f.m4, "
+    String expected = "select ( dim1___dim1 . date ) as `date` , sum(alias1) as `msr1` , ( dim2___dim2 . name ) "
+        + "as `dim2_name`  from  (select fact___f.dim1_id, fact___f.m2, fact___f.dim2_id, fact___f.m3, fact___f.m4, "
         + "sum(( fact___f . msr1 )) as alias1 from fact fact___f where ( fact___f . m4 ) "
         + "is not null  and (( fact___f . m2 ) =  '1234' ) and (( fact___f . m3 ) >  3000 ) and "
         + "fact___f.dim1_id in  (  select dim1 .id from dim1 where (( dim1. date ) =  '2014-11-25 00:00:00' ) )  "
@@ -839,8 +862,8 @@ public class TestColumnarSQLRewriter {
 
     String actual = qtest.rewrite(query, conf, hconf);
 
-    String expected = "select ( dim1___dim1 . date ) dim1_date , sum(alias1) msr1 , "
-        + "( dim2___dim2 . name ) dim2_name  "
+    String expected = "select ( dim1___dim1 . date ) as `dim1_date` , sum(alias1) as `msr1` , "
+        + "( dim2___dim2 . name ) as `dim2_name`  "
         + "from  (select fact___f.dim1_id, fact___f.m2, fact___f.dim2_id, fact___f.m3, fact___f.m4"
         + "sum(( fact___f . msr1 )) as alias1 from fact fact___f where ( fact___f . m4 ) "
         + "is not null  and (( fact___f . m2 ) =  '1234' ) and (( fact___f . m3 ) >  3000 ) "
@@ -868,8 +891,8 @@ public class TestColumnarSQLRewriter {
     SessionState.start(hconf);
 
     String actual = qtest.rewrite(query, conf, hconf);
-    String expected = "select ( dim1___dim1 . date ) dim1_date , sum(alias1) msr1 , "
-        + "( dim2___dim2 . name ) dim2_name  from  (select fact___f.dim1_id, fact___f.m2, fact___f.dim2_id,"
+    String expected = "select ( dim1___dim1 . date ) as `dim1_date` , sum(alias1) as `msr1` , "
+        + "( dim2___dim2 . name ) as `dim2_name`  from  (select fact___f.dim1_id, fact___f.m2, fact___f.dim2_id,"
         + "fact___f.dim3_id, "
         + "fact___f.m4, sum(( fact___f . msr1 )) as alias1 from fact fact___f where ( fact___f . m4 ) "
         + "is not null  and (( fact___f . m2 ) =  '1234' ) and fact___f.dim1_id in  (  select dim1 .id from dim1 "
@@ -903,7 +926,7 @@ public class TestColumnarSQLRewriter {
     String actual = qtest.rewrite(query, conf, hconf);
     String expected = "select ( sales_fact___fact . time_key ), ( time_dim___time_dim . day_of_week ), "
             + "( time_dim___time_dim . day ), ( item_dim___item_dim . item_key ),  "
-            + "case  when (sum(alias2) =  0 ) then  0.0  else sum(alias2) end  dollars_sold ,"
+            + "case  when (sum(alias2) =  0 ) then  0.0  else sum(alias2) end  as `dollars_sold` ,"
             + " sum(alias3), avg(alias4), min(alias5), max(alias6) from  (select sales_fact___fact.time_key, "
             + "sales_fact___fact.location_key, sales_fact___fact.item_key,sum(( sales_fact___fact . dollars_sold )) "
             + "as alias1, sum(( sales_fact___fact . dollars_sold )) as alias2, "
@@ -953,8 +976,8 @@ public class TestColumnarSQLRewriter {
 
     String actual = qtest.rewrite(query, conf, hconf);
     String expected = "select ( sales_fact__db_sales_fact_fact . time_key ), ( time_dim___time_dim . day_of_week ), "
-            + "( time_dim___time_dim . day ), ((sum(alias1) +  0 ) + (sum(alias2) +  0 )) expr1 , "
-            + "((sum(alias3) *  1000 ) / sum(alias4)) expr2  from  "
+            + "( time_dim___time_dim . day ), ((sum(alias1) +  0 ) + (sum(alias2) +  0 )) as `expr1` , "
+            + "((sum(alias3) *  1000 ) / sum(alias4)) as `expr2`  from  "
             + "(select sales_fact__db_sales_fact_fact.time_key, sales_fact__db_sales_fact_fact.location_key,"
             + "sum(( sales_fact__db_sales_fact_fact . item_count )) as alias1, "
             + "sum(( sales_fact__db_sales_fact_fact . product_count )) as alias2, "
@@ -1002,13 +1025,13 @@ public class TestColumnarSQLRewriter {
     String actual = qtest.rewrite(query, conf, hconf);
     String expected = "select ( sales_fact__db_sales_fact_fact . time_key ), ( time_dim___time_dim . day_of_week ), "
             + "( time_dim___time_dim . day ), ((sum(( sales_fact__db_sales_fact_fact . item_count )) +  0 ) + "
-            + "(sum(( sales_fact__db_sales_fact_fact . product_count )) +  0 )) expr1 , "
+            + "(sum(( sales_fact__db_sales_fact_fact . product_count )) +  0 )) as `expr1` , "
             + "((sum( case  when ( location_dim__db_location_dim_ld . status_id ) is null  then  0  "
             + "when (( location_dim__db_location_dim_ld . status_id ) =  1 ) then "
             + "( sales_fact__db_sales_fact_fact . item_sold ) else  0  end ) *  1000 ) / sum( case  "
             + "when ( location_dim__db_location_dim_ld . status_id ) is null  then  0  "
             + "when (( location_dim__db_location_dim_ld . status_id ) =  2 ) then "
-            + "( sales_fact__db_sales_fact_fact . dollars_sold ) else  0  end )) expr2  "
+            + "( sales_fact__db_sales_fact_fact . dollars_sold ) else  0  end )) as `expr2`  "
             + "from db.sales_fact sales_fact__db_sales_fact_fact  inner join "
             + "(select time_key,day_of_week,day from time_dim) time_dim___time_dim on "
             + "(( sales_fact__db_sales_fact_fact . time_key ) = ( time_dim___time_dim . time_key ))  "
@@ -1043,8 +1066,8 @@ public class TestColumnarSQLRewriter {
 
     String actual = qtest.rewrite(query, conf, hconf);
     String expected = "select ( sales_fact__db_sales_fact_fact . time_key ), ( time_dim___time_dim . day_of_week ),"
-            + " ( time_dim___time_dim . day ), ((sum(alias1) +  0 ) + (sum(alias2) +  0 )) expr1 , "
-            + "((sum(alias3) *  1000 ) / sum(alias4)) expr2  from  "
+            + " ( time_dim___time_dim . day ), ((sum(alias1) +  0 ) + (sum(alias2) +  0 )) as `expr1` , "
+            + "((sum(alias3) *  1000 ) / sum(alias4)) as `expr2`  from  "
             + "(select sales_fact__db_sales_fact_fact.time_key, sales_fact__db_sales_fact_fact."
             + "location_key,sum(( sales_fact__db_sales_fact_fact . item_count )) as alias1, "
             + "sum(( sales_fact__db_sales_fact_fact . product_count )) as alias2, "
@@ -1089,8 +1112,8 @@ public class TestColumnarSQLRewriter {
     SessionState.start(hconf);
 
     String actual = qtest.rewrite(query, conf, hconf);
-    String expected = "select ( sales_fact__db_sales_fact_fact . time_key ) time_key , "
-            + "( time_dim___time_dim . day_of_week ), sum(alias1) total_item_sold  from "
+    String expected = "select ( sales_fact__db_sales_fact_fact . time_key ) as `time_key` , "
+            + "( time_dim___time_dim . day_of_week ), sum(alias1) as `total_item_sold`  from "
             + " (select sales_fact__db_sales_fact_fact.time_key,sum(( sales_fact__db_sales_fact_fact ."
             + " item_sold )) as alias1, sum(( sales_fact__db_sales_fact_fact . dollar_sold )) "
             + "as alias2 from db.sales_fact sales_fact__db_sales_fact_fact where "
