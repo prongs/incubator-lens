@@ -27,10 +27,18 @@ public class CommonUtils {
 
   }
 
-  public static Map<String, String> parseMapFromString(String s) {
+  /**
+   * Splits given String str around non-escaped commas. Then parses each of the split element
+   * as map entries in the format `key=value`. Constructs a map of such entries.
+   * e.g. "a=b, c=d" parses to map{a:b, c:d} where the symbols are self-explanatory.
+   *
+   * @param str The string to parse
+   * @return parsed map
+   */
+  public static Map<String, String> parseMapFromString(String str) {
     Map<String, String> map = new HashMap<>();
-    if (s != null) {
-      for (String kv : s.split("(?<!\\\\),")) {
+    if (str != null) {
+      for (String kv : str.split("(?<!\\\\),")) {
         if (!kv.isEmpty()) {
           String[] kvArray = kv.split("=");
           String key = "";

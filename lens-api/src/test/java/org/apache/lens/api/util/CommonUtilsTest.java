@@ -19,6 +19,7 @@
 package org.apache.lens.api.util;
 
 import static org.apache.lens.api.util.CommonUtils.parseMapFromString;
+
 import static org.testng.Assert.assertEquals;
 
 import java.util.HashMap;
