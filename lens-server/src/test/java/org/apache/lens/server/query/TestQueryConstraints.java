@@ -18,6 +18,7 @@
  */
 package org.apache.lens.server.query;
 
+import static org.apache.lens.server.api.util.LensUtil.getImplementations;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 
@@ -46,19 +47,19 @@ import org.apache.lens.server.api.error.LensException;
 import org.apache.lens.server.api.metrics.MetricsService;
 import org.apache.lens.server.api.query.AbstractQueryContext;
 import org.apache.lens.server.api.query.QueryExecutionService;
+import org.apache.lens.server.api.query.constraint.QueryLaunchingConstraint;
 import org.apache.lens.server.common.RestAPITestUtil;
 import org.apache.lens.server.common.TestResourceFile;
-import org.apache.lens.server.error.LensExceptionMapper;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
 
 import org.glassfish.jersey.client.ClientConfig;
-import org.glassfish.jersey.filter.LoggingFilter;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
+import org.glassfish.jersey.test.TestProperties;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.AfterTest;
@@ -66,6 +67,7 @@ import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 import com.beust.jcommander.internal.Lists;
+import com.google.common.collect.ImmutableSet;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -76,7 +78,32 @@ import lombok.extern.slf4j.Slf4j;
 public class TestQueryConstraints extends LensJerseyTest {
   private HiveConf serverConf;
 
-  public static class HiveDriver1 extends HiveDriver {
+  public static class MockHiveDriverBase extends HiveDriver {
+
+    private final Configuration customConf;
+    private final String factoriesKey;
+
+    /**
+     * Instantiates a new hive driver.
+     *
+     * @throws LensException the lens exception
+     */
+    public MockHiveDriverBase() throws LensException {
+      customConf = new Configuration();
+      customConf.setInt("driver.max.concurrent.launched.queries", 2);
+      factoriesKey = "factories";
+      customConf.set(factoriesKey,
+        "org.apache.lens.server.api.query.constraint.MaxConcurrentDriverQueriesConstraintFactory");
+    }
+
+    @Override
+    public void configure(Configuration conf) throws LensException {
+      super.configure(conf);
+      queryConstraints = getImplementations("factories", customConf);
+    }
+  }
+
+  public static class HiveDriver1 extends MockHiveDriverBase {
 
     /**
      * Instantiates a new hive driver.
@@ -84,10 +111,16 @@ public class TestQueryConstraints extends LensJerseyTest {
      * @throws LensException the lens exception
      */
     public HiveDriver1() throws LensException {
+
+    }
+
+    @Override
+    public ImmutableSet<QueryLaunchingConstraint> getQueryConstraints() {
+      return queryConstraints;
     }
   }
 
-  public static class HiveDriver2 extends HiveDriver {
+  public static class HiveDriver2 extends MockHiveDriverBase {
 
     /**
      * Instantiates a new hive driver.
@@ -96,9 +129,14 @@ public class TestQueryConstraints extends LensJerseyTest {
      */
     public HiveDriver2() throws LensException {
     }
+
+    @Override
+    public ImmutableSet<QueryLaunchingConstraint> getQueryConstraints() {
+      return queryConstraints;
+    }
   }
 
-  public static class RandomDriverSelector implements DriverSelector {
+  public static class RoundRobinSelector implements DriverSelector {
     int counter = 0;
 
     @Override
@@ -119,18 +157,6 @@ public class TestQueryConstraints extends LensJerseyTest {
   /** The lens session id. */
   LensSessionHandle lensSessionId;
 
-  public static class QueryServiceTestApp extends QueryApp {
-
-    @Override
-    public Set<Class<?>> getClasses() {
-      final Set<Class<?>> classes = super.getClasses();
-      classes.add(LensExceptionMapper.class);
-      classes.add(LensJAXBContextResolver.class);
-      classes.remove(LoggingFilter.class);
-      return classes;
-    }
-  }
-
   /*
    * (non-Javadoc)
    *
@@ -141,9 +167,9 @@ public class TestQueryConstraints extends LensJerseyTest {
     super.setUp();
     queryService = LensServices.get().getService(QueryExecutionService.NAME);
     metricsSvc = LensServices.get().getService(MetricsService.NAME);
-    Map<String, String> sessionconf = new HashMap<String, String>();
-    sessionconf.put("test.session.key", "svalue");
-    lensSessionId = queryService.openSession("foo@localhost", "bar", sessionconf); // @localhost should be removed
+    Map<String, String> sessionConf = new HashMap<>();
+    sessionConf.put("test.session.key", "svalue");
+    lensSessionId = queryService.openSession("foo@localhost", "bar", sessionConf); // @localhost should be removed
     // automatically
     createTable(TEST_TABLE);
     loadData(TEST_TABLE, TestResourceFile.TEST_DATA2_FILE.getValue());
@@ -152,16 +178,10 @@ public class TestQueryConstraints extends LensJerseyTest {
   @Override
   public HiveConf getServerConf() {
     if (serverConf == null) {
-      serverConf = super.getServerConf();
-      serverConf.setBoolean("lens.server.enable.console.metrics", false);
-      LensServerConf.getHiveConf().set("lens.server.ws.filternames",
-        "authentication,consistentState,serverMode");
+      serverConf = new HiveConf(super.getServerConf());
       serverConf.set(LensConfConstants.DRIVER_CLASSES,
         HiveDriver1.class.getName() + "," + HiveDriver2.class.getName());
-      serverConf.setInt("driver.max.concurrent.launched.queries", 2);
-      serverConf.set("lens.driver.hive.query.launching.constraint.factories",
-        "org.apache.lens.server.api.query.constraint.MaxConcurrentDriverQueriesConstraintFactory");
-      serverConf.set("lens.server.driver.selector.class", RandomDriverSelector.class.getName());
+      serverConf.set("lens.server.driver.selector.class", RoundRobinSelector.class.getName());
       LensServerConf.getConfForDrivers().addResource(serverConf);
     }
     return serverConf;
@@ -191,9 +211,9 @@ public class TestQueryConstraints extends LensJerseyTest {
    */
   @Override
   protected Application configure() {
-//    enable(TestProperties.LOG_TRAFFIC);
-//    enable(TestProperties.DUMP_ENTITY);
-    return new QueryServiceTestApp();
+    enable(TestProperties.LOG_TRAFFIC);
+    enable(TestProperties.DUMP_ENTITY);
+    return new TestQueryService.QueryServiceTestApp();
   }
 
   /*
@@ -256,6 +276,10 @@ public class TestQueryConstraints extends LensJerseyTest {
       RestAPITestUtil.waitForQueryToFinish(target(), lensSessionId, handle);
       assertValidity();
     }
+    for (QueryHandle handle : handles) {
+      RestAPITestUtil.getLensQueryResult(target(), lensSessionId, handle);
+      assertValidity();
+    }
   }
 
   private void assertValidity() {
@@ -286,9 +310,8 @@ public class TestQueryConstraints extends LensJerseyTest {
     mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("operation").build(), "execute"));
     mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("conf").fileName("conf").build(), conf,
       MediaType.APPLICATION_XML_TYPE));
-    final QueryHandle handle = target.request().post(Entity.entity(mp, MediaType.MULTIPART_FORM_DATA_TYPE),
+    return target.request().post(Entity.entity(mp, MediaType.MULTIPART_FORM_DATA_TYPE),
       new GenericType<LensAPIResult<QueryHandle>>() {}).getData();
-    return handle;
   }
 
   @AfterMethod

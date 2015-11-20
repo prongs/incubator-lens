@@ -143,7 +143,7 @@ public class HiveDriver implements LensDriver {
   private DriverQueryHook queryHook;
 
   @Getter
-  private ImmutableSet<QueryLaunchingConstraint> queryConstraints;
+  protected ImmutableSet<QueryLaunchingConstraint> queryConstraints;
   private ImmutableSet<WaitingQueriesSelectionPolicy> selectionPolicies;
 
   private String sessionDbKey(String sessionHandle, String database) {
