@@ -126,7 +126,7 @@ public abstract class LensJerseyTest extends JerseyTest {
     LensTestUtil.createTestDatabaseResources(new String[]{LensTestUtil.DB_WITH_JARS, LensTestUtil.DB_WITH_JARS_2},
       hiveConf);
 
-    LensServices.get().init(LensServerConf.getHiveConf());
+    LensServices.get().init(getServerConf());
     LensServices.get().start();
 
     // Check if mock service is started

@@ -109,7 +109,7 @@ public class DefaultEstimatedQueryCollection implements EstimatedQueryCollection
    */
   @Override
   public boolean remove(QueryContext query) {
-    this.queriesByDriver.remove(query.getSelectedDriver());
+    this.queriesByDriver.remove(query.getSelectedDriver(), query);
     return this.queries.remove(query);
   }
 

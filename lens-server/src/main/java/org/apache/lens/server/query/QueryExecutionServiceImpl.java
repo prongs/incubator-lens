@@ -266,7 +266,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
    * queries is locked using removalFromLaunchedQueriesLock, until the decision to add to waiting queries
    * and actual addition to waiting query is complete.
    * */
-  private final ReentrantLock removalFromLaunchedQueriesLock = new ReentrantLock();
+  final ReentrantLock removalFromLaunchedQueriesLock = new ReentrantLock();
 
   private final ExecutorService waitingQueriesSelectionSvc = Executors.newSingleThreadExecutor();
 

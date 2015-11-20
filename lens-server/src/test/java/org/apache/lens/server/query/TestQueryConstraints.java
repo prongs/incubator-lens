@@ -1,0 +1,298 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+package org.apache.lens.server.query;
+
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+
+import java.util.*;
+
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.Application;
+import javax.ws.rs.core.GenericType;
+import javax.ws.rs.core.MediaType;
+
+import org.apache.lens.api.LensConf;
+import org.apache.lens.api.LensSessionHandle;
+import org.apache.lens.api.jaxb.LensJAXBContextResolver;
+import org.apache.lens.api.query.QueryHandle;
+import org.apache.lens.api.result.LensAPIResult;
+import org.apache.lens.driver.hive.HiveDriver;
+import org.apache.lens.server.LensJerseyTest;
+import org.apache.lens.server.LensServerConf;
+import org.apache.lens.server.LensServices;
+import org.apache.lens.server.LensTestUtil;
+import org.apache.lens.server.api.LensConfConstants;
+import org.apache.lens.server.api.driver.DriverSelector;
+import org.apache.lens.server.api.driver.LensDriver;
+import org.apache.lens.server.api.error.LensException;
+import org.apache.lens.server.api.metrics.MetricsService;
+import org.apache.lens.server.api.query.AbstractQueryContext;
+import org.apache.lens.server.api.query.QueryExecutionService;
+import org.apache.lens.server.common.RestAPITestUtil;
+import org.apache.lens.server.common.TestResourceFile;
+import org.apache.lens.server.error.LensExceptionMapper;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hive.conf.HiveConf;
+
+import org.glassfish.jersey.client.ClientConfig;
+import org.glassfish.jersey.filter.LoggingFilter;
+import org.glassfish.jersey.media.multipart.FormDataBodyPart;
+import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
+import org.glassfish.jersey.media.multipart.FormDataMultiPart;
+import org.glassfish.jersey.media.multipart.MultiPartFeature;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.AfterTest;
+import org.testng.annotations.BeforeTest;
+import org.testng.annotations.Test;
+
+import com.beust.jcommander.internal.Lists;
+import lombok.extern.slf4j.Slf4j;
+
+/**
+ * The Class TestQueryService.
+ */
+@Slf4j
+@Test(groups = "unit-test")
+public class TestQueryConstraints extends LensJerseyTest {
+  private HiveConf serverConf;
+
+  public static class HiveDriver1 extends HiveDriver {
+
+    /**
+     * Instantiates a new hive driver.
+     *
+     * @throws LensException the lens exception
+     */
+    public HiveDriver1() throws LensException {
+    }
+  }
+
+  public static class HiveDriver2 extends HiveDriver {
+
+    /**
+     * Instantiates a new hive driver.
+     *
+     * @throws LensException the lens exception
+     */
+    public HiveDriver2() throws LensException {
+    }
+  }
+
+  public static class RandomDriverSelector implements DriverSelector {
+    int counter = 0;
+
+    @Override
+    public LensDriver select(AbstractQueryContext ctx, Configuration conf) {
+      final Collection<LensDriver> drivers = ctx.getDriverContext().getDriversWithValidQueryCost();
+      LensDriver driver = drivers.toArray(new LensDriver[drivers.size()])[counter];
+      counter = (counter + 1) % 2;
+      return driver;
+    }
+  }
+
+  /** The query service. */
+  QueryExecutionServiceImpl queryService;
+
+  /** The metrics svc. */
+  MetricsService metricsSvc;
+
+  /** The lens session id. */
+  LensSessionHandle lensSessionId;
+
+  public static class QueryServiceTestApp extends QueryApp {
+
+    @Override
+    public Set<Class<?>> getClasses() {
+      final Set<Class<?>> classes = super.getClasses();
+      classes.add(LensExceptionMapper.class);
+      classes.add(LensJAXBContextResolver.class);
+      classes.remove(LoggingFilter.class);
+      return classes;
+    }
+  }
+
+  /*
+   * (non-Javadoc)
+   *
+   * @see org.glassfish.jersey.test.JerseyTest#setUp()
+   */
+  @BeforeTest
+  public void setUp() throws Exception {
+    super.setUp();
+    queryService = LensServices.get().getService(QueryExecutionService.NAME);
+    metricsSvc = LensServices.get().getService(MetricsService.NAME);
+    Map<String, String> sessionconf = new HashMap<String, String>();
+    sessionconf.put("test.session.key", "svalue");
+    lensSessionId = queryService.openSession("foo@localhost", "bar", sessionconf); // @localhost should be removed
+    // automatically
+    createTable(TEST_TABLE);
+    loadData(TEST_TABLE, TestResourceFile.TEST_DATA2_FILE.getValue());
+  }
+
+  @Override
+  public HiveConf getServerConf() {
+    if (serverConf == null) {
+      serverConf = super.getServerConf();
+      serverConf.setBoolean("lens.server.enable.console.metrics", false);
+      LensServerConf.getHiveConf().set("lens.server.ws.filternames",
+        "authentication,consistentState,serverMode");
+      serverConf.set(LensConfConstants.DRIVER_CLASSES,
+        HiveDriver1.class.getName() + "," + HiveDriver2.class.getName());
+      serverConf.setInt("driver.max.concurrent.launched.queries", 2);
+      serverConf.set("lens.driver.hive.query.launching.constraint.factories",
+        "org.apache.lens.server.api.query.constraint.MaxConcurrentDriverQueriesConstraintFactory");
+      serverConf.set("lens.server.driver.selector.class", RandomDriverSelector.class.getName());
+      LensServerConf.getConfForDrivers().addResource(serverConf);
+    }
+    return serverConf;
+  }
+
+  /*
+     * (non-Javadoc)
+     *
+     * @see org.glassfish.jersey.test.JerseyTest#tearDown()
+     */
+  @AfterTest
+  public void tearDown() throws Exception {
+    dropTable(TEST_TABLE);
+    queryService.closeSession(lensSessionId);
+    for (LensDriver driver : queryService.getDrivers()) {
+      if (driver instanceof HiveDriver) {
+        assertFalse(((HiveDriver) driver).hasLensSession(lensSessionId));
+      }
+    }
+    super.tearDown();
+  }
+
+  /*
+   * (non-Javadoc)
+   *
+   * @see org.glassfish.jersey.test.JerseyTest#configure()
+   */
+  @Override
+  protected Application configure() {
+//    enable(TestProperties.LOG_TRAFFIC);
+//    enable(TestProperties.DUMP_ENTITY);
+    return new QueryServiceTestApp();
+  }
+
+  /*
+   * (non-Javadoc)
+   *
+   * @see org.glassfish.jersey.test.JerseyTest#configureClient(org.glassfish.jersey.client.ClientConfig)
+   */
+  @Override
+  protected void configureClient(ClientConfig config) {
+    config.register(MultiPartFeature.class);
+    config.register(LensJAXBContextResolver.class);
+  }
+
+  /** The test table. */
+  public static final String TEST_TABLE = "TEST_TABLE";
+
+  /**
+   * Creates the table.
+   *
+   * @param tblName the tbl name
+   * @throws InterruptedException the interrupted exception
+   */
+  private void createTable(String tblName) throws InterruptedException {
+    LensTestUtil.createTable(tblName, target(), lensSessionId);
+  }
+
+  /**
+   * Load data.
+   *
+   * @param tblName      the tbl name
+   * @param testDataFile the test data file
+   * @throws InterruptedException the interrupted exception
+   */
+  private void loadData(String tblName, final String testDataFile) throws InterruptedException {
+    LensTestUtil.loadDataFromClasspath(tblName, testDataFile, target(), lensSessionId);
+  }
+
+  /**
+   * Drop table.
+   *
+   * @param tblName the tbl name
+   * @throws InterruptedException the interrupted exception
+   */
+  private void dropTable(String tblName) throws InterruptedException {
+    LensTestUtil.dropTable(tblName, target(), lensSessionId);
+  }
+
+  @Test
+  public void testThrottling() throws InterruptedException {
+    List<QueryHandle> handles = Lists.newArrayList();
+    for (int j = 0; j < 5; j++) {
+      for (int i = 0; i < 10; i++) {
+        handles.add(launchQuery());
+        assertValidity();
+      }
+      // No harm in sleeping, the queries will anyway take time.
+      Thread.sleep(5000);
+    }
+    for (QueryHandle handle : handles) {
+      RestAPITestUtil.waitForQueryToFinish(target(), lensSessionId, handle);
+      assertValidity();
+    }
+  }
+
+  private void assertValidity() {
+    queryService.removalFromLaunchedQueriesLock.lock();
+    long queued = queryService.getQueuedQueriesCount();
+    long waiting = queryService.getWaitingQueriesCount();
+    long running = queryService.getRunningQueriesCount();
+    queryService.removalFromLaunchedQueriesLock.unlock();
+    Assert.assertTrue(running <= 4);
+    if (running == 4) {
+      assertEquals(queued, 0);
+    } else {
+      assertEquals(waiting, 0);
+    }
+    assertEquals(metricsSvc.getTotalSuccessfulQueries(), metricsSvc.getTotalFinishedQueries());
+  }
+
+  private QueryHandle launchQuery() {
+    final WebTarget target = target().path("queryapi/queries");
+
+    LensConf conf = new LensConf();
+    conf.addProperty(LensConfConstants.QUERY_METRIC_UNIQUE_ID_CONF_KEY, UUID.randomUUID().toString());
+    // estimate native query
+    final FormDataMultiPart mp = new FormDataMultiPart();
+    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("sessionid").build(), lensSessionId,
+      MediaType.APPLICATION_XML_TYPE));
+    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("query").build(), "select ID from " + TEST_TABLE));
+    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("operation").build(), "execute"));
+    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("conf").fileName("conf").build(), conf,
+      MediaType.APPLICATION_XML_TYPE));
+    final QueryHandle handle = target.request().post(Entity.entity(mp, MediaType.MULTIPART_FORM_DATA_TYPE),
+      new GenericType<LensAPIResult<QueryHandle>>() {}).getData();
+    return handle;
+  }
+
+  @AfterMethod
+  private void waitForPurge() throws InterruptedException {
+    waitForPurge(0, queryService.finishedQueries);
+  }
+}
