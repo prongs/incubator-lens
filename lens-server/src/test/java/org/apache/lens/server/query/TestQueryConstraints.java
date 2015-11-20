@@ -47,7 +47,6 @@ import org.apache.lens.server.api.error.LensException;
 import org.apache.lens.server.api.metrics.MetricsService;
 import org.apache.lens.server.api.query.AbstractQueryContext;
 import org.apache.lens.server.api.query.QueryExecutionService;
-import org.apache.lens.server.api.query.constraint.QueryLaunchingConstraint;
 import org.apache.lens.server.common.RestAPITestUtil;
 import org.apache.lens.server.common.TestResourceFile;
 
@@ -67,7 +66,6 @@ import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 import com.beust.jcommander.internal.Lists;
-import com.google.common.collect.ImmutableSet;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -81,7 +79,6 @@ public class TestQueryConstraints extends LensJerseyTest {
   public static class MockHiveDriverBase extends HiveDriver {
 
     private final Configuration customConf;
-    private final String factoriesKey;
 
     /**
      * Instantiates a new hive driver.
@@ -91,15 +88,14 @@ public class TestQueryConstraints extends LensJerseyTest {
     public MockHiveDriverBase() throws LensException {
       customConf = new Configuration();
       customConf.setInt("driver.max.concurrent.launched.queries", 2);
-      factoriesKey = "factories";
-      customConf.set(factoriesKey,
+      customConf.set(HiveDriver.QUERY_LAUNCHIG_CONSTRAINT_FACTORIES_KEY,
         "org.apache.lens.server.api.query.constraint.MaxConcurrentDriverQueriesConstraintFactory");
     }
 
     @Override
     public void configure(Configuration conf) throws LensException {
       super.configure(conf);
-      queryConstraints = getImplementations("factories", customConf);
+      queryConstraints = getImplementations(HiveDriver.QUERY_LAUNCHIG_CONSTRAINT_FACTORIES_KEY, customConf);
     }
   }
 
@@ -113,11 +109,6 @@ public class TestQueryConstraints extends LensJerseyTest {
     public HiveDriver1() throws LensException {
 
     }
-
-    @Override
-    public ImmutableSet<QueryLaunchingConstraint> getQueryConstraints() {
-      return queryConstraints;
-    }
   }
 
   public static class HiveDriver2 extends MockHiveDriverBase {
@@ -128,11 +119,6 @@ public class TestQueryConstraints extends LensJerseyTest {
      * @throws LensException the lens exception
      */
     public HiveDriver2() throws LensException {
-    }
-
-    @Override
-    public ImmutableSet<QueryLaunchingConstraint> getQueryConstraints() {
-      return queryConstraints;
     }
   }
 
