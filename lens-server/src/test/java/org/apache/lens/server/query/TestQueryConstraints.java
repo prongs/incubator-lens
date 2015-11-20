@@ -276,7 +276,6 @@ public class TestQueryConstraints extends LensJerseyTest {
     } else {
       assertEquals(count.waiting, 0);
     }
-    assertEquals(metricsSvc.getTotalSuccessfulQueries(), metricsSvc.getTotalFinishedQueries());
   }
 
   private QueryHandle launchQuery() {
