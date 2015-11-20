@@ -269,16 +269,12 @@ public class TestQueryConstraints extends LensJerseyTest {
   }
 
   private void assertValidity() {
-    queryService.removalFromLaunchedQueriesLock.lock();
-    long queued = queryService.getQueuedQueriesCount();
-    long waiting = queryService.getWaitingQueriesCount();
-    long running = queryService.getRunningQueriesCount();
-    queryService.removalFromLaunchedQueriesLock.unlock();
-    Assert.assertTrue(running <= 4);
-    if (running == 4) {
-      assertEquals(queued, 0);
+    QueryExecutionServiceImpl.QueryCount count = queryService.getQueryCountSnapshot();
+    Assert.assertTrue(count.running <= 4);
+    if (count.running == 4) {
+      assertEquals(count.queued, 0);
     } else {
-      assertEquals(waiting, 0);
+      assertEquals(count.waiting, 0);
     }
     assertEquals(metricsSvc.getTotalSuccessfulQueries(), metricsSvc.getTotalFinishedQueries());
   }
