@@ -264,7 +264,7 @@ public class TestQueryConstraints extends LensJerseyTest {
 
   private void assertValidity() {
     QueryExecutionServiceImpl.QueryCount count = queryService.getQueryCountSnapshot();
-    Assert.assertTrue(count.running <= 4, "" + count.running + " running queries: "
+    Assert.assertTrue(count.running <= 4, System.currentTimeMillis() + " " + count.running + " running queries: "
       + queryService.getLaunchedQueries());
     if (count.running == 4) {
       assertEquals(count.queued, 0);
