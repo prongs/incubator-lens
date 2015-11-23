@@ -2039,7 +2039,8 @@ public class TestCubeMetastoreClient {
     Assert.assertTrue(client.dimTableLatestPartitionExists(storageTableName));
     parts = client.getPartitionsByFilter(storageTableName, "dt='latest'");
     assertEquals(1, parts.size());
-    assertEquals(TextInputFormat.class.getCanonicalName(), parts.get(0).getInputFormatClass().getCanonicalName());
+    assertEquals(SequenceFileInputFormat.class.getCanonicalName(),
+      parts.get(0).getInputFormatClass().getCanonicalName());
     assertEquals(parts.get(0).getParameters().get(MetastoreUtil.getLatestPartTimestampKey("dt")),
       UpdatePeriod.HOURLY.format().format(now));
     assertEquals(client.getAllParts(storageTableName).size(), 2);
