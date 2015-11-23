@@ -250,7 +250,7 @@ public class TestQueryConstraints extends LensJerseyTest {
         assertValidity();
       }
       // No harm in sleeping, the queries will anyway take time.
-      Thread.sleep(5000);
+      Thread.sleep(1000);
     }
     for (QueryHandle handle : handles) {
       RestAPITestUtil.waitForQueryToFinish(target(), lensSessionId, handle);
@@ -264,7 +264,8 @@ public class TestQueryConstraints extends LensJerseyTest {
 
   private void assertValidity() {
     QueryExecutionServiceImpl.QueryCount count = queryService.getQueryCountSnapshot();
-    Assert.assertTrue(count.running <= 4, "" + count.running);
+    Assert.assertTrue(count.running <= 4, "" + count.running + " running queries: "
+      + queryService.getLaunchedQueries());
     if (count.running == 4) {
       assertEquals(count.queued, 0);
     } else {

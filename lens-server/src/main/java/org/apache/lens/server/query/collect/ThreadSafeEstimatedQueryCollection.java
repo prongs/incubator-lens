@@ -26,11 +26,13 @@ import org.apache.lens.server.api.query.QueryContext;
 import org.apache.lens.server.api.query.cost.QueryCost;
 
 import lombok.NonNull;
+import lombok.ToString;
 
 /**
  * Makes an implementation of {@link EstimatedQueryCollection} interface thread safe by wrapping all behaviours in
  * synchronized method.
  */
+@ToString
 public class ThreadSafeEstimatedQueryCollection implements EstimatedQueryCollection {
 
   private final EstimatedQueryCollection estimatedQueries;

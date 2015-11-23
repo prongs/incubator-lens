@@ -139,6 +139,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
   /**
    * The launched queries.
    */
+  @Getter
   private EstimatedQueryCollection launchedQueries;
 
   /**
