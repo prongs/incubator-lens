@@ -26,13 +26,11 @@ import org.apache.lens.server.api.query.QueryContext;
 import org.apache.lens.server.api.query.cost.QueryCost;
 
 import lombok.NonNull;
-import lombok.ToString;
 
 /**
  * Makes an implementation of {@link EstimatedQueryCollection} interface thread safe by wrapping all behaviours in
  * synchronized method.
  */
-@ToString
 public class ThreadSafeEstimatedQueryCollection implements EstimatedQueryCollection {
 
   private final EstimatedQueryCollection estimatedQueries;
@@ -52,22 +50,22 @@ public class ThreadSafeEstimatedQueryCollection implements EstimatedQueryCollect
   }
 
   @Override
-  public synchronized  QueryCost getTotalQueryCost(String user) {
+  public synchronized QueryCost getTotalQueryCost(String user) {
     return this.estimatedQueries.getTotalQueryCost(user);
   }
 
   @Override
-  public synchronized  Set<QueryContext> getQueries() {
+  public synchronized Set<QueryContext> getQueries() {
     return this.estimatedQueries.getQueries();
   }
 
   @Override
-  public synchronized  Set<QueryContext> getQueries(String user) {
+  public synchronized Set<QueryContext> getQueries(String user) {
     return this.estimatedQueries.getQueries(user);
   }
 
   @Override
-  public synchronized  int getQueriesCount() {
+  public synchronized int getQueriesCount() {
     return this.estimatedQueries.getQueriesCount();
   }
 
@@ -94,5 +92,10 @@ public class ThreadSafeEstimatedQueryCollection implements EstimatedQueryCollect
   @Override
   public synchronized boolean removeAll(Set<QueryContext> queries) {
     return this.estimatedQueries.removeAll(queries);
+  }
+
+  @Override
+  public synchronized String toString() {
+    return getClass().getSimpleName() + "(estimatedQueries=" + this.estimatedQueries + ")";
   }
 }
