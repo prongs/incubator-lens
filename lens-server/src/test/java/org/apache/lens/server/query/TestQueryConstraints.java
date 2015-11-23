@@ -66,7 +66,7 @@ import lombok.extern.slf4j.Slf4j;
  * The Class TestQueryService.
  */
 @Slf4j
-@Test(groups = "unit-test")
+@Test(groups = "restart-test")
 public class TestQueryConstraints extends LensJerseyTest {
   private HiveConf serverConf;
 
