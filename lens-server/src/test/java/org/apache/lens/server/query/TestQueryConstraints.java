@@ -20,6 +20,7 @@ package org.apache.lens.server.query;
 
 import static org.apache.lens.server.api.LensConfConstants.QUERY_METRIC_UNIQUE_ID_CONF_KEY;
 import static org.apache.lens.server.api.util.LensUtil.getImplementations;
+
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 
