@@ -116,8 +116,7 @@ public class CubeMetastoreClient {
     for (CubeFactTable fact : getAllFacts(cube)) {
       for (String storage : fact.getStorages()) {
         for (UpdatePeriod updatePeriod : fact.getUpdatePeriods().get(storage)) {
-          PartitionTimeline timeline = partitionTimelineCache.get(fact.getName(), storage, updatePeriod,
-            partCol);
+          PartitionTimeline timeline = partitionTimelineCache.get(fact.getName(), storage, updatePeriod, partCol);
           if (timeline != null) {// this storage table is partitioned by partCol or not.
             Date latest = timeline.getLatestDate();
             if (latest != null && latest.after(max)) {
@@ -425,8 +424,8 @@ public class CubeMetastoreClient {
     /** check partition existence in the appropriate timeline if it exists */
     public boolean partitionTimeExists(String name, String storage, UpdatePeriod period, String partCol, Date partSpec)
       throws HiveException, LensException {
-      return get(name, storage, period, partCol) != null && get(name, storage, period, partCol).exists(TimePartition.of(
-        period, partSpec));
+      return get(name, storage, period, partCol) != null
+        && get(name, storage, period, partCol).exists(TimePartition.of(period, partSpec));
     }
 
     /**
@@ -438,6 +437,20 @@ public class CubeMetastoreClient {
       return get(fact, storage) != null && get(fact, storage).get(updatePeriod) != null && get(fact, storage).get(
         updatePeriod).get(partCol) != null ? get(fact, storage).get(updatePeriod).get(partCol) : null;
     }
+    /**
+     * returns the timeline corresponding to fact-storage table, updatePeriod, partCol. throws exception if not
+     * exists, which would most probably mean the combination is incorrect.
+     */
+    public PartitionTimeline getAndFailFast(String fact, String storage, UpdatePeriod updatePeriod, String partCol)
+      throws HiveException, LensException {
+      PartitionTimeline timeline = get(fact, storage, updatePeriod, partCol);
+      if (timeline == null) {
+        throw new LensException(LensCubeErrorCode.TIMELINE_ABSENT.getLensErrorInfo(),
+          fact, storage, updatePeriod, partCol);
+      }
+      return timeline;
+    }
+
 
     /**
      * returns the timeline corresponding to fact-storage table, updatePeriod, partCol. throws exception if not
@@ -1244,10 +1257,6 @@ public class CubeMetastoreClient {
 
   public boolean dimTableLatestPartitionExists(String storageTableName) {
     return latestLookupCache.contains(storageTableName.trim().toLowerCase());
-  }
-
-  Partition getLatestPart(String storageTableName, String latestPartCol) throws HiveException {
-    return getLatestPart(storageTableName, latestPartCol, null);
   }
 
   Partition getLatestPart(String storageTableName, String latestPartCol, Map<String, String> nonTimeParts)
