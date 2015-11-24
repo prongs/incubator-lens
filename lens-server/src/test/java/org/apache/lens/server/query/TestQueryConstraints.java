@@ -83,14 +83,14 @@ public class TestQueryConstraints extends LensJerseyTest {
     public MockHiveDriverBase() throws LensException {
       customConf = new Configuration();
       customConf.setInt("driver.max.concurrent.launched.queries", 2);
-      customConf.set(HiveDriver.QUERY_LAUNCHIG_CONSTRAINT_FACTORIES_KEY,
+      customConf.set(HiveDriver.QUERY_LAUNCHING_CONSTRAINT_FACTORIES_KEY,
         "org.apache.lens.server.api.query.constraint.MaxConcurrentDriverQueriesConstraintFactory");
     }
 
     @Override
     public void configure(Configuration conf) throws LensException {
       super.configure(conf);
-      queryConstraints = getImplementations(HiveDriver.QUERY_LAUNCHIG_CONSTRAINT_FACTORIES_KEY, customConf);
+      queryConstraints = getImplementations(HiveDriver.QUERY_LAUNCHING_CONSTRAINT_FACTORIES_KEY, customConf);
     }
   }
 
