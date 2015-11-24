@@ -19,7 +19,6 @@
 package org.apache.lens.cube.parse;
 
 import static java.util.Calendar.*;
-import static org.apache.lens.server.api.util.LensUtil.getHashMap;
 
 import java.text.DateFormat;
 import java.text.ParseException;

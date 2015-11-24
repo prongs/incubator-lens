@@ -1082,7 +1082,7 @@ public class CubeMetastoreClient {
           }
           boolean isLatest = latestTimestamp != null && dropTimestamp.equals(latestTimestamp);
           // check if partition being dropped is the latest partition
-          if(isLatest) {
+          if (isLatest) {
             for (int i = 0; i < partVals.size(); i++) {
               if (i != timeColIndex) {
                 if (!part.getValues().get(i).equals(partVals.get(i))) {

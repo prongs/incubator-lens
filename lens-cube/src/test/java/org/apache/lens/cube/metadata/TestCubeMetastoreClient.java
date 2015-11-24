@@ -23,6 +23,7 @@ import static org.apache.lens.cube.metadata.MetastoreUtil.*;
 import static org.apache.lens.cube.metadata.UpdatePeriod.*;
 import static org.apache.lens.cube.parse.DateUtil.getDateWithOffset;
 import static org.apache.lens.server.api.util.LensUtil.getHashMap;
+
 import static org.testng.Assert.*;
 
 import java.util.*;

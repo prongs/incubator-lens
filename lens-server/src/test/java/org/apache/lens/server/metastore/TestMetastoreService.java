@@ -19,6 +19,7 @@
 package org.apache.lens.server.metastore;
 
 import static org.apache.lens.cube.metadata.UpdatePeriod.*;
+
 import static org.testng.Assert.*;
 
 import java.io.File;
