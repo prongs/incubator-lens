@@ -1203,7 +1203,8 @@ public class CubeMetastoreClient {
   }
 
   boolean partitionExists(String storageTableName, UpdatePeriod updatePeriod, Map<String, Date> partitionTimestamps,
-    Map<String, String> partSpec) throws HiveException {
+    Map<String, String> nonTimePartSpec) throws HiveException {
+    HashMap<String, String> partSpec = new HashMap<>(nonTimePartSpec);
     partSpec.putAll(getPartitionSpec(updatePeriod, partitionTimestamps));
     return partitionExists(storageTableName, partSpec);
   }
