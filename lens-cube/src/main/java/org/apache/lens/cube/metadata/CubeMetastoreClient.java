@@ -451,21 +451,6 @@ public class CubeMetastoreClient {
       return timeline;
     }
 
-
-    /**
-     * returns the timeline corresponding to fact-storage table, updatePeriod, partCol. throws exception if not
-     * exists, which would most probably mean the combination is incorrect.
-     */
-    public PartitionTimeline getAndFailFast(String fact, String storage, UpdatePeriod updatePeriod, String partCol)
-      throws HiveException, LensException {
-      PartitionTimeline timeline = get(fact, storage, updatePeriod, partCol);
-      if (timeline == null) {
-        throw new LensException(LensCubeErrorCode.TIMELINE_ABSENT.getLensErrorInfo(),
-          fact, storage, updatePeriod, partCol);
-      }
-      return timeline;
-    }
-
     /** update partition timeline cache for addition of time partition */
     public void updateForAddition(String cubeTableName, String storageName, UpdatePeriod updatePeriod,
       Map<String, TreeSet<Date>> timePartSpec) throws HiveException, LensException {

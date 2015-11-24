@@ -1953,16 +1953,17 @@ public class TestCubeMetastoreClient {
   public void testCubeDim() throws Exception {
     String dimName = "ziptableMeta";
 
-    List<FieldSchema> dimColumns = new ArrayList<FieldSchema>();
+    List<FieldSchema> dimColumns;
+    dimColumns = new ArrayList<FieldSchema>();
     dimColumns.add(new FieldSchema("zipcode", "int", "code"));
     dimColumns.add(new FieldSchema("f1", "string", "field1"));
     dimColumns.add(new FieldSchema("f2", "string", "field2"));
     dimColumns.add(new FieldSchema("stateid", "int", "state id"));
     dimColumns.add(new FieldSchema("statei2", "int", "state id"));
 
-    Map<String, UpdatePeriod> dumpPeriods = new HashMap<String, UpdatePeriod>();
-    ArrayList<FieldSchema> partCols = new ArrayList<FieldSchema>();
-    List<String> timePartCols = new ArrayList<String>();
+    Map<String, UpdatePeriod> dumpPeriods = new HashMap<>();
+    ArrayList<FieldSchema> partCols = new ArrayList<>();
+    List<String> timePartCols = new ArrayList<>();
     partCols.add(getDatePartition());
     timePartCols.add(getDatePartitionKey());
     StorageTableDesc s1 = new StorageTableDesc();
@@ -1972,7 +1973,7 @@ public class TestCubeMetastoreClient {
     s1.setTimePartCols(timePartCols);
     dumpPeriods.put(c1, HOURLY);
 
-    Map<String, StorageTableDesc> storageTables = new HashMap<String, StorageTableDesc>();
+    Map<String, StorageTableDesc> storageTables = new HashMap<>();
     storageTables.put(c1, s1);
 
     CubeDimensionTable cubeDim = new CubeDimensionTable(zipDim.getName(), dimName, dimColumns, 0L, dumpPeriods);
@@ -2007,11 +2008,11 @@ public class TestCubeMetastoreClient {
     // test partition
     String storageTableName = MetastoreUtil.getFactOrDimtableStorageTableName(dimName, c1);
     Assert.assertFalse(client.dimTableLatestPartitionExists(storageTableName));
-    Map<String, Date> timeParts = new HashMap<String, Date>();
-    timeParts.put(TestCubeMetastoreClient.getDatePartitionKey(), now);
-    StoragePartitionDesc sPartSpec = new StoragePartitionDesc(cubeDim.getName(), timeParts, null, HOURLY);
+    Map<String, Date> timePartsNow = new HashMap<>();
+    timePartsNow.put(TestCubeMetastoreClient.getDatePartitionKey(), now);
+    StoragePartitionDesc sPartSpec = new StoragePartitionDesc(cubeDim.getName(), timePartsNow, null, HOURLY);
     client.addPartition(sPartSpec, c1);
-    Assert.assertTrue(client.dimPartitionExists(cubeDim.getName(), c1, timeParts));
+    Assert.assertTrue(client.dimPartitionExists(cubeDim.getName(), c1, timePartsNow));
     Assert
       .assertTrue(client.latestPartitionExists(cubeDim.getName(), c1, TestCubeMetastoreClient.getDatePartitionKey()));
     assertEquals(client.getAllParts(storageTableName).size(), 2);
@@ -2035,7 +2036,7 @@ public class TestCubeMetastoreClient {
     sPartSpec2.setOutputFormat(HiveIgnoreKeyTextOutputFormat.class.getCanonicalName());
     client.addPartition(sPartSpec2, c1);
     assertEquals(client.getAllParts(storageTableName).size(), 3);
-    Assert.assertTrue(client.dimPartitionExists(cubeDim.getName(), c1, timeParts));
+    Assert.assertTrue(client.dimPartitionExists(cubeDim.getName(), c1, timePartsNow));
     Assert.assertTrue(client.dimPartitionExists(cubeDim.getName(), c1, timeParts2));
     Assert
       .assertTrue(client.latestPartitionExists(cubeDim.getName(), c1, TestCubeMetastoreClient.getDatePartitionKey()));
@@ -2047,9 +2048,9 @@ public class TestCubeMetastoreClient {
     assertEquals(parts.get(0).getParameters().get(MetastoreUtil.getLatestPartTimestampKey("dt")),
       HOURLY.format().format(nowPlus1));
 
-    client.dropPartition(cubeDim.getName(), c1, timeParts, null, HOURLY);
+    client.dropPartition(cubeDim.getName(), c1, timePartsNow, null, HOURLY);
     Assert.assertTrue(client.dimPartitionExists(cubeDim.getName(), c1, timeParts2));
-    Assert.assertFalse(client.dimPartitionExists(cubeDim.getName(), c1, timeParts));
+    Assert.assertFalse(client.dimPartitionExists(cubeDim.getName(), c1, timePartsNow));
     Assert
       .assertTrue(client.latestPartitionExists(cubeDim.getName(), c1, TestCubeMetastoreClient.getDatePartitionKey()));
     Assert.assertTrue(client.dimTableLatestPartitionExists(storageTableName));
@@ -2063,7 +2064,7 @@ public class TestCubeMetastoreClient {
 
     client.dropPartition(cubeDim.getName(), c1, timeParts2, null, HOURLY);
     Assert.assertFalse(client.dimPartitionExists(cubeDim.getName(), c1, timeParts2));
-    Assert.assertFalse(client.dimPartitionExists(cubeDim.getName(), c1, timeParts));
+    Assert.assertFalse(client.dimPartitionExists(cubeDim.getName(), c1, timePartsNow));
     Assert.assertFalse(client.latestPartitionExists(cubeDim.getName(), c1,
       TestCubeMetastoreClient.getDatePartitionKey()));
     assertEquals(client.getAllParts(storageTableName).size(), 0);
