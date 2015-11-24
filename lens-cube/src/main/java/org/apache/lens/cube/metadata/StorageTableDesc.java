@@ -50,8 +50,8 @@ public class StorageTableDesc extends CreateTableDesc {
   public StorageTableDesc() {
   }
 
-  public StorageTableDesc(Class<?> inputFormatClass,
-    Class<?> outputFormatClass, ArrayList<FieldSchema> partCols, List<String> timePartCols) {
+  public StorageTableDesc(Class<?> inputFormatClass, Class<?> outputFormatClass,
+    ArrayList<FieldSchema> partCols, List<String> timePartCols) {
     if (inputFormatClass != null) {
       setInputFormat(inputFormatClass.getCanonicalName());
     }

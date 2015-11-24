@@ -19,12 +19,14 @@
 package org.apache.lens.cube.parse;
 
 import static java.util.Calendar.*;
+import static org.apache.lens.server.api.util.LensUtil.getHashMap;
 
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -44,6 +46,24 @@ import lombok.extern.slf4j.Slf4j;
 public final class DateUtil {
   private DateUtil() {
 
+  }
+  private static class DateOffsetProvider extends HashMap<Integer, Date> {
+    {
+      put(0, new Date());
+    }
+
+    @Override
+    public Date get(Object key) {
+      if (!containsKey(key) && key instanceof Integer) {
+        put((Integer) key, org.apache.commons.lang3.time.DateUtils.addHours(super.get(0), (Integer) key));
+      }
+      return super.get(key);
+    }
+  }
+
+  private static DateOffsetProvider dateOffsetProvider = new DateOffsetProvider();
+  public static Date getDateWithOffset(int i) {
+    return dateOffsetProvider.get(i);
   }
 
   /*

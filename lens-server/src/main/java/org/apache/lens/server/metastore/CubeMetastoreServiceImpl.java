@@ -919,11 +919,9 @@ public class CubeMetastoreServiceImpl extends BaseLensService implements CubeMet
     String storageName, String filter) throws LensException {
     try {
       acquire(sessionid);
-      String tableName = MetastoreUtil.getStorageTableName(cubeTableName,
-        Storage.getPrefix(storageName));
+      String tableName = MetastoreUtil.getStorageTableName(cubeTableName, Storage.getPrefix(storageName));
       CubeMetastoreClient msClient = getClient(sessionid);
-      List<Partition> partitions = msClient.getPartitionsByFilter(
-        tableName, filter);
+      List<Partition> partitions = msClient.getPartitionsByFilter(tableName, filter);
       for (Partition part : partitions) {
         try {
           Map<String, Date> timeSpec = new HashMap<String, Date>();
