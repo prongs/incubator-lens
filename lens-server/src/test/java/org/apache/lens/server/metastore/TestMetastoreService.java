@@ -48,8 +48,8 @@ import org.apache.lens.api.result.LensAPIResult;
 import org.apache.lens.cube.metadata.*;
 import org.apache.lens.cube.metadata.ExprColumn.ExprSpec;
 import org.apache.lens.server.LensJerseyTest;
-import org.apache.lens.server.LensServices;
 import org.apache.lens.server.LensServerTestUtil;
+import org.apache.lens.server.LensServices;
 import org.apache.lens.server.api.metastore.CubeMetastoreService;
 import org.apache.lens.server.api.util.LensUtil;
 

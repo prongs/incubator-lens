@@ -20,9 +20,13 @@
 package org.apache.lens.cube.parse;
 
 import static java.util.Calendar.*;
+
 import static org.apache.lens.cube.metadata.UpdatePeriod.*;
+
 import static org.testng.Assert.*;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 import org.apache.lens.cube.metadata.*;
