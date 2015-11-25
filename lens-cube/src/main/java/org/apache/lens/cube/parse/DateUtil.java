@@ -182,84 +182,12 @@ public final class DateUtil {
     return diff.offsetFrom(calendar.getTime());
   }
 
-  public static Date getCeilDate(Date fromDate, UpdatePeriod interval) {
-    Calendar cal = Calendar.getInstance();
-    cal.setTime(fromDate);
-    boolean hasFraction = false;
-    switch (interval) {
-    case YEARLY:
-      if (cal.get(MONTH) != 0) {
-        hasFraction = true;
-        break;
-      }
-    case MONTHLY:
-      if (cal.get(DAY_OF_MONTH) != 1) {
-        hasFraction = true;
-        break;
-      }
-    case DAILY:
-      if (cal.get(Calendar.HOUR_OF_DAY) != 0) {
-        hasFraction = true;
-        break;
-      }
-    case HOURLY:
-      if (cal.get(Calendar.MINUTE) != 0) {
-        hasFraction = true;
-        break;
-      }
-    case MINUTELY:
-      if (cal.get(Calendar.SECOND) != 0) {
-        hasFraction = true;
-        break;
-      }
-    case SECONDLY:
-    case CONTINUOUS:
-      if (cal.get(Calendar.MILLISECOND) != 0) {
-        hasFraction = true;
-      }
-      break;
-    case WEEKLY:
-      if (cal.get(Calendar.DAY_OF_WEEK) != 1) {
-        hasFraction = true;
-        break;
-      }
-    }
-
-    if (hasFraction) {
-      cal.add(interval.calendarField(), 1);
-      return getFloorDate(cal.getTime(), interval);
-    } else {
-      return fromDate;
-    }
+  public static Date getCeilDate(Date date, UpdatePeriod interval) {
+    return interval.getCeilDate(date);
   }
 
-  public static Date getFloorDate(Date toDate, UpdatePeriod interval) {
-    Calendar cal = Calendar.getInstance();
-    cal.setTime(toDate);
-    switch (interval) {
-    case YEARLY:
-      cal.set(MONTH, 0);
-    case MONTHLY:
-      cal.set(DAY_OF_MONTH, 1);
-    case DAILY:
-      cal.set(Calendar.HOUR_OF_DAY, 0);
-    case HOURLY:
-      cal.set(Calendar.MINUTE, 0);
-    case MINUTELY:
-      cal.set(Calendar.SECOND, 0);
-    case SECONDLY:
-    case CONTINUOUS:
-      cal.set(Calendar.MILLISECOND, 0);
-      break;
-    case WEEKLY:
-      cal.set(Calendar.DAY_OF_WEEK, 1);
-      cal.set(Calendar.HOUR_OF_DAY, 0);
-      cal.set(Calendar.MINUTE, 0);
-      cal.set(Calendar.SECOND, 0);
-      cal.set(Calendar.MILLISECOND, 0);
-      break;
-    }
-    return cal.getTime();
+  public static Date getFloorDate(Date date, UpdatePeriod interval) {
+    return interval.getFloorDate(date);
   }
 
   public static CoveringInfo getMonthlyCoveringInfo(Date from, Date to) {

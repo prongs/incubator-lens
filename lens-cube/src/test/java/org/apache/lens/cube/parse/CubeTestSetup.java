@@ -20,13 +20,9 @@
 package org.apache.lens.cube.parse;
 
 import static java.util.Calendar.*;
-
 import static org.apache.lens.cube.metadata.UpdatePeriod.*;
-
 import static org.testng.Assert.*;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 import org.apache.lens.cube.metadata.*;
@@ -88,10 +84,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class CubeTestSetup {
 
-  public static final String HOUR_FMT = "yyyy-MM-dd-HH";
-  public static final SimpleDateFormat HOUR_PARSER = new SimpleDateFormat(HOUR_FMT);
-  public static final String MONTH_FMT = "yyyy-MM";
-  public static final SimpleDateFormat MONTH_PARSER = new SimpleDateFormat(MONTH_FMT);
   private Set<CubeMeasure> cubeMeasures;
   private Set<CubeDimAttribute> cubeDimensions;
   public static final String TEST_CUBE_NAME = "testCube";
@@ -191,7 +183,7 @@ public class CubeTestSetup {
     BEFORE_4_DAYS_START = cal.getTime();
 
 
-    THIS_YEAR_START = DateUtils.truncate(NOW, YEARLY.calendarField());
+    THIS_YEAR_START = YEARLY.truncate(NOW);
     THIS_YEAR_END = DateUtils.addYears(THIS_YEAR_START, 1);
     LAST_YEAR_START = DateUtils.addYears(THIS_YEAR_START, -1);
     LAST_YEAR_END = THIS_YEAR_START;
@@ -222,11 +214,11 @@ public class CubeTestSetup {
   }
 
   public static String getDateUptoHours(Date dt) {
-    return HOUR_PARSER.format(dt);
+    return HOURLY.format(dt);
   }
 
   public static String getDateUptoMonth(Date dt) {
-    return MONTH_PARSER.format(dt);
+    return MONTHLY.format(dt);
   }
 
   interface StoragePartitionProvider {
@@ -572,12 +564,11 @@ public class CubeTestSetup {
   }
 
   public static void addParts(List<String> partitions, UpdatePeriod updatePeriod, Date from, Date to) {
-    DateFormat fmt = updatePeriod.format();
     Calendar cal = Calendar.getInstance();
     cal.setTime(from);
     Date dt = cal.getTime();
     while (dt.before(to)) {
-      String part = fmt.format(dt);
+      String part = updatePeriod.format(dt);
       cal.add(updatePeriod.calendarField(), 1);
       partitions.add(part);
       dt = cal.getTime();
