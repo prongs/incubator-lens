@@ -135,8 +135,8 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
     createRestartTestDataFile();
 
     // Create a test table
-    LensTestUtil.createTable("test_server_restart", target(), lensSessionId);
-    LensTestUtil.loadData("test_server_restart", TestResourceFile.TEST_DATA_FILE.getValue(), target(), lensSessionId);
+    LensServerTestUtil.createTable("test_server_restart", target(), lensSessionId);
+    LensServerTestUtil.loadData("test_server_restart", TestResourceFile.TEST_DATA_FILE.getValue(), target(), lensSessionId);
     log.info("Loaded data");
 
     // test post execute op
@@ -211,7 +211,7 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
       }
     }
     log.info("End server restart test");
-    LensTestUtil.dropTable("test_server_restart", target(), lensSessionId);
+    LensServerTestUtil.dropTable("test_server_restart", target(), lensSessionId);
     queryService.closeSession(lensSessionId);
   }
 
@@ -242,8 +242,8 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
     log.info("@@ Added resource {}", dataFile.toURI());
 
     // Create a test table
-    LensTestUtil.createTable("test_hive_server_restart", target(), lensSessionId);
-    LensTestUtil.loadData("test_hive_server_restart", TestResourceFile.TEST_DATA_FILE.getValue(), target(),
+    LensServerTestUtil.createTable("test_hive_server_restart", target(), lensSessionId);
+    LensServerTestUtil.loadData("test_hive_server_restart", TestResourceFile.TEST_DATA_FILE.getValue(), target(),
       lensSessionId);
     log.info("Loaded data");
 
@@ -354,7 +354,7 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
     // "Expected to be successful " + handle);
 
     log.info("End hive server restart test");
-    LensTestUtil.dropTable("test_hive_server_restart", target(), lensSessionId);
+    LensServerTestUtil.dropTable("test_hive_server_restart", target(), lensSessionId);
     queryService.closeSession(lensSessionId);
   }
 

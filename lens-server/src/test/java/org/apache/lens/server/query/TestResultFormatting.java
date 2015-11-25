@@ -37,8 +37,8 @@ import org.apache.lens.api.query.QueryStatus;
 import org.apache.lens.api.query.QueryStatus.Status;
 import org.apache.lens.api.result.LensAPIResult;
 import org.apache.lens.server.LensJerseyTest;
+import org.apache.lens.server.LensServerTestUtil;
 import org.apache.lens.server.LensServices;
-import org.apache.lens.server.LensTestUtil;
 import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.query.*;
 import org.apache.lens.server.common.TestResourceFile;
@@ -75,9 +75,9 @@ public class TestResultFormatting extends LensJerseyTest {
     super.setUp();
     queryService = LensServices.get().getService(QueryExecutionService.NAME);
     lensSessionId = queryService.openSession("foo", "bar", new HashMap<String, String>());
-    LensTestUtil.createTable(testTable, target(), lensSessionId,
+    LensServerTestUtil.createTable(testTable, target(), lensSessionId,
       "(ID INT, IDSTR STRING, IDARR ARRAY<INT>, IDSTRARR ARRAY<STRING>)");
-    LensTestUtil.loadDataFromClasspath(testTable, TestResourceFile.TEST_DATA2_FILE.getValue(), target(), lensSessionId);
+    LensServerTestUtil.loadDataFromClasspath(testTable, TestResourceFile.TEST_DATA2_FILE.getValue(), target(), lensSessionId);
   }
 
   /*
@@ -87,7 +87,7 @@ public class TestResultFormatting extends LensJerseyTest {
    */
   @AfterTest
   public void tearDown() throws Exception {
-    LensTestUtil.dropTable(testTable, target(), lensSessionId);
+    LensServerTestUtil.dropTable(testTable, target(), lensSessionId);
     queryService.closeSession(lensSessionId);
     super.tearDown();
   }

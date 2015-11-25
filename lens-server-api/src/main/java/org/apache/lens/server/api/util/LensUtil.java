@@ -20,7 +20,6 @@ package org.apache.lens.server.api.util;
 
 import java.util.Set;
 
-import org.apache.lens.api.LensConf;
 import org.apache.lens.server.api.common.ConfigBasedObjectCreationFactory;
 
 import org.apache.commons.lang3.StringUtils;
@@ -83,23 +82,5 @@ public final class LensUtil {
     } catch (final ReflectiveOperationException e) {
       throw new IllegalStateException(e);
     }
-  }
-
-  public static Configuration getConfiguration(Object... args) {
-    Configuration conf = new Configuration(false);
-    assert (args.length % 2 == 0);
-    for (int i = 0; i < args.length; i += 2) {
-      conf.set(args[i].toString(), args[i + 1].toString());
-    }
-    return conf;
-  }
-
-  public static LensConf getLensConf(Object... args) {
-    assert (args.length % 2 == 0);
-    LensConf conf = new LensConf();
-    for (int i = 0; i < args.length; i += 2) {
-      conf.addProperty(args[i], args[i + 1]);
-    }
-    return conf;
   }
 }
