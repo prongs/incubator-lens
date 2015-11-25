@@ -22,7 +22,11 @@ import org.apache.lens.api.LensConf;
 
 import org.apache.hadoop.conf.Configuration;
 
-public class LensServerApiTestUtil {
+public class LensServerAPITestUtil {
+  private LensServerAPITestUtil() {
+
+  }
+
   public static Configuration getConfiguration(Object... args) {
     Configuration conf = new Configuration(false);
     assert (args.length % 2 == 0);

@@ -36,7 +36,7 @@ import org.apache.lens.server.LensServerConf;
 import org.apache.lens.server.LensServerTestUtil;
 import org.apache.lens.server.LensServices;
 import org.apache.lens.server.api.LensConfConstants;
-import org.apache.lens.server.api.LensServerApiTestUtil;
+import org.apache.lens.server.api.LensServerAPITestUtil;
 import org.apache.lens.server.api.driver.DriverSelector;
 import org.apache.lens.server.api.driver.LensDriver;
 import org.apache.lens.server.api.error.LensException;
@@ -276,7 +276,7 @@ public class TestQueryConstraints extends LensJerseyTest {
   private QueryHandle launchQuery() {
     return RestAPITestUtil.executeAndGetHandle(target(), Optional.of(lensSessionId),
       Optional.of("select ID from " + TEST_TABLE),
-      Optional.of(LensServerApiTestUtil.getLensConf(QUERY_METRIC_UNIQUE_ID_CONF_KEY, UUID.randomUUID())));
+      Optional.of(LensServerAPITestUtil.getLensConf(QUERY_METRIC_UNIQUE_ID_CONF_KEY, UUID.randomUUID())));
   }
 
   @AfterMethod
