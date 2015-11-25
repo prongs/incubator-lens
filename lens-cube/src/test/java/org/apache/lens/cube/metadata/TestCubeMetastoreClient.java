@@ -21,9 +21,8 @@ package org.apache.lens.cube.metadata;
 
 import static org.apache.lens.cube.metadata.MetastoreUtil.*;
 import static org.apache.lens.cube.metadata.UpdatePeriod.*;
-import static org.apache.lens.cube.parse.CubeTestSetup.*;
+import static org.apache.lens.cube.parse.CubeTestSetup.DateOffsetProvider;
 import static org.apache.lens.server.api.util.LensUtil.getHashMap;
-
 import static org.testng.Assert.*;
 
 import java.util.*;
@@ -100,6 +99,11 @@ public class TestCubeMetastoreClient {
   private static Set<ExprColumn> cubeExpressions = new HashSet<>();
   private static Set<JoinChain> joinChains = new HashSet<>();
   private static Set<ExprColumn> dimExpressions = new HashSet<>();
+  private static DateOffsetProvider dateOffsetProvider = new DateOffsetProvider(HOURLY);
+
+  public static Date getDateWithOffset(int i) {
+    return dateOffsetProvider.get(i);
+  }
 
   /**
    * Get the date partition as field schema

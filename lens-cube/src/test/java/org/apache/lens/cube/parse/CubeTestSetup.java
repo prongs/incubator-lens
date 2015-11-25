@@ -132,27 +132,31 @@ public class CubeTestSetup {
   private static Map<String, String> factValidityProperties = Maps.newHashMap();
   @Getter
   private static Map<String, List<UpdatePeriod>> storageToUpdatePeriodMap = new LinkedHashMap<>();
-  private static class DateOffsetProvider extends HashMap<Integer, Date> {
+  public static class DateOffsetProvider extends HashMap<Integer, Date> {
+    private final UpdatePeriod updatePeriod;
+    Calendar calendar = Calendar.getInstance();
+
+    public DateOffsetProvider(UpdatePeriod updatePeriod) {
+      this.updatePeriod = updatePeriod;
+    }
     {
-      put(0, new Date());
+      put(0, calendar.getTime());
     }
 
     @Override
     public Date get(Object key) {
       if (!containsKey(key) && key instanceof Integer) {
-        put((Integer) key, org.apache.commons.lang3.time.DateUtils.addHours(super.get(0), (Integer) key));
+        calendar.setTime(super.get(0));
+        calendar.add(updatePeriod.calendarField(), (Integer) key);
+        put((Integer) key, calendar.getTime());
       }
       return super.get(key);
     }
   }
 
-  private static DateOffsetProvider dateOffsetProvider = new DateOffsetProvider();
-  public static Date getDateWithOffset(int i) {
-    return dateOffsetProvider.get(i);
-  }
-
   static {
     Calendar cal = Calendar.getInstance();
+    // Keep in sync
     NOW = cal.getTime();
     log.debug("Test now:{}", NOW);
 
