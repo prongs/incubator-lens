@@ -1354,7 +1354,7 @@ public class TestCubeMetastoreClient {
           for (Map.Entry<String, String> entry : part.getSpec().entrySet()) {
             if (!nonTimeParts.containsKey(entry.getKey())) {
               try {
-                updatePeriod.format().parse(entry.getValue());
+                updatePeriod.parse(entry.getValue());
               } catch (java.text.ParseException e) {
                 ignore = true;
                 break;

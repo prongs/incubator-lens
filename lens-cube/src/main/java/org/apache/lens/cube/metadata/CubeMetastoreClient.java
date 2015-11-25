@@ -935,7 +935,7 @@ public class CubeMetastoreClient {
 
         if (makeLatest) {
           Map<String, String> latestParams = LensUtil.getHashMap(getLatestPartTimestampKey(partCol),
-            updatePeriod.format().format(pTimestamp));
+            updatePeriod.format(pTimestamp));
           latest.latestParts.put(partCol, new LatestPartColumnInfo(latestParams));
         }
       }
@@ -968,7 +968,7 @@ public class CubeMetastoreClient {
     if (updatePeriodStr != null) {
       UpdatePeriod partInterval = UpdatePeriod.valueOf(updatePeriodStr);
       try {
-        partDate = partInterval.format().parse(partVal);
+        partDate = partInterval.parse(partVal);
       } catch (ParseException e) {
         // ignore
       }
@@ -1052,7 +1052,7 @@ public class CubeMetastoreClient {
     for (FieldSchema column : partCols) {
       partColNames.add(column.getName());
       if (timePartSpec.containsKey(column.getName())) {
-        partVals.add(updatePeriod.format().format(timePartSpec.get(column.getName())));
+        partVals.add(updatePeriod.format(timePartSpec.get(column.getName())));
       } else if (nonTimePartSpec.containsKey(column.getName())) {
         partVals.add(nonTimePartSpec.get(column.getName()));
       } else {
@@ -1075,7 +1075,7 @@ public class CubeMetastoreClient {
           Date latestTimestamp = getLatestTimeStampFromPartition(part, timeCol);
           Date dropTimestamp;
           try {
-            dropTimestamp = updatePeriod.format().parse(updatePeriod.format().format(timePartSpec.get(timeCol)));
+            dropTimestamp = updatePeriod.parse(updatePeriod.format(timePartSpec.get(timeCol)));
           } catch (ParseException e) {
             throw new HiveException(e);
           }
@@ -1122,7 +1122,7 @@ public class CubeMetastoreClient {
   private Map<String, String> getPartitionSpec(UpdatePeriod updatePeriod, Map<String, Date> partitionTimestamps) {
     Map<String, String> partSpec = new HashMap<>();
     for (Map.Entry<String, Date> entry : partitionTimestamps.entrySet()) {
-      String pval = updatePeriod.format().format(entry.getValue());
+      String pval = updatePeriod.format(entry.getValue());
       partSpec.put(entry.getKey(), pval);
     }
     return partSpec;

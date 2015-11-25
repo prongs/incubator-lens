@@ -515,7 +515,7 @@ public class MetastoreUtil {
       String latestPartUpdatePeriod = part.getParameters().get(PARTITION_UPDATE_PERIOD);
       UpdatePeriod latestUpdatePeriod = UpdatePeriod.valueOf(latestPartUpdatePeriod.toUpperCase());
       try {
-        return latestUpdatePeriod.format().parse(latestTimeStampStr);
+        return latestUpdatePeriod.parse(latestTimeStampStr);
       } catch (ParseException e) {
         throw new HiveException(e);
       }
