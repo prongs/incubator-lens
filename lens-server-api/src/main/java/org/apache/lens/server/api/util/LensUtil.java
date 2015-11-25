@@ -86,7 +86,7 @@ public final class LensUtil {
   }
 
   public static Configuration getConfiguration(Object... args) {
-    Configuration conf = new Configuration();
+    Configuration conf = new Configuration(false);
     assert (args.length % 2 == 0);
     for (int i = 0; i < args.length; i += 2) {
       conf.set(args[i].toString(), args[i + 1].toString());
