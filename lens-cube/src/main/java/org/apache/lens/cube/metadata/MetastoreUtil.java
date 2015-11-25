@@ -509,7 +509,7 @@ public class MetastoreUtil {
     return partitions;
   }
 
-  public static Date getLatestTimeStampOfDimtable(Partition part, String partCol) throws HiveException {
+  public static Date getLatestTimeStampFromPartition(Partition part, String partCol) throws HiveException {
     if (part != null) {
       String latestTimeStampStr = part.getParameters().get(MetastoreUtil.getLatestPartTimestampKey(partCol));
       String latestPartUpdatePeriod = part.getParameters().get(PARTITION_UPDATE_PERIOD);

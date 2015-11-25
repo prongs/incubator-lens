@@ -1928,7 +1928,7 @@ public class TestCubeMetastoreClient {
     List<Partition> parts = client.getPartitionsByFilter(storageTableName, "dt='latest'");
     assertEquals(parts.size(), expectedLatestValues.size());
     for (Partition part : parts) {
-      assertEquals(MetastoreUtil.getLatestTimeStampOfDimtable(part, getDatePartitionKey()),
+      assertEquals(MetastoreUtil.getLatestTimeStampFromPartition(part, getDatePartitionKey()),
         TimePartition.of(HOURLY, expectedLatestValues.get(part.getSpec().get("region"))).getDate());
     }
   }
