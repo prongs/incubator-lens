@@ -18,6 +18,8 @@
  */
 package org.apache.lens.server;
 
+import static org.apache.lens.server.LensServerTestUtil.createTable;
+import static org.apache.lens.server.LensServerTestUtil.loadData;
 import static org.apache.lens.server.common.RestAPITestUtil.execute;
 
 import static org.testng.Assert.assertEquals;
@@ -135,8 +137,8 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
     createRestartTestDataFile();
 
     // Create a test table
-    LensServerTestUtil.createTable("test_server_restart", target(), lensSessionId);
-    LensServerTestUtil.loadData("test_server_restart", TestResourceFile.TEST_DATA_FILE.getValue(), target(), lensSessionId);
+    createTable("test_server_restart", target(), lensSessionId);
+    loadData("test_server_restart", TestResourceFile.TEST_DATA_FILE.getValue(), target(), lensSessionId);
     log.info("Loaded data");
 
     // test post execute op
@@ -242,8 +244,8 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
     log.info("@@ Added resource {}", dataFile.toURI());
 
     // Create a test table
-    LensServerTestUtil.createTable("test_hive_server_restart", target(), lensSessionId);
-    LensServerTestUtil.loadData("test_hive_server_restart", TestResourceFile.TEST_DATA_FILE.getValue(), target(),
+    createTable("test_hive_server_restart", target(), lensSessionId);
+    loadData("test_hive_server_restart", TestResourceFile.TEST_DATA_FILE.getValue(), target(),
       lensSessionId);
     log.info("Loaded data");
 

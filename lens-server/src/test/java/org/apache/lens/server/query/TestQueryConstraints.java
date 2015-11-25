@@ -20,8 +20,8 @@ package org.apache.lens.server.query;
 
 import static org.apache.lens.server.api.LensConfConstants.QUERY_METRIC_UNIQUE_ID_CONF_KEY;
 import static org.apache.lens.server.api.util.LensUtil.getImplementations;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
+
+import static org.testng.Assert.*;
 
 import java.util.*;
 
@@ -52,7 +52,6 @@ import org.apache.hadoop.hive.conf.HiveConf;
 import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.test.TestProperties;
-import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeTest;
@@ -264,7 +263,7 @@ public class TestQueryConstraints extends LensJerseyTest {
 
   private void assertValidity() {
     QueryExecutionServiceImpl.QueryCount count = queryService.getQueryCountSnapshot();
-    Assert.assertTrue(count.running <= 4, System.currentTimeMillis() + " " + count.running + " running queries: "
+    assertTrue(count.running <= 4, System.currentTimeMillis() + " " + count.running + " running queries: "
       + queryService.getLaunchedQueries());
     if (count.running == 4) {
       assertEquals(count.queued, 0);

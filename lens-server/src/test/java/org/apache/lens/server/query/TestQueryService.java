@@ -20,6 +20,8 @@ package org.apache.lens.server.query;
 
 import static javax.ws.rs.core.Response.Status.*;
 
+import static org.apache.lens.server.LensServerTestUtil.DB_WITH_JARS;
+import static org.apache.lens.server.LensServerTestUtil.DB_WITH_JARS_2;
 import static org.apache.lens.server.api.LensServerAPITestUtil.getLensConf;
 import static org.apache.lens.server.common.RestAPITestUtil.*;
 
@@ -1248,18 +1250,18 @@ public class TestQueryService extends LensJerseyTest {
 
     // Open session with a DB which has static jars
     LensSessionHandle sessionHandle =
-      sessionService.openSession("foo@localhost", "bar", LensServerTestUtil.DB_WITH_JARS, new HashMap<String, String>());
+      sessionService.openSession("foo@localhost", "bar", DB_WITH_JARS, new HashMap<String, String>());
 
     // Add a jar in the session
     File testJarFile = new File("target/testjars/test2.jar");
     sessionService.addResourceToAllServices(sessionHandle, "jar", "file://" + testJarFile.getAbsolutePath());
 
-    log.info("@@@ Opened session " + sessionHandle.getPublicId() + " with database " + LensServerTestUtil.DB_WITH_JARS);
+    log.info("@@@ Opened session " + sessionHandle.getPublicId() + " with database " + DB_WITH_JARS);
     LensSessionImpl session = sessionService.getSession(sessionHandle);
 
     // Jars should be pending until query is run
-    assertEquals(session.getPendingSessionResourcesForDatabase(LensServerTestUtil.DB_WITH_JARS).size(), 1);
-    assertEquals(session.getPendingSessionResourcesForDatabase(LensServerTestUtil.DB_WITH_JARS_2).size(), 1);
+    assertEquals(session.getPendingSessionResourcesForDatabase(DB_WITH_JARS).size(), 1);
+    assertEquals(session.getPendingSessionResourcesForDatabase(DB_WITH_JARS_2).size(), 1);
 
     final String tableInDBWithJars = "testHiveDriverGetsDBJars";
     try {
@@ -1272,31 +1274,30 @@ public class TestQueryService extends LensJerseyTest {
       for (LensDriver driver : queryService.getDrivers()) {
         if (driver instanceof HiveDriver) {
           addedToHiveDriver =
-            ((HiveDriver) driver).areDBResourcesAddedForSession(sessionHandle.getPublicId().toString(),
-              LensServerTestUtil.DB_WITH_JARS);
+            ((HiveDriver) driver).areDBResourcesAddedForSession(sessionHandle.getPublicId().toString(), DB_WITH_JARS);
         }
       }
       assertTrue(addedToHiveDriver);
 
       // Switch database
       log.info("@@@# database switch test");
-      session.setCurrentDatabase(LensServerTestUtil.DB_WITH_JARS_2);
+      session.setCurrentDatabase(DB_WITH_JARS_2);
       LensServerTestUtil.createTable(tableInDBWithJars + "_2", target(), sessionHandle, "(ID INT, IDSTR STRING) "
         + "ROW FORMAT SERDE \"DatabaseJarSerde\"");
 
       // All db jars should have been added
-      assertTrue(session.getDBResources(LensServerTestUtil.DB_WITH_JARS_2).isEmpty());
-      assertTrue(session.getDBResources(LensServerTestUtil.DB_WITH_JARS).isEmpty());
+      assertTrue(session.getDBResources(DB_WITH_JARS_2).isEmpty());
+      assertTrue(session.getDBResources(DB_WITH_JARS).isEmpty());
 
       // All session resources must have been added to both DBs
       assertFalse(session.getLensSessionPersistInfo().getResources().isEmpty());
       for (LensSessionImpl.ResourceEntry resource : session.getLensSessionPersistInfo().getResources()) {
-        assertTrue(resource.isAddedToDatabase(LensServerTestUtil.DB_WITH_JARS_2));
-        assertTrue(resource.isAddedToDatabase(LensServerTestUtil.DB_WITH_JARS));
+        assertTrue(resource.isAddedToDatabase(DB_WITH_JARS_2));
+        assertTrue(resource.isAddedToDatabase(DB_WITH_JARS));
       }
 
-      assertTrue(session.getPendingSessionResourcesForDatabase(LensServerTestUtil.DB_WITH_JARS).isEmpty());
-      assertTrue(session.getPendingSessionResourcesForDatabase(LensServerTestUtil.DB_WITH_JARS_2).isEmpty());
+      assertTrue(session.getPendingSessionResourcesForDatabase(DB_WITH_JARS).isEmpty());
+      assertTrue(session.getPendingSessionResourcesForDatabase(DB_WITH_JARS_2).isEmpty());
 
     } finally {
       log.info("@@@ TEST_OVER");
