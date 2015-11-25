@@ -1334,8 +1334,8 @@ public class CubeMetastoreClient {
   }
 
   boolean isFactTableForCube(Table tbl, String cube) {
-    return isFactTable(tbl) && CubeFactTable.getCubeName(tbl.getTableName(), tbl.getParameters()).equalsIgnoreCase
-      (cube.toLowerCase());
+    return isFactTable(tbl) && CubeFactTable.getCubeName(tbl.getTableName(), tbl.getParameters())
+      .equalsIgnoreCase(cube.toLowerCase());
   }
 
   /**
