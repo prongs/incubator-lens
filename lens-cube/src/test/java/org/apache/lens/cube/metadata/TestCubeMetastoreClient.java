@@ -1024,14 +1024,13 @@ public class TestCubeMetastoreClient {
 
     // add one dimension of the cube
     factColumns.add(new FieldSchema("zipcode", "int", "zip"));
-    Set<UpdatePeriod> updates = Sets.newHashSet(HOURLY, DAILY);
     FieldSchema itPart = new FieldSchema("it", "string", "date part");
     FieldSchema etPart = new FieldSchema("et", "string", "date part");
     StorageTableDesc s1 = new StorageTableDesc(TextInputFormat.class, HiveIgnoreKeyTextOutputFormat.class,
       Lists.newArrayList(getDatePartition(), itPart, etPart),
       Lists.newArrayList(getDatePartitionKey(), itPart.getName(), etPart.getName()));
 
-    Map<String, Set<UpdatePeriod>> updatePeriods = getHashMap(c1, updates, c2, updates);
+    Map<String, Set<UpdatePeriod>> updatePeriods = getHashMap(c1, hourlyAndDaily, c2, hourlyAndDaily);
     Map<String, StorageTableDesc> storageTables = getHashMap(c1, s1, c2, s1);
 
     CubeFactTable cubeFact = new CubeFactTable(CUBE_NAME_WITH_PROPS, factName, factColumns, updatePeriods);
