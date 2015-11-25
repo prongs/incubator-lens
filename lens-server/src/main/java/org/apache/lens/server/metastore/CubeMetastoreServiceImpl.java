@@ -870,7 +870,7 @@ public class CubeMetastoreServiceImpl extends BaseLensService implements CubeMet
         String dateStr = partSpec.get(partCol);
         Date date = null;
         try {
-          date = period.format().parse(dateStr);
+          date = period.parse(dateStr);
         } catch (Exception e) {
           continue;
         }

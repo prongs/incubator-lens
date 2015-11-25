@@ -1571,7 +1571,7 @@ public class CubeTestSetup {
       TimePartition tp = TimePartition.of(HOURLY, temp);
       ttdStoreAll.add(tp);
       ttd2StoreAll.add(tp);
-      partitions.add(HOURLY.format().format(temp));
+      partitions.add(HOURLY.format(temp));
       StoragePartitionDesc sPartSpec = new StoragePartitionDesc(fact.getName(), timeParts, null, HOURLY);
       storagePartitionDescs.add(sPartSpec);
       cal.add(HOUR_OF_DAY, 1);
