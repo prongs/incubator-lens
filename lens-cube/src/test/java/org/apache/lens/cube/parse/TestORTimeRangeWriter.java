@@ -60,30 +60,16 @@ public class TestORTimeRangeWriter extends TestTimeRangeWriter {
   public void validateConsecutive(String whereClause, DateFormat format) {
     List<String> parts = new ArrayList<String>();
     if (format == null) {
-      parts.add(UpdatePeriod.DAILY.format(CubeTestSetup.ONE_DAY_BACK));
-      parts.add(UpdatePeriod.DAILY.format(CubeTestSetup.TWODAYS_BACK));
-      parts.add(UpdatePeriod.DAILY.format(CubeTestSetup.NOW));
+      parts.add(CubeTestSetup.getDateStringWithOffset(UpdatePeriod.DAILY, -1));
+      parts.add(CubeTestSetup.getDateStringWithOffset(UpdatePeriod.DAILY, -2));
+      parts.add(CubeTestSetup.getDateStringWithOffset(UpdatePeriod.DAILY, 0));
     } else {
-      parts.add(format.format(CubeTestSetup.ONE_DAY_BACK));
-      parts.add(format.format(CubeTestSetup.TWODAYS_BACK));
-      parts.add(format.format(CubeTestSetup.NOW));
+      parts.add(format.format(CubeTestSetup.getDateWithOffset(UpdatePeriod.DAILY, -1)));
+      parts.add(format.format(CubeTestSetup.getDateWithOffset(UpdatePeriod.DAILY, -2)));
+      parts.add(format.format(CubeTestSetup.getDateWithOffset(UpdatePeriod.DAILY, 0)));
     }
 
     System.out.println("Expected :" + StorageUtil.getWherePartClause("dt", "test", parts));
     Assert.assertEquals(whereClause, StorageUtil.getWherePartClause("dt", "test", parts));
   }
-
-  @Override
-  public void validateSingle(String whereClause, DateFormat format) {
-    List<String> parts = new ArrayList<String>();
-    if (format == null) {
-      parts.add(UpdatePeriod.DAILY.format(CubeTestSetup.ONE_DAY_BACK));
-    } else {
-      parts.add(format.format(CubeTestSetup.ONE_DAY_BACK));
-    }
-
-    System.out.println("Expected :" + StorageUtil.getWherePartClause("dt", "test", parts));
-    Assert.assertEquals(whereClause, StorageUtil.getWherePartClause("dt", "test", parts));
-  }
-
 }

@@ -113,7 +113,7 @@ public class TestTimeRangeWriterWithQuery extends TestQueryRewrite {
 
     // multiple range query
     //from date 4 days back
-    qCal.setTime(BEFORE_4_DAYS_START);
+    qCal.setTime(BEFORE_6_DAYS);
     Date from4DaysBackDate = qCal.getTime();
     String qFrom4Days = qFmt.format(from4DaysBackDate);
     String fourDaysInRangeClause = " time_range_in(d_time, '"+ qFrom4Days + "', '" + qTo + "')";
@@ -198,8 +198,8 @@ public class TestTimeRangeWriterWithQuery extends TestQueryRewrite {
       rewrite(
         "select SUM(msr2) from testCube" + " where time_range_in(test_time_dim, '"
           + CubeTestSetup.getDateUptoHours(TWODAYS_BACK) + "','" + CubeTestSetup.getDateUptoHours(NOW) + "')"
-          + " OR time_range_in(test_time_dim, '" + CubeTestSetup.getDateUptoHours(BEFORE_4_DAYS_START) + "','"
-          + CubeTestSetup.getDateUptoHours(BEFORE_4_DAYS_END) + "')", tconf);
+          + " OR time_range_in(test_time_dim, '" + CubeTestSetup.getDateUptoHours(BEFORE_6_DAYS) + "','"
+          + CubeTestSetup.getDateUptoHours(BEFORE_4_DAYS) + "')", tconf);
 
     whereClauses = new HashMap<String, String>();
     whereClauses.put(
@@ -208,8 +208,8 @@ public class TestTimeRangeWriterWithQuery extends TestQueryRewrite {
         getUptoHour(getOneLess(CubeTestSetup.NOW, UpdatePeriod.HOURLY.calendarField())),
         TestTimeRangeWriter.DB_FORMAT)
         + " OR "
-        + TestBetweenTimeRangeWriter.getBetweenClause("hourdim", "full_hour", getUptoHour(BEFORE_4_DAYS_START),
-        getUptoHour(getOneLess(BEFORE_4_DAYS_END, UpdatePeriod.HOURLY.calendarField())),
+        + TestBetweenTimeRangeWriter.getBetweenClause("hourdim", "full_hour", getUptoHour(BEFORE_6_DAYS),
+        getUptoHour(getOneLess(BEFORE_4_DAYS, UpdatePeriod.HOURLY.calendarField())),
         TestTimeRangeWriter.DB_FORMAT));
     expected =
       getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", " join " + getDbName()
@@ -221,8 +221,8 @@ public class TestTimeRangeWriterWithQuery extends TestQueryRewrite {
       rewrite(
         "select to_date(test_time_dim), SUM(msr2) from testCube" + " where time_range_in(test_time_dim, '"
           + CubeTestSetup.getDateUptoHours(TWODAYS_BACK) + "','" + CubeTestSetup.getDateUptoHours(NOW) + "')"
-          + " OR time_range_in(test_time_dim, '" + CubeTestSetup.getDateUptoHours(BEFORE_4_DAYS_START) + "','"
-          + CubeTestSetup.getDateUptoHours(BEFORE_4_DAYS_END) + "')", tconf);
+          + " OR time_range_in(test_time_dim, '" + CubeTestSetup.getDateUptoHours(BEFORE_6_DAYS) + "','"
+          + CubeTestSetup.getDateUptoHours(BEFORE_4_DAYS) + "')", tconf);
 
     expected =
       getExpectedQuery(cubeName, "select to_date(hourdim.full_hour), sum(testcube.msr2) FROM ", " join "
@@ -285,8 +285,8 @@ public class TestTimeRangeWriterWithQuery extends TestQueryRewrite {
       rewrite(
         "select SUM(msr2) from testCube" + " where time_range_in(test_time_dim2, '"
           + CubeTestSetup.getDateUptoHours(TWODAYS_BACK) + "','" + CubeTestSetup.getDateUptoHours(NOW) + "')"
-          + " OR time_range_in(test_time_dim2, '" + CubeTestSetup.getDateUptoHours(BEFORE_4_DAYS_START) + "','"
-          + CubeTestSetup.getDateUptoHours(BEFORE_4_DAYS_END) + "')", tconf);
+          + " OR time_range_in(test_time_dim2, '" + CubeTestSetup.getDateUptoHours(BEFORE_6_DAYS) + "','"
+          + CubeTestSetup.getDateUptoHours(BEFORE_4_DAYS) + "')", tconf);
 
     whereClauses = new HashMap<String, String>();
     whereClauses.put(
@@ -295,8 +295,8 @@ public class TestTimeRangeWriterWithQuery extends TestQueryRewrite {
         getUptoHour(getOneLess(CubeTestSetup.NOW, UpdatePeriod.HOURLY.calendarField())),
         TestTimeRangeWriter.DB_FORMAT)
         + " OR "
-        + TestBetweenTimeRangeWriter.getBetweenClause("timehourchain", "full_hour", getUptoHour(BEFORE_4_DAYS_START),
-        getUptoHour(getOneLess(BEFORE_4_DAYS_END, UpdatePeriod.HOURLY.calendarField())),
+        + TestBetweenTimeRangeWriter.getBetweenClause("timehourchain", "full_hour", getUptoHour(BEFORE_6_DAYS),
+        getUptoHour(getOneLess(BEFORE_4_DAYS, UpdatePeriod.HOURLY.calendarField())),
         TestTimeRangeWriter.DB_FORMAT));
     expected =
       getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", " join " + getDbName()
@@ -309,8 +309,8 @@ public class TestTimeRangeWriterWithQuery extends TestQueryRewrite {
       rewrite(
         "select to_date(test_time_dim2), SUM(msr2) from testCube" + " where time_range_in(test_time_dim2, '"
           + CubeTestSetup.getDateUptoHours(TWODAYS_BACK) + "','" + CubeTestSetup.getDateUptoHours(NOW) + "')"
-          + " OR time_range_in(test_time_dim2, '" + CubeTestSetup.getDateUptoHours(BEFORE_4_DAYS_START) + "','"
-          + CubeTestSetup.getDateUptoHours(BEFORE_4_DAYS_END) + "')", tconf);
+          + " OR time_range_in(test_time_dim2, '" + CubeTestSetup.getDateUptoHours(BEFORE_6_DAYS) + "','"
+          + CubeTestSetup.getDateUptoHours(BEFORE_4_DAYS) + "')", tconf);
 
     expected =
       getExpectedQuery(cubeName, "select to_date(timehourchain.full_hour), sum(testcube.msr2) FROM ", " join "

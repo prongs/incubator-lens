@@ -26,6 +26,8 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -36,6 +38,8 @@ import org.apache.lens.server.api.error.LensException;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DateUtils;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +49,7 @@ public final class DateUtil {
   private DateUtil() {
 
   }
+
   /*
    * NOW -> new java.util.Date() NOW-7DAY -> a date one week earlier NOW (+-)
    * <NUM>UNIT or Hardcoded dates in DD-MM-YYYY hh:mm:ss,sss
@@ -145,10 +150,18 @@ public final class DateUtil {
     }
   }
 
-  public static Date resolveAbsoluteDate(String str) throws LensException {
+  static Cache<String, Date> stringToDateCache = CacheBuilder.newBuilder()
+    .expireAfterWrite(2, TimeUnit.HOURS).maximumSize(100).build();
+
+  public static Date resolveAbsoluteDate(final String str) throws LensException {
     try {
-      return ABSDATE_PARSER.get().parse(getAbsDateFormatString(str));
-    } catch (ParseException e) {
+      return stringToDateCache.get(str, new Callable<Date>() {
+        @Override
+        public Date call() throws ParseException {
+          return ABSDATE_PARSER.get().parse(getAbsDateFormatString(str));
+        }
+      });
+    } catch (Exception e) {
       log.error("Invalid date format. expected only {} date provided:{}", ABSDATE_FMT, str, e);
       throw new LensException(LensCubeErrorCode.WRONG_TIME_RANGE_FORMAT.getLensErrorInfo(), ABSDATE_FMT, str);
     }
