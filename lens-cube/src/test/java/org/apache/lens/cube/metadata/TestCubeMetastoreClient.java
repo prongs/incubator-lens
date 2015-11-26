@@ -237,7 +237,8 @@ public class TestCubeMetastoreClient {
     cubeDimensions.add(new BaseDimAttribute(new FieldSchema("dim1startTime", "string", "basedim"),
       "Dim With starttime", getDateWithOffset(HOURLY, 0), null, 100.0));
     cubeDimensions.add(new ReferencedDimAtrribute(new FieldSchema("dim2start", "string", "ref dim"),
-      "Dim2 with starttime", new TableReference("testdim2", "id"), getDateWithOffset(HOURLY, 0), getDateWithOffset(HOURLY, 0), 100.0));
+      "Dim2 with starttime", new TableReference("testdim2", "id"),
+      getDateWithOffset(HOURLY, 0), getDateWithOffset(HOURLY, 0), 100.0));
 
     List<TableReference> multiRefs = new ArrayList<>();
     multiRefs.add(new TableReference("testdim2", "id"));
@@ -1693,8 +1694,7 @@ public class TestCubeMetastoreClient {
     List<Partition> parts = client.getPartitionsByFilter(storageTableName, "dt='latest'");
     assertEquals(1, parts.size());
     assertEquals(TextInputFormat.class.getCanonicalName(), parts.get(0).getInputFormatClass().getCanonicalName());
-    assertEquals(parts.get(0).getParameters().get(getLatestPartTimestampKey("dt")),
-      HOURLY.format(getDateWithOffset(HOURLY, 0)));
+    assertEquals(parts.get(0).getParameters().get(getLatestPartTimestampKey("dt")), getDateStringWithOffset(HOURLY, 0));
 
     client.dropPartition(cubeDim.getName(), c1, timeParts, null, HOURLY);
     assertFalse(client.dimPartitionExists(cubeDim.getName(), c1, timeParts));
@@ -1766,7 +1766,7 @@ public class TestCubeMetastoreClient {
     Partition latestPart = parts.get(0);
     assertEquals(latestPart.getInputFormatClass(), TextInputFormat.class);
     assertFalse(latestPart.getCols().contains(newcol));
-    assertEquals(latestPart.getParameters().get(getLatestPartTimestampKey("dt")), HOURLY.format(getDateWithOffset(HOURLY, 0)));
+    assertEquals(latestPart.getParameters().get(getLatestPartTimestampKey("dt")), getDateStringWithOffset(HOURLY, 0));
 
     // Partition with different schema
     cubeDim.alterColumn(newcol);
@@ -1789,7 +1789,7 @@ public class TestCubeMetastoreClient {
     latestPart = parts.get(0);
     assertEquals(latestPart.getInputFormatClass(), SequenceFileInputFormat.class);
     assertTrue(latestPart.getCols().contains(newcol));
-    assertEquals(latestPart.getParameters().get(getLatestPartTimestampKey("dt")), HOURLY.format(getDateWithOffset(HOURLY, 1)));
+    assertEquals(latestPart.getParameters().get(getLatestPartTimestampKey("dt")), getDateStringWithOffset(HOURLY, 1));
 
     // add one more partition
     Map<String, Date> timeParts2 = getTimePartitionByOffsets(getDatePartitionKey(), 2);
@@ -1808,7 +1808,7 @@ public class TestCubeMetastoreClient {
     latestPart = parts.get(0);
     assertEquals(latestPart.getInputFormatClass(), TextInputFormat.class);
     assertTrue(latestPart.getCols().contains(newcol));
-    assertEquals(latestPart.getParameters().get(getLatestPartTimestampKey("dt")), HOURLY.format(getDateWithOffset(HOURLY, 2)));
+    assertEquals(latestPart.getParameters().get(getLatestPartTimestampKey("dt")), getDateStringWithOffset(HOURLY, 2));
 
     // drop the last added partition
     client.dropPartition(cubeDim.getName(), c1, timeParts2, null, HOURLY);
@@ -1819,8 +1819,7 @@ public class TestCubeMetastoreClient {
     assertEquals(parts.size(), 1);
     latestPart = parts.get(0);
     assertEquals(latestPart.getInputFormatClass(), SequenceFileInputFormat.class);
-    assertEquals(latestPart.getParameters().get(getLatestPartTimestampKey("dt")),
-      HOURLY.format(getDateWithOffset(HOURLY, 1)));
+    assertEquals(latestPart.getParameters().get(getLatestPartTimestampKey("dt")), getDateStringWithOffset(HOURLY, 1));
     assertEquals(client.getAllParts(storageTableName).size(), 3);
 
     // drop the first partition, leaving the middle.
@@ -1832,8 +1831,7 @@ public class TestCubeMetastoreClient {
     assertEquals(parts.size(), 1);
     latestPart = parts.get(0);
     assertEquals(latestPart.getInputFormatClass(), SequenceFileInputFormat.class);
-    assertEquals(latestPart.getParameters().get(getLatestPartTimestampKey("dt")),
-      HOURLY.format(getDateWithOffset(HOURLY, 1)));
+    assertEquals(latestPart.getParameters().get(getLatestPartTimestampKey("dt")), getDateStringWithOffset(HOURLY, 1));
     assertEquals(client.getAllParts(storageTableName).size(), 2);
 
     client.dropPartition(cubeDim.getName(), c1, timeParts1, null, HOURLY);
