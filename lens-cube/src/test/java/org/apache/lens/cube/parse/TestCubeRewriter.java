@@ -21,10 +21,8 @@ package org.apache.lens.cube.parse;
 
 import static org.apache.lens.cube.metadata.UpdatePeriod.*;
 import static org.apache.lens.cube.parse.CandidateTablePruneCause.CandidateTablePruneCode.*;
-import static org.apache.lens.cube.parse.CubeQueryConfUtil.getValidStorageTablesKey;
-import static org.apache.lens.cube.parse.CubeQueryConfUtil.getValidUpdatePeriodsKey;
+import static org.apache.lens.cube.parse.CubeQueryConfUtil.*;
 import static org.apache.lens.cube.parse.CubeTestSetup.*;
-import static org.apache.lens.cube.parse.CubeTestSetup.getWhereForMonthlyDailyAndHourly2monthsUnionQuery;
 
 import static org.testng.Assert.*;
 
@@ -36,6 +34,7 @@ import org.apache.lens.cube.error.LensCubeErrorCode;
 import org.apache.lens.cube.metadata.*;
 import org.apache.lens.cube.parse.CandidateTablePruneCause.SkipStorageCause;
 import org.apache.lens.cube.parse.CandidateTablePruneCause.SkipStorageCode;
+import org.apache.lens.server.api.LensServerAPITestUtil;
 import org.apache.lens.server.api.error.LensException;
 
 import org.apache.commons.lang.time.DateUtils;
@@ -61,18 +60,16 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class TestCubeRewriter extends TestQueryRewrite {
 
-  private final String cubeName = TEST_CUBE_NAME;
-
   private Configuration conf;
 
   @BeforeTest
   public void setupDriver() throws Exception {
-    conf = new Configuration();
-    conf.set(CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "C0,C1,C2");
-    conf.setBoolean(CubeQueryConfUtil.DISABLE_AUTO_JOINS, true);
-    conf.setBoolean(CubeQueryConfUtil.ENABLE_SELECT_TO_GROUPBY, true);
-    conf.setBoolean(CubeQueryConfUtil.ENABLE_GROUP_BY_TO_SELECT, true);
-    conf.setBoolean(CubeQueryConfUtil.DISABLE_AGGREGATE_RESOLVER, false);
+    conf = LensServerAPITestUtil.getConfiguration(
+      DRIVER_SUPPORTED_STORAGES, "C0,C1,C2",
+      DISABLE_AUTO_JOINS, true,
+      ENABLE_SELECT_TO_GROUPBY, true,
+      ENABLE_GROUP_BY_TO_SELECT, true,
+      DISABLE_AGGREGATE_RESOLVER, false);
   }
 
   @Override
@@ -83,7 +80,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
   @Test
   public void testQueryWithNow() throws Exception {
     LensException e = getLensExceptionInRewrite(
-      "select SUM(msr2) from testCube where" + " time_range_in(d_time, 'NOW - 2DAYS', 'NOW')", getConf());
+      "select SUM(msr2) from testCube where " + getTimeRangeString("NOW - 2DAYS", "NOW"), getConf());
     assertEquals(e.getErrorCode(), LensCubeErrorCode.NO_CANDIDATE_FACT_AVAILABLE.getLensErrorInfo().getErrorCode());
   }
 
@@ -93,19 +90,12 @@ public class TestCubeRewriter extends TestQueryRewrite {
     conf.setClass(CubeQueryConfUtil.TIME_RANGE_WRITER_CLASS, BetweenTimeRangeWriter.class, TimeRangeWriter.class);
 
     DateFormat qFmt = new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss");
-    Calendar qCal = Calendar.getInstance();
-    Date toDate = qCal.getTime();
-    String qTo = qFmt.format(toDate);
-    qCal.setTime(TWODAYS_BACK);
-    Date from2DaysBackDate = qCal.getTime();
-    String qFrom = qFmt.format(from2DaysBackDate);
+    String timeRangeString;
+    timeRangeString = getTimeRangeString(DAILY, -2, 0, qFmt);
+    CubeQueryContext rewrittenQuery = rewriteCtx("select SUM(msr15) from testCube where " + timeRangeString, conf);
 
-    CubeQueryContext rewrittenQuery = rewriteCtx("select SUM(msr15) from testCube where"
-      + " time_range_in(d_time, '" + qFrom + "', '" + qTo + "')", conf);
-
-    DateFormat fmt = UpdatePeriod.CONTINUOUS.format();
-    String to = fmt.format(toDate);
-    String from = fmt.format(from2DaysBackDate);
+    String to = getDateStringWithOffset(DAILY, 0, CONTINUOUS);
+    String from = getDateStringWithOffset(DAILY, -2, CONTINUOUS);
 
     String expected = "select SUM((testCube.msr15)) from TestQueryRewrite.c0_testFact_CONTINUOUS testcube"
       + " WHERE ((( testcube . dt ) between  '" + from + "'  and  '" + to + "' ))";
@@ -114,20 +104,17 @@ public class TestCubeRewriter extends TestQueryRewrite {
     compareQueries(rewrittenQuery.toHQL(), expected);
 
     //test with msr2 on different fact
-    rewrittenQuery = rewriteCtx("select SUM(msr2) from testCube where" + " time_range_in(d_time, '"
-      + qFrom + "', '" + qTo + "')", conf);
+    rewrittenQuery = rewriteCtx("select SUM(msr2) from testCube where " + timeRangeString, conf);
     expected = "select SUM((testCube.msr2)) from TestQueryRewrite.c0_testFact testcube"
       + " WHERE ((( testcube . dt ) between  '" + from + "'  and  '" + to + "' ))";
     System.out.println("rewrittenQuery.toHQL() " + rewrittenQuery.toHQL());
     System.out.println("expected " + expected);
     compareQueries(rewrittenQuery.toHQL(), expected);
 
-    //from date 4 days back
-    qCal.setTime(BEFORE_6_DAYS);
-    Date from4DaysBackDate = qCal.getTime();
-    String qFrom4DaysBackDate = qFmt.format(from4DaysBackDate);
-    LensException th = getLensExceptionInRewrite("select SUM(msr15) from testCube where"
-      + " time_range_in(d_time, '" + qFrom4DaysBackDate + "', '" + qTo + "')", getConf());
+    //from date 6 days back
+    timeRangeString = getTimeRangeString(DAILY, -6, 0, qFmt);
+    LensException th = getLensExceptionInRewrite("select SUM(msr15) from testCube where "
+      + timeRangeString, getConf());
     assertEquals(th.getErrorCode(), LensCubeErrorCode.NO_CANDIDATE_FACT_AVAILABLE.getLensErrorInfo().getErrorCode());
   }
 
@@ -148,8 +135,8 @@ public class TestCubeRewriter extends TestQueryRewrite {
     CubeQueryContext rewrittenQuery =
       rewriteCtx("cube select" + " SUM(msr2) from testCube where " + TWO_DAYS_RANGE, getConfWithStorages("C2"));
     String expected =
-      getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null, null,
-        getWhereForDailyAndHourly2days(cubeName, "C2_testfact"));
+      getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) FROM ", null, null,
+        getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
     compareQueries(rewrittenQuery.toHQL(), expected);
     System.out.println("Non existing parts:" + rewrittenQuery.getNonExistingParts());
     assertNotNull(rewrittenQuery.getNonExistingParts());
@@ -160,7 +147,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
     Configuration conf = getConf();
     conf.setClass(CubeQueryConfUtil.TIME_RANGE_WRITER_CLASS, AbridgedTimeRangeWriter.class, TimeRangeWriter.class);
     conf.setBoolean(CubeQueryConfUtil.FAIL_QUERY_ON_PARTIAL_DATA, false);
-    conf.set(CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "C1,C2,C4");
+    conf.set(DRIVER_SUPPORTED_STORAGES, "C1,C2,C4");
     CubeQueryContext cubeQueryContext =
       rewriteCtx("cube select" + " SUM(msr2) from testCube where " + THIS_YEAR_RANGE, conf);
     PruneCauses<CubeFactTable> pruneCause = cubeQueryContext.getFactPruningMsgs();
@@ -181,15 +168,15 @@ public class TestCubeRewriter extends TestQueryRewrite {
     String hqlQuery = rewrite("cube select" + " SUM(msr2) from testCube where " + TWO_DAYS_RANGE, getConfWithStorages(
       "C2"));
     String expected =
-      getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null, null,
-        getWhereForDailyAndHourly2days(cubeName, "C2_testfact"));
+      getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) FROM ", null, null,
+        getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
     compareQueries(hqlQuery, expected);
 
     Configuration conf = getConfWithStorages("C1");
     conf.setBoolean(CubeQueryConfUtil.FAIL_QUERY_ON_PARTIAL_DATA, true);
     hqlQuery = rewrite("select SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE, conf);
     expected =
-      getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null, null,
+      getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) FROM ", null, null,
         getWhereForHourly2days("c1_testfact2"));
     compareQueries(hqlQuery, expected);
 
@@ -226,7 +213,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
 
     // test join
     Configuration conf = getConf();
-    conf.setBoolean(CubeQueryConfUtil.DISABLE_AUTO_JOINS, false);
+    conf.setBoolean(DISABLE_AUTO_JOINS, false);
     String hqlQuery;
 
     hqlQuery = rewrite("cube select" + " testdim2.name, SUM(msr2) from derivedCube where " + TWO_DAYS_RANGE, conf);
@@ -238,7 +225,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
     compareQueries(hqlQuery, expected);
 
     // Test that explicit join query passes with join resolver disabled
-    conf.setBoolean(CubeQueryConfUtil.DISABLE_AUTO_JOINS, true);
+    conf.setBoolean(DISABLE_AUTO_JOINS, true);
     List<String> joinWhereConds = new ArrayList<String>();
     joinWhereConds.add(StorageUtil.getWherePartClause("dt", "testdim2", StorageConstants.getPartitionsForLatest()));
     hqlQuery =
@@ -255,12 +242,12 @@ public class TestCubeRewriter extends TestQueryRewrite {
   @Test
   public void testCubeInsert() throws Exception {
     Configuration conf = getConf();
-    conf.set(CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "C2");
+    conf.set(DRIVER_SUPPORTED_STORAGES, "C2");
     String hqlQuery = rewrite("insert overwrite directory" + " 'target/test' select SUM(msr2) from testCube where "
       + TWO_DAYS_RANGE, conf);
-    Map<String, String> wh = getWhereForDailyAndHourly2days(cubeName, "C2_testfact");
+    Map<String, String> wh = getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact");
     String expected = "insert overwrite directory 'target/test' "
-      + getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null, null, wh);
+      + getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) FROM ", null, null, wh);
     compareQueries(hqlQuery, expected);
 
     hqlQuery = rewrite("insert overwrite directory" + " 'target/test' cube select SUM(msr2) from testCube where "
@@ -269,9 +256,9 @@ public class TestCubeRewriter extends TestQueryRewrite {
 
     hqlQuery = rewrite("insert overwrite local directory" + " 'target/test' select SUM(msr2) from testCube where "
       + TWO_DAYS_RANGE, conf);
-    wh = getWhereForDailyAndHourly2days(cubeName, "C2_testfact");
+    wh = getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact");
     expected = "insert overwrite local directory 'target/test' "
-      + getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null, null, wh);
+      + getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) FROM ", null, null, wh);
     compareQueries(hqlQuery, expected);
 
     hqlQuery = rewrite("insert overwrite local directory" + " 'target/test' cube select SUM(msr2) from testCube where "
@@ -280,9 +267,9 @@ public class TestCubeRewriter extends TestQueryRewrite {
 
     hqlQuery = rewrite("insert overwrite table temp" + " select SUM(msr2) from testCube where " + TWO_DAYS_RANGE,
       conf);
-    wh = getWhereForDailyAndHourly2days(cubeName, "C2_testfact");
+    wh = getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact");
     expected = "insert overwrite table temp "
-      + getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null, null, wh);
+      + getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) FROM ", null, null, wh);
     compareQueries(hqlQuery, expected);
 
     hqlQuery = rewrite("insert overwrite table temp" + " cube select SUM(msr2) from testCube where " + TWO_DAYS_RANGE,
@@ -323,8 +310,8 @@ public class TestCubeRewriter extends TestQueryRewrite {
     String hqlQuery, expected;
     hqlQuery = rewrite("select SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE, getConfWithStorages("C2"));
     expected =
-      getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null, null,
-        getWhereForDailyAndHourly2days(cubeName, "C2_testfact"));
+      getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) FROM ", null, null,
+        getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
     compareQueries(hqlQuery, expected);
 
     // Test with partition existence
@@ -332,68 +319,68 @@ public class TestCubeRewriter extends TestQueryRewrite {
     conf.setBoolean(CubeQueryConfUtil.FAIL_QUERY_ON_PARTIAL_DATA, true);
     hqlQuery = rewrite("select SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE, conf);
     expected =
-      getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null, null,
+      getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) FROM ", null, null,
         getWhereForHourly2days("c1_testfact2"));
     compareQueries(hqlQuery, expected);
     conf.setBoolean(CubeQueryConfUtil.FAIL_QUERY_ON_PARTIAL_DATA, false);
 
     // Tests for valid tables
-    conf.set(CubeQueryConfUtil.getValidFactTablesKey(cubeName), "testFact");
-    conf.set(CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "C1");
+    conf.set(CubeQueryConfUtil.getValidFactTablesKey(TEST_CUBE_NAME), "testFact");
+    conf.set(DRIVER_SUPPORTED_STORAGES, "C1");
     hqlQuery = rewrite("select SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE, conf);
     expected =
-      getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null, null,
-        getWhereForDailyAndHourly2days(cubeName, "C1_testfact"));
+      getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) FROM ", null, null,
+        getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C1_testfact"));
     compareQueries(hqlQuery, expected);
 
-    conf.set(CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "C2");
-    conf.set(CubeQueryConfUtil.getValidFactTablesKey(cubeName), "testFact");
+    conf.set(DRIVER_SUPPORTED_STORAGES, "C2");
+    conf.set(CubeQueryConfUtil.getValidFactTablesKey(TEST_CUBE_NAME), "testFact");
     hqlQuery = rewrite("select SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE, conf);
     expected =
-      getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null, null,
-        getWhereForDailyAndHourly2days(cubeName, "C2_testfact"));
+      getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) FROM ", null, null,
+        getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
     compareQueries(hqlQuery, expected);
 
-    conf.set(CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "C1");
-    conf.set(CubeQueryConfUtil.getValidFactTablesKey(cubeName), "testFact2");
+    conf.set(DRIVER_SUPPORTED_STORAGES, "C1");
+    conf.set(CubeQueryConfUtil.getValidFactTablesKey(TEST_CUBE_NAME), "testFact2");
     hqlQuery = rewrite("select SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE, conf);
     expected =
-      getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null, null,
+      getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) FROM ", null, null,
         getWhereForHourly2days("c1_testfact2"));
     compareQueries(hqlQuery, expected);
 
-    conf.set(CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "C1");
-    conf.set(CubeQueryConfUtil.getValidFactTablesKey(cubeName), "testFact2");
+    conf.set(DRIVER_SUPPORTED_STORAGES, "C1");
+    conf.set(CubeQueryConfUtil.getValidFactTablesKey(TEST_CUBE_NAME), "testFact2");
     conf.set(getValidStorageTablesKey("testFact2"), "C1_testFact2");
     hqlQuery = rewrite("select SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE, conf);
     expected =
-      getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null, null,
+      getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) FROM ", null, null,
         getWhereForHourly2days("c1_testfact2"));
     compareQueries(hqlQuery, expected);
 
-    conf.set(CubeQueryConfUtil.getValidFactTablesKey(cubeName), "testFact");
+    conf.set(CubeQueryConfUtil.getValidFactTablesKey(TEST_CUBE_NAME), "testFact");
     conf.set(getValidStorageTablesKey("testfact"), "C1_testFact");
     conf.set(getValidUpdatePeriodsKey("testfact", "C1"), "HOURLY");
     hqlQuery = rewrite("select SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE, conf);
     expected =
-      getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null, null, getWhereForHourly2days("c1_testfact"));
+      getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) FROM ", null, null, getWhereForHourly2days("c1_testfact"));
     compareQueries(hqlQuery, expected);
 
-    conf.set(CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "C2");
+    conf.set(DRIVER_SUPPORTED_STORAGES, "C2");
     conf.set(getValidStorageTablesKey("testfact"), "C2_testFact");
     conf.set(getValidUpdatePeriodsKey("testfact", "C2"), "HOURLY");
     hqlQuery = rewrite("select SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE, conf);
     expected =
-      getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null, null, getWhereForHourly2days("c2_testfact"));
+      getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) FROM ", null, null, getWhereForHourly2days("c2_testfact"));
     compareQueries(hqlQuery, expected);
 
     // max interval test
     conf = new Configuration();
     conf.set(CubeQueryConfUtil.QUERY_MAX_INTERVAL, "HOURLY");
-    conf.set(CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "C1,C2");
+    conf.set(DRIVER_SUPPORTED_STORAGES, "C1,C2");
     hqlQuery = rewrite("select SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE, conf);
     expected =
-      getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null, null, getWhereForHourly2days("c1_testfact2"));
+      getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) FROM ", null, null, getWhereForHourly2days("c1_testfact2"));
     compareQueries(hqlQuery, expected);
   }
 
@@ -430,7 +417,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
       hqlQuery = rewrite("select cityid as `City ID`, msr8, msr7 as `Third measure` "
         + "from testCube where " + TWO_MONTHS_RANGE_UPTO_HOURS, conf);
 
-      expected = getExpectedUnionQuery(cubeName, storages, provider,
+      expected = getExpectedUnionQuery(TEST_CUBE_NAME, storages, provider,
         "SELECT testcube.alias0 as `City ID`, sum(testcube.alias1) + max(testcube.alias2), "
           + "case when sum(testcube.alias1) = 0 then 0 else sum(testcube.alias3)/sum(testcube.alias1) end "
           + "as `Third Measure`",
@@ -445,7 +432,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
       hqlQuery = rewrite("select cityid as `City ID`, msr3 as `Third measure` from testCube where "
         + TWO_MONTHS_RANGE_UPTO_HOURS + " having msr7 > 10", conf);
 
-      expected = getExpectedUnionQuery(cubeName, storages, provider,
+      expected = getExpectedUnionQuery(TEST_CUBE_NAME, storages, provider,
         "SELECT testcube.alias0 as `City ID`, max(testcube.alias1) as `Third measure`",
         null, "group by testcube.alias0 having "
           + "(case when sum(testcube.alias2)=0 then 0 else sum(testcube.alias3)/sum(testcube.alias2) end > 10 )",
@@ -458,7 +445,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
       hqlQuery = rewrite("select cityid as `City ID`, msr3 as `Third measure` from testCube where "
         + TWO_MONTHS_RANGE_UPTO_HOURS + " having msr8 > 10", conf);
 
-      expected = getExpectedUnionQuery(cubeName, storages, provider,
+      expected = getExpectedUnionQuery(TEST_CUBE_NAME, storages, provider,
         "SELECT testcube.alias0 as `City ID`, max(testcube.alias1) as `Third measure`",
         null, "GROUP BY testcube.alias0 "
           + "HAVING (sum(testcube.alias2) + max(testcube.alias1)) > 10 ",
@@ -469,7 +456,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
       hqlQuery = rewrite("select msr3 as `Measure 3` from testCube where "
         + TWO_MONTHS_RANGE_UPTO_HOURS + " having msr2 > 10 and msr2 < 100", conf);
 
-      expected = getExpectedUnionQuery(cubeName, storages, provider,
+      expected = getExpectedUnionQuery(TEST_CUBE_NAME, storages, provider,
         "SELECT max(testcube.alias0) as `Measure 3` ",
         null, " HAVING sum(testcube.alias1) > 10 and sum(testcube.alias1) < 100",
         "SELECT max(testcube.msr3) as `alias0`, sum(testcube.msr2) as `alias1`", null, null);
@@ -479,7 +466,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
         + "SUM(msr2) as `Measure 2` from testCube where "
         + TWO_MONTHS_RANGE_UPTO_HOURS + " having msr4 > 10 order by cityid desc limit 5", conf);
 
-      expected = getExpectedUnionQuery(cubeName, storages, provider,
+      expected = getExpectedUnionQuery(TEST_CUBE_NAME, storages, provider,
         "SELECT testcube.alias0, testcube.alias1 as `City ID`, max(testcube.alias2) as `Measure 3`, "
           + "count(testcube.alias3), sum(testcube.alias4) as `Measure 2`",
         null, "group by testcube.alias0, testcube.alias1 "
@@ -490,12 +477,12 @@ public class TestCubeRewriter extends TestQueryRewrite {
       compareQueries(hqlQuery, expected);
 
       conf.setBoolean(CubeQueryConfUtil.ENABLE_GROUP_BY_TO_SELECT, false);
-      conf.setBoolean(CubeQueryConfUtil.ENABLE_SELECT_TO_GROUPBY, false);
+      conf.setBoolean(ENABLE_SELECT_TO_GROUPBY, false);
       hqlQuery = rewrite("select cityid as `City ID`, msr3 as `Measure 3`, "
         + "SUM(msr2) as `Measure 2` from testCube" + " where "
         + TWO_MONTHS_RANGE_UPTO_HOURS + " group by zipcode having msr4 > 10 order by cityid desc limit 5", conf);
 
-      expected = getExpectedUnionQuery(cubeName, storages, provider,
+      expected = getExpectedUnionQuery(TEST_CUBE_NAME, storages, provider,
         "SELECT testcube.alias0 as `City ID`,max(testcube.alias1) as `Measure 3`,sum(testcube.alias2) as `Measure 2` ",
         null, "group by testcube.alias3 having count(testcube.alias4) > 10 order by testcube.alias0 desc limit 5",
         "SELECT testcube.cityid as `alias0`, max(testcube.msr3) as `alias1`, "
@@ -522,7 +509,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
     StoragePartitionProvider provider = new StoragePartitionProvider() {
       @Override
       public Map<String, String> providePartitionsForStorage(String storage) {
-        return getWhereForDailyAndHourly2days(cubeName, storage);
+        return getWhereForDailyAndHourly2days(TEST_CUBE_NAME, storage);
       }
     };
     try {
@@ -530,7 +517,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
       String hqlQuery = rewrite("select SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE, conf);
       System.out.println("HQL:" + hqlQuery);
 
-      String expected = getExpectedUnionQuery(cubeName, Lists.newArrayList("c1_testfact", "c2_testfact"), provider,
+      String expected = getExpectedUnionQuery(TEST_CUBE_NAME, Lists.newArrayList("c1_testfact", "c2_testfact"), provider,
         "select sum(testcube.alias0) ", null, null,
         "select sum(testcube.msr2) as `alias0` from ", null, null
       );
@@ -543,7 +530,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
   @Test
   public void testCubeWhereQueryWithMultipleTablesForMonth() throws Exception {
     Configuration conf = getConf();
-    conf.set(CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "C1,C2,C3");
+    conf.set(DRIVER_SUPPORTED_STORAGES, "C1,C2,C3");
     conf.setBoolean(CubeQueryConfUtil.ENABLE_STORAGES_UNION, true);
     conf.set(getValidStorageTablesKey("testfact"), "");
     conf.set(getValidUpdatePeriodsKey("testfact", "C1"), "HOURLY");
@@ -566,7 +553,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
       String hqlQuery = rewrite("select SUM(msr2) from testCube" + " where " + TWO_MONTHS_RANGE_UPTO_HOURS, conf);
       System.out.println("HQL:" + hqlQuery);
       ArrayList<String> storages = Lists.newArrayList("c1_testfact", "c2_testfact", "c3_testfact");
-      String expected = getExpectedUnionQuery(cubeName, storages, provider,
+      String expected = getExpectedUnionQuery(TEST_CUBE_NAME, storages, provider,
         "select sum(testcube.alias0)", null, null,
         "select sum(testcube.msr2) as `alias0` from ", null, null
       );
@@ -580,29 +567,29 @@ public class TestCubeRewriter extends TestQueryRewrite {
   public void testPartColAsQueryColumn() throws Exception {
     Configuration conf = getConf();
     conf.setBoolean(CubeQueryConfUtil.FAIL_QUERY_ON_PARTIAL_DATA, false);
-    conf.set(CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "C3");
-    conf.setBoolean(CubeQueryConfUtil.DISABLE_AUTO_JOINS, false);
+    conf.set(DRIVER_SUPPORTED_STORAGES, "C3");
+    conf.setBoolean(DISABLE_AUTO_JOINS, false);
     String hql, expected;
     hql = rewrite(
       "select countrydim.name, msr2 from" + " testCube" + " where countrydim.region = 'asia' and "
         + TWO_DAYS_RANGE, conf);
     expected =
-      getExpectedQuery(cubeName, "select countrydim.name, sum(testcube.msr2)" + " FROM ", " JOIN " + getDbName()
+      getExpectedQuery(TEST_CUBE_NAME, "select countrydim.name, sum(testcube.msr2)" + " FROM ", " JOIN " + getDbName()
           + "c3_countrytable_partitioned countrydim on testcube.countryid=countrydim.id and countrydim.dt='latest'",
         "countrydim.region='asia'",
         " group by countrydim.name ", null,
-        getWhereForHourly2days(cubeName, "C3_testfact2_raw"));
+        getWhereForHourly2days(TEST_CUBE_NAME, "C3_testfact2_raw"));
     compareQueries(hql, expected);
     hql = rewrite(
       "select statedim.name, statedim.countryid, msr2 from" + " testCube" + " where statedim.countryid = 5 and "
         + TWO_DAYS_RANGE, conf);
     expected =
-      getExpectedQuery(cubeName, "select statedim.name, statedim.countryid, sum(testcube.msr2)" + " FROM ",
+      getExpectedQuery(TEST_CUBE_NAME, "select statedim.name, statedim.countryid, sum(testcube.msr2)" + " FROM ",
         " JOIN " + getDbName()
           + "c3_statetable_partitioned statedim ON" + " testCube.stateid = statedim.id and statedim.dt = 'latest'",
         "statedim.countryid=5",
         " group by statedim.name, statedim.countryid", null,
-        getWhereForHourly2days(cubeName, "C3_testfact2_raw"));
+        getWhereForHourly2days(TEST_CUBE_NAME, "C3_testfact2_raw"));
     compareQueries(hql, expected);
   }
 
@@ -610,7 +597,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
   public void testCubeJoinQuery() throws Exception {
     // q1
     Configuration conf = getConf();
-    conf.set(CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "C2");
+    conf.set(DRIVER_SUPPORTED_STORAGES, "C2");
     String hqlQuery =
       rewrite("select SUM(msr2) from testCube" + " join citydim on testCube.cityid = citydim.id" + " where "
         + TWO_DAYS_RANGE, conf);
@@ -618,9 +605,9 @@ public class TestCubeRewriter extends TestQueryRewrite {
     //    joinWhereConds.add(StorageUtil.getWherePartClause("dt", "citydim", StorageConstants.getPartitionsForLatest
     // ()));
     String expected =
-      getExpectedQuery(cubeName, "select sum(testcube.msr2)" + " FROM ", " INNER JOIN " + getDbName()
+      getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2)" + " FROM ", " INNER JOIN " + getDbName()
           + "c2_citytable citydim ON" + " testCube.cityid = citydim.id", null, null, joinWhereConds,
-        getWhereForDailyAndHourly2days(cubeName, "C2_testfact"));
+        getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
     compareQueries(hqlQuery, expected);
 
     hqlQuery =
@@ -642,12 +629,12 @@ public class TestCubeRewriter extends TestQueryRewrite {
     joinWhereConds.add(StorageUtil.getWherePartClause("dt", "citydim", StorageConstants.getPartitionsForLatest()));
     joinWhereConds.add(StorageUtil.getWherePartClause("dt", "zipdim", StorageConstants.getPartitionsForLatest()));
     expected =
-      getExpectedQuery(cubeName, "select statedim.name," + " sum(testcube.msr2) FROM ", "INNER JOIN " + getDbName()
+      getExpectedQuery(TEST_CUBE_NAME, "select statedim.name," + " sum(testcube.msr2) FROM ", "INNER JOIN " + getDbName()
           + "c1_citytable citydim ON" + " testCube.cityid = citydim.id LEFT OUTER JOIN " + getDbName()
           + "c1_statetable statedim" + " ON statedim.id = citydim.stateid AND "
           + "(statedim.dt = 'latest') RIGHT OUTER JOIN " + getDbName() + "c1_ziptable"
           + " zipdim ON citydim.zipcode = zipdim.code", null, " group by" + " statedim.name ", joinWhereConds,
-        getWhereForHourly2days(cubeName, "C1_testfact2"));
+        getWhereForHourly2days(TEST_CUBE_NAME, "C1_testfact2"));
     compareQueries(hqlQuery, expected);
 
     // q3
@@ -672,18 +659,18 @@ public class TestCubeRewriter extends TestQueryRewrite {
         + " left outer join citydim on testCube.cityid = citydim.id"
         + " left outer join zipdim on citydim.zipcode = zipdim.code" + " where " + TWO_DAYS_RANGE, getConf());
     expected =
-      getExpectedQuery(cubeName, "select citydim.name," + " sum(testcube.msr2) FROM ", " LEFT OUTER JOIN "
+      getExpectedQuery(TEST_CUBE_NAME, "select citydim.name," + " sum(testcube.msr2) FROM ", " LEFT OUTER JOIN "
           + getDbName() + "c1_citytable citydim ON" + " testCube.cityid = citydim.id and (citydim.dt = 'latest') "
           + " LEFT OUTER JOIN " + getDbName() + "c1_ziptable" + " zipdim ON citydim.zipcode = zipdim.code AND "
           + "(zipdim.dt = 'latest')", null, " group by" + " citydim.name ", null,
-        getWhereForHourly2days(cubeName, "C1_testfact2"));
+        getWhereForHourly2days(TEST_CUBE_NAME, "C1_testfact2"));
     compareQueries(hqlQuery, expected);
 
     hqlQuery =
       rewrite("select SUM(msr2) from testCube" + " join countrydim on testCube.countryid = countrydim.id" + " where "
         + TWO_MONTHS_RANGE_UPTO_MONTH, getConf());
     expected =
-      getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", " INNER JOIN " + getDbName()
+      getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) FROM ", " INNER JOIN " + getDbName()
           + "c1_countrytable countrydim ON testCube.countryid = " + " countrydim.id", null, null, null,
         getWhereForMonthly2months("c2_testfactmonthly"));
     compareQueries(hqlQuery, expected);
@@ -698,23 +685,23 @@ public class TestCubeRewriter extends TestQueryRewrite {
   public void testCubeGroupbyWithConstantProjected() throws Exception {
     // check constants
     Configuration conf = getConf();
-    conf.set(CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "C2");
+    conf.set(DRIVER_SUPPORTED_STORAGES, "C2");
     String hqlQuery1 = rewrite("select cityid, 99, \"placeHolder\", -1001, SUM(msr2) from testCube" + " where "
       + TWO_DAYS_RANGE, conf);
-    String expected1 = getExpectedQuery(cubeName, "select testcube.cityid, 99, \"placeHolder\", -1001,"
+    String expected1 = getExpectedQuery(TEST_CUBE_NAME, "select testcube.cityid, 99, \"placeHolder\", -1001,"
         + " sum(testcube.msr2) FROM ", null, " group by testcube.cityid ",
-      getWhereForDailyAndHourly2days(cubeName, "C2_testfact"));
+      getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
     compareQueries(hqlQuery1, expected1);
 
     // check constants with expression
     String hqlQuery2 = rewrite(
       "select cityid, case when stateid = 'za' then \"Not Available\" end, 99, \"placeHolder\", -1001, "
         + "SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE, conf);
-    String expected2 = getExpectedQuery(cubeName,
+    String expected2 = getExpectedQuery(TEST_CUBE_NAME,
       "select testcube.cityid, case when testcube.stateid = 'za' then \"Not Available\" end, 99, \"placeHolder\","
         + " -1001, sum(testcube.msr2) FROM ", null,
       " group by testcube.cityid, case when testcube.stateid = 'za' then \"Not Available\" end ",
-      getWhereForDailyAndHourly2days(cubeName, "C2_testfact"));
+      getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
     compareQueries(hqlQuery2, expected2);
 
     // check expression with boolean and numeric constants
@@ -723,7 +710,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
         + "case when stateid='za' then 99 else -1001 end,  "
         + "SUM(msr2), SUM(msr2 + 39), SUM(msr2) + 567 from testCube" + " where " + TWO_DAYS_RANGE, conf);
     String expected3 = getExpectedQuery(
-      cubeName,
+      TEST_CUBE_NAME,
       "select testcube.cityid, testcube.stateid + 99, 44 + testcube.stateid, testcube.stateid - 33,"
         + " 999 - testcube.stateid, TRUE, FALSE, round(123.4567,2), "
         + "case when testcube.stateid='za' then 99 else -1001 end,"
@@ -732,14 +719,14 @@ public class TestCubeRewriter extends TestQueryRewrite {
       " group by testcube.cityid,testcube.stateid + 99, 44 + testcube.stateid, testcube.stateid - 33, "
         + "999 - testcube.stateid, "
         + " case when testcube.stateid='za' then 99 else -1001 end ",
-      getWhereForDailyAndHourly2days(cubeName, "C2_testfact"));
+      getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
     compareQueries(hqlQuery3, expected3);
   }
 
   @Test
   public void testCubeGroupbyQuery() throws Exception {
     Configuration conf = getConf();
-    conf.set(CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "C2");
+    conf.set(DRIVER_SUPPORTED_STORAGES, "C2");
     String hqlQuery =
       rewrite("select name, SUM(msr2) from" + " testCube join citydim on testCube.cityid = citydim.id where "
         + TWO_DAYS_RANGE, conf);
@@ -747,9 +734,9 @@ public class TestCubeRewriter extends TestQueryRewrite {
     //    joinWhereConds.add(StorageUtil.getWherePartClause("dt", "citydim", StorageConstants.getPartitionsForLatest
     // ()));
     String expected =
-      getExpectedQuery(cubeName, "select citydim.name," + " sum(testcube.msr2) FROM ", "INNER JOIN " + getDbName()
+      getExpectedQuery(TEST_CUBE_NAME, "select citydim.name," + " sum(testcube.msr2) FROM ", "INNER JOIN " + getDbName()
           + "c2_citytable citydim ON" + " testCube.cityid = citydim.id", null, " group by citydim.name ",
-        joinWhereConds, getWhereForDailyAndHourly2days(cubeName, "C2_testfact"));
+        joinWhereConds, getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
     compareQueries(hqlQuery, expected);
 
     hqlQuery =
@@ -759,70 +746,70 @@ public class TestCubeRewriter extends TestQueryRewrite {
 
     hqlQuery = rewrite("select cityid, SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE, conf);
     expected =
-      getExpectedQuery(cubeName, "select testcube.cityid," + " sum(testcube.msr2) FROM ", null,
-        " group by testcube.cityid ", getWhereForDailyAndHourly2days(cubeName, "C2_testfact"));
+      getExpectedQuery(TEST_CUBE_NAME, "select testcube.cityid," + " sum(testcube.msr2) FROM ", null,
+        " group by testcube.cityid ", getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
     compareQueries(hqlQuery, expected);
 
     hqlQuery = rewrite("select round(cityid), SUM(msr2) from" + " testCube where " + TWO_DAYS_RANGE, conf);
     expected =
-      getExpectedQuery(cubeName, "select round(testcube.cityid)," + " sum(testcube.msr2) FROM ", null,
-        " group by round(testcube.cityid) ", getWhereForDailyAndHourly2days(cubeName, "C2_testfact"));
+      getExpectedQuery(TEST_CUBE_NAME, "select round(testcube.cityid)," + " sum(testcube.msr2) FROM ", null,
+        " group by round(testcube.cityid) ", getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
     compareQueries(hqlQuery, expected);
 
     hqlQuery =
       rewrite("select SUM(msr2) from testCube" + "  where " + TWO_DAYS_RANGE + "group by round(zipcode)", conf);
     expected =
-      getExpectedQuery(cubeName, "select round(testcube.zipcode)," + " sum(testcube.msr2) FROM ", null,
-        " group by round(testcube.zipcode) ", getWhereForDailyAndHourly2days(cubeName, "C2_testfact"));
+      getExpectedQuery(TEST_CUBE_NAME, "select round(testcube.zipcode)," + " sum(testcube.msr2) FROM ", null,
+        " group by round(testcube.zipcode) ", getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
     compareQueries(hqlQuery, expected);
 
     hqlQuery =
       rewrite("select round(cityid), SUM(msr2) from" + " testCube where " + TWO_DAYS_RANGE + " group by zipcode",
         conf);
     expected =
-      getExpectedQuery(cubeName, "select " + " round(testcube.cityid), sum(testcube.msr2) FROM ", null,
-        " group by testcube.zipcode", getWhereForDailyAndHourly2days(cubeName, "C2_testfact"));
+      getExpectedQuery(TEST_CUBE_NAME, "select " + " round(testcube.cityid), sum(testcube.msr2) FROM ", null,
+        " group by testcube.zipcode", getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
     compareQueries(hqlQuery, expected);
 
     hqlQuery = rewrite("select round(cityid), SUM(msr2) from" + " testCube where " + TWO_DAYS_RANGE, conf);
     expected =
-      getExpectedQuery(cubeName, "select " + " round(testcube.cityid), sum(testcube.msr2) FROM ", null,
-        " group by round(testcube.cityid)", getWhereForDailyAndHourly2days(cubeName, "C2_testfact"));
+      getExpectedQuery(TEST_CUBE_NAME, "select " + " round(testcube.cityid), sum(testcube.msr2) FROM ", null,
+        " group by round(testcube.cityid)", getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
     compareQueries(hqlQuery, expected);
 
     hqlQuery =
       rewrite("select cityid, SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE + " group by round(zipcode)",
         conf);
     expected =
-      getExpectedQuery(cubeName, "select " + " testcube.cityid, sum(testcube.msr2) FROM ", null,
-        " group by round(testcube.zipcode)", getWhereForDailyAndHourly2days(cubeName, "C2_testfact"));
+      getExpectedQuery(TEST_CUBE_NAME, "select " + " testcube.cityid, sum(testcube.msr2) FROM ", null,
+        " group by round(testcube.zipcode)", getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
     compareQueries(hqlQuery, expected);
 
     hqlQuery =
       rewrite("select SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE + " group by round(zipcode)", conf);
     expected =
-      getExpectedQuery(cubeName, "select round(testcube.zipcode)," + " sum(testcube.msr2) FROM ", null,
-        " group by round(testcube.zipcode)", getWhereForDailyAndHourly2days(cubeName, "C2_testfact"));
+      getExpectedQuery(TEST_CUBE_NAME, "select round(testcube.zipcode)," + " sum(testcube.msr2) FROM ", null,
+        " group by round(testcube.zipcode)", getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
     compareQueries(hqlQuery, expected);
 
     hqlQuery =
       rewrite("select cityid, msr2 from testCube" + " where " + TWO_DAYS_RANGE + " group by round(zipcode)", conf);
     expected =
-      getExpectedQuery(cubeName, "select " + " testcube.cityid, sum(testcube.msr2) FROM ", null,
-        " group by round(testcube.zipcode)", getWhereForDailyAndHourly2days(cubeName, "C2_testfact"));
+      getExpectedQuery(TEST_CUBE_NAME, "select " + " testcube.cityid, sum(testcube.msr2) FROM ", null,
+        " group by round(testcube.zipcode)", getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
     compareQueries(hqlQuery, expected);
 
     hqlQuery =
       rewrite("select round(zipcode) rzc," + " msr2 from testCube where " + TWO_DAYS_RANGE + " group by zipcode"
         + " order by rzc", conf);
     expected =
-      getExpectedQuery(cubeName, "select round(testcube.zipcode) as `rzc`," + " sum(testcube.msr2) FROM ", null,
-        " group by testcube.zipcode  order by rzc asc", getWhereForDailyAndHourly2days(cubeName, "C2_testfact"));
+      getExpectedQuery(TEST_CUBE_NAME, "select round(testcube.zipcode) as `rzc`," + " sum(testcube.msr2) FROM ", null,
+        " group by testcube.zipcode  order by rzc asc", getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
     compareQueries(hqlQuery, expected);
 
     // rewrite with expressions
-    conf.setBoolean(CubeQueryConfUtil.DISABLE_AUTO_JOINS, false);
-    conf.set(CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "C1, C2");
+    conf.setBoolean(DISABLE_AUTO_JOINS, false);
+    conf.set(DRIVER_SUPPORTED_STORAGES, "C1, C2");
     hqlQuery =
       rewrite("SELECT citydim.name AS g1," + " CASE  WHEN citydim.name=='NULL'  THEN 'NULL' "
         + " WHEN citydim.name=='X'  THEN 'X-NAME' " + " WHEN citydim.name=='Y'  THEN 'Y-NAME' "
@@ -854,7 +841,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
         + "";
     expected =
       getExpectedQuery(
-        cubeName,
+        TEST_CUBE_NAME,
         "SELECT ( citydim.name ) as `g1` ,"
           + "  case  when (( citydim.name ) ==  'NULL' ) then  'NULL'  when (( citydim.name ) ==  'X' )"
           + " then  'X-NAME'  when (( citydim.name ) ==  'Y' ) then  'Y-NAME'"
@@ -992,8 +979,8 @@ public class TestCubeRewriter extends TestQueryRewrite {
     String hqlQuery = rewrite("select SUM(msr2) m2 from" + " testCube where " + TWO_DAYS_RANGE, getConfWithStorages(
       "C2"));
     String expected =
-      getExpectedQuery(cubeName, "select sum(testcube.msr2) as `m2` FROM ", null, null,
-        getWhereForDailyAndHourly2days(cubeName, "C2_testfact"));
+      getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) as `m2` FROM ", null, null,
+        getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
     compareQueries(hqlQuery, expected);
 
     hqlQuery = rewrite("select SUM(msr2) from testCube mycube" + " where " + TWO_DAYS_RANGE, getConfWithStorages("C2"));
@@ -1005,8 +992,8 @@ public class TestCubeRewriter extends TestQueryRewrite {
     hqlQuery =
       rewrite("select SUM(testCube.msr2) from testCube" + " where " + TWO_DAYS_RANGE, getConfWithStorages("C2"));
     expected =
-      getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null, null,
-        getWhereForDailyAndHourly2days(cubeName, "C2_testfact"));
+      getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) FROM ", null, null,
+        getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
     compareQueries(hqlQuery, expected);
 
     hqlQuery = rewrite("select mycube.msr2 m2 from testCube" + " mycube where " + TWO_DAYS_RANGE, getConfWithStorages(
@@ -1018,8 +1005,8 @@ public class TestCubeRewriter extends TestQueryRewrite {
 
     hqlQuery = rewrite("select testCube.msr2 m2 from testCube" + " where " + TWO_DAYS_RANGE, getConfWithStorages("C2"));
     expected =
-      getExpectedQuery(cubeName, "select sum(testcube.msr2) as `m2` FROM ", null, null,
-        getWhereForDailyAndHourly2days(cubeName, "C2_testfact"));
+      getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) as `m2` FROM ", null, null,
+        getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
     compareQueries(hqlQuery, expected);
   }
 
@@ -1028,7 +1015,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
     String hqlQuery =
       rewrite("select SUM(msr2) from testCube" + " where " + TWO_MONTHS_RANGE_UPTO_HOURS, getConfWithStorages("C2"));
     String expected =
-      getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null, null,
+      getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) FROM ", null, null,
         getWhereForMonthlyDailyAndHourly2months("C2_testfact"));
     compareQueries(hqlQuery, expected);
   }
@@ -1079,7 +1066,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
     String hqlQuery = rewrite("select cityid, SUM(msr2) from testCube" + " where " + TWO_MONTHS_RANGE_UPTO_MONTH,
       getConfWithStorages("C2"));
     String expected =
-      getExpectedQuery(cubeName, "select testcube.cityid," + " sum(testcube.msr2) FROM ", null,
+      getExpectedQuery(TEST_CUBE_NAME, "select testcube.cityid," + " sum(testcube.msr2) FROM ", null,
         "group by testcube.cityid", getWhereForMonthly2months("c2_testfact"));
     compareQueries(hqlQuery, expected);
   }
@@ -1172,26 +1159,26 @@ public class TestCubeRewriter extends TestQueryRewrite {
         "c1_citytable", true);
     compareQueries(hqlQuery, expected);
 
-    conf.set(CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "C2");
+    conf.set(DRIVER_SUPPORTED_STORAGES, "C2");
     hqlQuery = rewrite("select name, stateid from citydim", conf);
     expected =
       getExpectedQuery("citydim", "select citydim.name," + " citydim.stateid from ", null, "c2_citytable", false);
     compareQueries(hqlQuery, expected);
 
-    conf.set(CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "C1");
+    conf.set(DRIVER_SUPPORTED_STORAGES, "C1");
     hqlQuery = rewrite("select name, stateid from citydim", conf);
     expected =
       getExpectedQuery("citydim", "select citydim.name," + " citydim.stateid from ", null, "c1_citytable", true);
     compareQueries(hqlQuery, expected);
 
-    conf.set(CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "");
+    conf.set(DRIVER_SUPPORTED_STORAGES, "");
     conf.set(CubeQueryConfUtil.VALID_STORAGE_DIM_TABLES, "C1_citytable");
     hqlQuery = rewrite("select name, stateid from citydim", conf);
     expected =
       getExpectedQuery("citydim", "select citydim.name," + " citydim.stateid from ", null, "c1_citytable", true);
     compareQueries(hqlQuery, expected);
 
-    conf.set(CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "");
+    conf.set(DRIVER_SUPPORTED_STORAGES, "");
     conf.set(CubeQueryConfUtil.VALID_STORAGE_DIM_TABLES, "C2_citytable");
     hqlQuery = rewrite("select name, stateid from citydim", conf);
     expected =
@@ -1221,13 +1208,13 @@ public class TestCubeRewriter extends TestQueryRewrite {
       getExpectedQuery("citydim", "select citydim.name," + " citydim.stateid from ", " limit 100", "c1_citytable",
         true);
     compareQueries(hqlQuery, expected);
-    conf.set(CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "C2");
+    conf.set(DRIVER_SUPPORTED_STORAGES, "C2");
     hqlQuery = rewrite("select name, stateid from citydim " + "limit 100", conf);
     expected =
       getExpectedQuery("citydim", "select citydim.name," + "citydim.stateid from ", " limit 100", "c2_citytable",
         false);
     compareQueries(hqlQuery, expected);
-    conf.set(CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "C1");
+    conf.set(DRIVER_SUPPORTED_STORAGES, "C1");
     hqlQuery = rewrite("select name, stateid from citydim" + " limit 100", conf);
     expected =
       getExpectedQuery("citydim", "select citydim.name," + " citydim.stateid from ", " limit 100", "c1_citytable",
@@ -1263,16 +1250,16 @@ public class TestCubeRewriter extends TestQueryRewrite {
     String[] expectedQueries = {
       getExpectedQuery("t", "SELECT t.cityid, sum(t.msr2) FROM ", null, " group by t.cityid",
         getWhereForDailyAndHourly2days("t", "C2_testfact")),
-      getExpectedQuery(cubeName, "SELECT testCube.cityid, sum(testCube.msr2)" + " FROM ",
+      getExpectedQuery(TEST_CUBE_NAME, "SELECT testCube.cityid, sum(testCube.msr2)" + " FROM ",
         " testcube.cityid > 100 ", " group by testcube.cityid having" + " sum(testCube.msr2) < 1000",
-        getWhereForDailyAndHourly2days(cubeName, "C2_testfact")),
-      getExpectedQuery(cubeName, "SELECT testCube.cityid, sum(testCube.msr2)" + " FROM ",
+        getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact")),
+      getExpectedQuery(TEST_CUBE_NAME, "SELECT testCube.cityid, sum(testCube.msr2)" + " FROM ",
         " testcube.cityid > 100 ", " group by testcube.cityid having"
           + " sum(testCube.msr2) < 1000 order by testCube.cityid asc",
-        getWhereForDailyAndHourly2days(cubeName, "C2_testfact")),
+        getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact")),
     };
     Configuration conf = getConf();
-    conf.set(CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "C2");
+    conf.set(DRIVER_SUPPORTED_STORAGES, "C2");
     for (int i = 0; i < queries.length; i++) {
       String hql = rewrite(queries[i], conf);
       compareQueries(hql, expectedQueries[i]);
@@ -1284,25 +1271,25 @@ public class TestCubeRewriter extends TestQueryRewrite {
     String hqlQuery = rewrite("select dim1, max(msr3)," + " msr2 from testCube" + " where " + TWO_DAYS_RANGE,
       getConfWithStorages("C1"));
     String expected =
-      getExpectedQuery(cubeName, "select testcube.dim1, max(testcube.msr3), sum(testcube.msr2) FROM ", null,
-        " group by testcube.dim1", getWhereForDailyAndHourly2days(cubeName, "C1_summary1"));
+      getExpectedQuery(TEST_CUBE_NAME, "select testcube.dim1, max(testcube.msr3), sum(testcube.msr2) FROM ", null,
+        " group by testcube.dim1", getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C1_summary1"));
     compareQueries(hqlQuery, expected);
     hqlQuery =
       rewrite("select dim1, dim2, COUNT(msr4)," + " SUM(msr2), msr3 from testCube" + " where " + TWO_DAYS_RANGE,
         getConfWithStorages("C1"));
     expected =
-      getExpectedQuery(cubeName, "select testcube.dim1, testcube,dim2, count(testcube.msr4),"
+      getExpectedQuery(TEST_CUBE_NAME, "select testcube.dim1, testcube,dim2, count(testcube.msr4),"
           + " sum(testcube.msr2), max(testcube.msr3) FROM ", null, " group by testcube.dim1, testcube.dim2",
-        getWhereForDailyAndHourly2days(cubeName, "C1_summary2"));
+        getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C1_summary2"));
     compareQueries(hqlQuery, expected);
     hqlQuery =
       rewrite("select dim1, dim2, cityid, msr4," + " SUM(msr2), msr3 from testCube" + " where " + TWO_DAYS_RANGE,
         getConfWithStorages("C1"));
     expected =
-      getExpectedQuery(cubeName, "select testcube.dim1, testcube,dim2, testcube.cityid,"
+      getExpectedQuery(TEST_CUBE_NAME, "select testcube.dim1, testcube,dim2, testcube.cityid,"
           + " count(testcube.msr4), sum(testcube.msr2), max(testcube.msr3) FROM ", null,
         " group by testcube.dim1, testcube.dim2, testcube.cityid",
-        getWhereForDailyAndHourly2days(cubeName, "C1_summary3"));
+        getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C1_summary3"));
     compareQueries(hqlQuery, expected);
   }
 
@@ -1312,27 +1299,27 @@ public class TestCubeRewriter extends TestQueryRewrite {
     String hqlQuery =
       rewrite("select dim1, max(msr3)," + " msr2 from testCube" + " where " + TWO_DAYS_RANGE_IT, getConf());
     String expected =
-      getExpectedQuery(cubeName, "select testcube.dim1, max(testcube.msr3), sum(testcube.msr2) FROM ", null,
-        " group by testcube.dim1", getWhereForDailyAndHourly2daysWithTimeDim(cubeName, "it", "C2_summary1"),
+      getExpectedQuery(TEST_CUBE_NAME, "select testcube.dim1, max(testcube.msr3), sum(testcube.msr2) FROM ", null,
+        " group by testcube.dim1", getWhereForDailyAndHourly2daysWithTimeDim(TEST_CUBE_NAME, "it", "C2_summary1"),
         null);
     compareQueries(hqlQuery, expected);
     hqlQuery =
       rewrite("select dim1, dim2, COUNT(msr4)," + " SUM(msr2), msr3 from testCube" + " where " + TWO_DAYS_RANGE_IT,
         getConf());
     expected =
-      getExpectedQuery(cubeName, "select testcube.dim1, testcube,dim2, count(testcube.msr4),"
+      getExpectedQuery(TEST_CUBE_NAME, "select testcube.dim1, testcube,dim2, count(testcube.msr4),"
           + " sum(testcube.msr2), max(testcube.msr3) FROM ", null, " group by testcube.dim1, testcube.dim2",
-        getWhereForDailyAndHourly2daysWithTimeDim(cubeName, "it", "C2_summary2"),
+        getWhereForDailyAndHourly2daysWithTimeDim(TEST_CUBE_NAME, "it", "C2_summary2"),
         null);
     compareQueries(hqlQuery, expected);
     hqlQuery =
       rewrite("select dim1, dim2, cityid, count(msr4)," + " SUM(msr2), msr3 from testCube" + " where "
         + TWO_DAYS_RANGE_IT, getConf());
     expected =
-      getExpectedQuery(cubeName, "select testcube.dim1, testcube,dim2, testcube.cityid,"
+      getExpectedQuery(TEST_CUBE_NAME, "select testcube.dim1, testcube,dim2, testcube.cityid,"
           + " count(testcube.msr4), sum(testcube.msr2), max(testcube.msr3) FROM ", null,
         " group by testcube.dim1, testcube.dim2, testcube.cityid",
-        getWhereForDailyAndHourly2daysWithTimeDim(cubeName, "it", "C2_summary3"),
+        getWhereForDailyAndHourly2daysWithTimeDim(TEST_CUBE_NAME, "it", "C2_summary3"),
         null);
     compareQueries(hqlQuery, expected);
   }
@@ -1344,9 +1331,9 @@ public class TestCubeRewriter extends TestQueryRewrite {
     String hqlQuery =
       rewrite("select dim1, max(msr3)," + " msr2 from testCube" + " where (" + TWO_DAYS_RANGE_IT
         + " OR it == 'default') AND dim1 > 1000", getConf());
-    String expected = getExpectedQuery(cubeName, "select testcube.dim1, max(testcube.msr3), sum(testcube.msr2) FROM ",
+    String expected = getExpectedQuery(TEST_CUBE_NAME, "select testcube.dim1, max(testcube.msr3), sum(testcube.msr2) FROM ",
       null, "or (( testcube.it ) == 'default')) and ((testcube.dim1) > 1000)" + " group by testcube.dim1",
-      getWhereForDailyAndHourly2daysWithTimeDim(cubeName, "it", "C2_summary1"),
+      getWhereForDailyAndHourly2daysWithTimeDim(TEST_CUBE_NAME, "it", "C2_summary1"),
       null);
     compareQueries(hqlQuery, expected);
 
@@ -1354,24 +1341,24 @@ public class TestCubeRewriter extends TestQueryRewrite {
       + TWO_DAYS_RANGE_BEFORE_4_DAYS + " AND dt='default')", getConf());
 
     String expecteddtRangeWhere1 =
-      getWhereForDailyAndHourly2daysWithTimeDim(cubeName, "dt", TWODAYS_BACK, NOW)
+      getWhereForDailyAndHourly2daysWithTimeDim(TEST_CUBE_NAME, "dt", TWODAYS_BACK, NOW)
         + " OR ("
-        + getWhereForDailyAndHourly2daysWithTimeDim(cubeName, "dt", BEFORE_6_DAYS, BEFORE_4_DAYS) + ")";
+        + getWhereForDailyAndHourly2daysWithTimeDim(TEST_CUBE_NAME, "dt", BEFORE_6_DAYS, BEFORE_4_DAYS) + ")";
     expected =
-      getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null, " AND testcube.dt='default'",
+      getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) FROM ", null, " AND testcube.dt='default'",
         expecteddtRangeWhere1, "c2_testfact");
     compareQueries(hqlQuery, expected);
 
     String expecteddtRangeWhere2 =
       "("
-        + getWhereForDailyAndHourly2daysWithTimeDim(cubeName, "dt", TWODAYS_BACK, NOW)
+        + getWhereForDailyAndHourly2daysWithTimeDim(TEST_CUBE_NAME, "dt", TWODAYS_BACK, NOW)
         + " AND testcube.dt='dt1') OR "
-        + getWhereForDailyAndHourly2daysWithTimeDim(cubeName, "dt", BEFORE_6_DAYS, BEFORE_4_DAYS);
+        + getWhereForDailyAndHourly2daysWithTimeDim(TEST_CUBE_NAME, "dt", BEFORE_6_DAYS, BEFORE_4_DAYS);
     hqlQuery =
       rewrite("select SUM(msr2) from testCube" + " where (" + TWO_DAYS_RANGE + " AND dt='dt1') OR ("
         + TWO_DAYS_RANGE_BEFORE_4_DAYS + " AND dt='default')", getConf());
     expected =
-      getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null, " AND testcube.dt='default'",
+      getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) FROM ", null, " AND testcube.dt='default'",
         expecteddtRangeWhere2, "c2_testfact");
     compareQueries(hqlQuery, expected);
 
@@ -1380,10 +1367,10 @@ public class TestCubeRewriter extends TestQueryRewrite {
       rewrite("select dim1, max(msr3)," + " msr2 from testCube where (" + TWO_DAYS_RANGE_IT + " OR (" + twoDaysPTRange
         + " and it == 'default')) AND dim1 > 1000", getConf());
     String expectedITPTrange =
-      getWhereForDailyAndHourly2daysWithTimeDim(cubeName, "it", TWODAYS_BACK, NOW) + " OR ("
-        + getWhereForDailyAndHourly2daysWithTimeDim(cubeName, "pt", TWODAYS_BACK, NOW) + ")";
+      getWhereForDailyAndHourly2daysWithTimeDim(TEST_CUBE_NAME, "it", TWODAYS_BACK, NOW) + " OR ("
+        + getWhereForDailyAndHourly2daysWithTimeDim(TEST_CUBE_NAME, "pt", TWODAYS_BACK, NOW) + ")";
     expected =
-      getExpectedQuery(cubeName, "select testcube.dim1, max(testcube.msr3), sum(testcube.msr2) FROM ", null,
+      getExpectedQuery(TEST_CUBE_NAME, "select testcube.dim1, max(testcube.msr3), sum(testcube.msr2) FROM ", null,
         "AND testcube.it == 'default' and testcube.dim1 > 1000 group by testcube.dim1", expectedITPTrange,
         "C2_summary1");
     compareQueries(hqlQuery, expected);
@@ -1438,24 +1425,24 @@ public class TestCubeRewriter extends TestQueryRewrite {
         + TWO_DAYS_RANGE_BEFORE_4_DAYS, getConfWithStorages("C2"));
 
     String expectedRangeWhere =
-      getWhereForDailyAndHourly2daysWithTimeDim(cubeName, "dt", TWODAYS_BACK, NOW)
+      getWhereForDailyAndHourly2daysWithTimeDim(TEST_CUBE_NAME, "dt", TWODAYS_BACK, NOW)
         + " OR "
-        + getWhereForDailyAndHourly2daysWithTimeDim(cubeName, "dt", BEFORE_6_DAYS, BEFORE_4_DAYS);
+        + getWhereForDailyAndHourly2daysWithTimeDim(TEST_CUBE_NAME, "dt", BEFORE_6_DAYS, BEFORE_4_DAYS);
     String expected =
-      getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null, null, expectedRangeWhere, "c2_testfact");
+      getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) FROM ", null, null, expectedRangeWhere, "c2_testfact");
     compareQueries(hqlQuery, expected);
     hqlQuery =
       rewrite("select dim1, max(msr3)," + " msr2 from testCube" + " where " + TWO_DAYS_RANGE + " OR "
         + TWO_DAYS_RANGE_BEFORE_4_DAYS, getConfWithStorages("C1"));
     expected =
-      getExpectedQuery(cubeName, "select testcube.dim1, max(testcube.msr3), sum(testcube.msr2) FROM ", null,
+      getExpectedQuery(TEST_CUBE_NAME, "select testcube.dim1, max(testcube.msr3), sum(testcube.msr2) FROM ", null,
         " group by testcube.dim1", expectedRangeWhere, "C1_summary1");
     compareQueries(hqlQuery, expected);
     hqlQuery =
       rewrite("select dim1, dim2, COUNT(msr4)," + " SUM(msr2), msr3 from testCube" + " where " + TWO_DAYS_RANGE
         + " OR " + TWO_DAYS_RANGE_BEFORE_4_DAYS, getConfWithStorages("C1"));
     expected =
-      getExpectedQuery(cubeName, "select testcube.dim1, testcube,dim2, count(testcube.msr4),"
+      getExpectedQuery(TEST_CUBE_NAME, "select testcube.dim1, testcube,dim2, count(testcube.msr4),"
           + " sum(testcube.msr2), max(testcube.msr3) FROM ", null, " group by testcube.dim1, testcube.dim2",
         expectedRangeWhere, "C1_summary2");
     compareQueries(hqlQuery, expected);
@@ -1463,7 +1450,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
       rewrite("select dim1, dim2, cityid, count(msr4)," + " SUM(msr2), msr3 from testCube" + " where " + TWO_DAYS_RANGE
         + " OR " + TWO_DAYS_RANGE_BEFORE_4_DAYS, getConfWithStorages("C1"));
     expected =
-      getExpectedQuery(cubeName, "select testcube.dim1, testcube,dim2, testcube.cityid,"
+      getExpectedQuery(TEST_CUBE_NAME, "select testcube.dim1, testcube,dim2, testcube.cityid,"
           + " count(testcube.msr4), sum(testcube.msr2), max(testcube.msr3) FROM ", null,
         " group by testcube.dim1, testcube.dim2, testcube.cityid", expectedRangeWhere, "C1_summary3");
     compareQueries(hqlQuery, expected);
@@ -1495,7 +1482,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
         + " left outer join statedim s1 on c1.stateid = s1.id"
         + " left outer join citydim c2 on s1.countryid = c2.id where " + TWO_DAYS_RANGE;
     Configuration conf = getConfWithStorages("C1");
-    conf.setBoolean(CubeQueryConfUtil.DISABLE_AUTO_JOINS, true);
+    conf.setBoolean(DISABLE_AUTO_JOINS, true);
     String hqlQuery = rewrite(cubeQl, conf);
     String db = getDbName();
     String expectedJoin =
@@ -1505,19 +1492,19 @@ public class TestCubeRewriter extends TestQueryRewrite {
         + db + "c1_citytable c2 ON (( s1 . countryid ) = ( c2 . id )) AND (c2.dt = 'latest')";
 
     String expected =
-      getExpectedQuery(cubeName, "select sum(testcube.msr2)" + " FROM ", expectedJoin, null, null, null,
-        getWhereForHourly2days(cubeName, "C1_testfact2"));
+      getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2)" + " FROM ", expectedJoin, null, null, null,
+        getWhereForHourly2days(TEST_CUBE_NAME, "C1_testfact2"));
     compareQueries(hqlQuery, expected);
   }
 
   @Test
   public void testJoinPathColumnLifeValidation() throws Exception {
     HiveConf testConf = new HiveConf(new HiveConf(getConf(), HiveConf.class));
-    testConf.setBoolean(CubeQueryConfUtil.DISABLE_AUTO_JOINS, false);
-    System.out.println("@@ Joins disabled? " + testConf.get(CubeQueryConfUtil.DISABLE_AUTO_JOINS));
+    testConf.setBoolean(DISABLE_AUTO_JOINS, false);
+    System.out.println("@@ Joins disabled? " + testConf.get(DISABLE_AUTO_JOINS));
     // Set column life of dim2 column in testCube
     CubeMetastoreClient client = CubeMetastoreClient.getInstance(testConf);
-    Cube cube = (Cube) client.getCube(cubeName);
+    Cube cube = (Cube) client.getCube(TEST_CUBE_NAME);
 
     ReferencedDimAtrribute col = (ReferencedDimAtrribute) cube.getColumnByName("cdim2");
     assertNotNull(col);
@@ -1532,7 +1519,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
     } finally {
       // Add old column back
       cube.alterDimension(col);
-      client.alterCube(cubeName, cube);
+      client.alterCube(TEST_CUBE_NAME, cube);
     }
 
     // Assert same query succeeds with valid column
@@ -1544,7 +1531,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
         col.getReferences(), oneWeekBack, null,
         col.getCost());
     cube.alterDimension(newDim2);
-    client.alterCube(cubeName, cube);
+    client.alterCube(TEST_CUBE_NAME, cube);
     String hql = rewrite(query, testConf);
     assertNotNull(hql);
   }
@@ -1573,8 +1560,8 @@ public class TestCubeRewriter extends TestQueryRewrite {
       "SELECT test_time_dim, msr2 FROM testCube where " + TWO_DAYS_RANGE_TTD;
 
     HiveConf hconf = new HiveConf(getConf(), TestCubeRewriter.class);
-    hconf.setBoolean(CubeQueryConfUtil.DISABLE_AUTO_JOINS, false);
-    hconf.set(CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "C1,C2,C3,C4");
+    hconf.setBoolean(DISABLE_AUTO_JOINS, false);
+    hconf.set(DRIVER_SUPPORTED_STORAGES, "C1,C2,C3,C4");
     hconf.setBoolean(CubeQueryConfUtil.REPLACE_TIMEDIM_WITH_PART_COL, true);
 
     CubeQueryRewriter rewriter = new CubeQueryRewriter(hconf, hconf);
@@ -1624,7 +1611,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
   public void testSelectDimonlyJoinOnCube() throws Exception {
     String query = "SELECT count (distinct citydim.name) from testCube where " + TWO_DAYS_RANGE;
     Configuration conf = new Configuration(getConf());
-    conf.setBoolean(CubeQueryConfUtil.DISABLE_AUTO_JOINS, false);
+    conf.setBoolean(DISABLE_AUTO_JOINS, false);
     String hql = rewrite(query, conf);
     System.out.println("@@ HQL = " + hql);
     assertNotNull(hql);

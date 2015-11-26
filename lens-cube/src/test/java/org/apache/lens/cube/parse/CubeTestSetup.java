@@ -24,6 +24,7 @@ import static java.util.Calendar.HOUR_OF_DAY;
 import static org.apache.lens.cube.metadata.UpdatePeriod.*;
 import static org.testng.Assert.*;
 
+import java.text.DateFormat;
 import java.util.*;
 
 import org.apache.lens.cube.metadata.*;
@@ -104,6 +105,9 @@ public class CubeTestSetup {
   public static final String LAST_HOUR_TIME_RANGE;
   public static final String TWO_DAYS_RANGE;
   public static final String TWO_DAYS_RANGE_TTD;
+  public static final String TWO_DAYS_RANGE_TTD_BEFORE_4_DAYS;
+  public static final String TWO_DAYS_RANGE_TTD2;
+  public static final String TWO_DAYS_RANGE_TTD2_BEFORE_4_DAYS;
   public static final String TWO_DAYS_RANGE_IT;
   public static final String THIS_YEAR_RANGE;
   public static final String LAST_YEAR_RANGE;
@@ -168,7 +172,10 @@ public class CubeTestSetup {
     return GENERAL_DATE_OFFSET_PROVIDER.get(up, offset);
   }
   public static String getDateStringWithOffset(UpdatePeriod up, int offset) {
-    return up.format(GENERAL_DATE_OFFSET_PROVIDER.get(up, offset));
+    return getDateStringWithOffset(up, offset, up);
+  }
+  public static String getDateStringWithOffset(UpdatePeriod up, int offset, UpdatePeriod formatWith) {
+    return formatWith.format(GENERAL_DATE_OFFSET_PROVIDER.get(up, offset));
   }
   static {
     // Keep in sync
@@ -193,6 +200,9 @@ public class CubeTestSetup {
 
     TWO_DAYS_RANGE = getTimeRangeString(HOURLY, -48, 0);
     TWO_DAYS_RANGE_TTD = getTimeRangeString("test_time_dim", DAILY, -2, 0, HOURLY);
+    TWO_DAYS_RANGE_TTD_BEFORE_4_DAYS = getTimeRangeString("test_time_dim", DAILY, -6, -4, HOURLY);
+    TWO_DAYS_RANGE_TTD2 = getTimeRangeString("test_time_dim2", DAILY, -2, 0, HOURLY);
+    TWO_DAYS_RANGE_TTD2_BEFORE_4_DAYS = getTimeRangeString("test_time_dim2", DAILY, -6, -4, HOURLY);
     TWO_DAYS_RANGE_IT = getTimeRangeString("it", DAILY, -2, 0, HOURLY);
     THIS_YEAR_RANGE = getTimeRangeString(YEARLY, 0, 1);
     LAST_YEAR_RANGE = getTimeRangeString(YEARLY, -1, 0);
@@ -2683,8 +2693,18 @@ public class CubeTestSetup {
       formatWith.format(getDateWithOffset(updatePeriod, startOffset)),
       formatWith.format(getDateWithOffset(updatePeriod, endOffset)));
   }
+  public static String getTimeRangeString(String partCol, UpdatePeriod updatePeriod, int startOffset, int endOffset,
+    DateFormat formatWith) {
+    return getTimeRangeString(partCol,
+      formatWith.format(getDateWithOffset(updatePeriod, startOffset)),
+      formatWith.format(getDateWithOffset(updatePeriod, endOffset)));
+  }
   public static String getTimeRangeString(UpdatePeriod updatePeriod, int startOffset, int endOffset,
     UpdatePeriod formatWith) {
+    return getTimeRangeString("d_time", updatePeriod, startOffset, endOffset, formatWith);
+  }
+  public static String getTimeRangeString(UpdatePeriod updatePeriod, int startOffset, int endOffset,
+    DateFormat formatWith) {
     return getTimeRangeString("d_time", updatePeriod, startOffset, endOffset, formatWith);
   }
 }

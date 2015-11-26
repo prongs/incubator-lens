@@ -278,7 +278,7 @@ public enum UpdatePeriod implements Named {
       return cal.getTime();
     case QUARTERLY:
       Date dt = DateUtils.truncate(date, this.calendarField());
-      dt.setMonth(dt.getMonth() - dt.getMonth() % 3);
+      dt.setMonth(dt.getMonth() - (dt.getMonth() % 3));
       return dt;
     default:
       return DateUtils.truncate(date, this.calendarField());
@@ -386,7 +386,7 @@ public enum UpdatePeriod implements Named {
         return -1;
       } else if (o1 != null && o2 == null) {
         return 1;
-      } else if (o1 == null && o2 == null) {
+      } else if (o1 == null) {
         return 0;
       } else {
         if (o1.weight > o2.weight) {
