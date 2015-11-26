@@ -354,6 +354,7 @@ public enum UpdatePeriod implements Named {
     Calendar cal = Calendar.getInstance();
     cal.setTime(date);
     switch(this) {
+    case YEARLY:
     case MONTHLY:
       cal.set(DAY_OF_MONTH, 1);
       break;
