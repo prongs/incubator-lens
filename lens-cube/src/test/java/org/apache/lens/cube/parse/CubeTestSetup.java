@@ -21,7 +21,9 @@ package org.apache.lens.cube.parse;
 
 import static java.util.Calendar.DAY_OF_MONTH;
 import static java.util.Calendar.HOUR_OF_DAY;
+
 import static org.apache.lens.cube.metadata.UpdatePeriod.*;
+
 import static org.testng.Assert.*;
 
 import java.text.DateFormat;
@@ -135,7 +137,7 @@ public class CubeTestSetup {
     public DateOffsetProvider(UpdatePeriod updatePeriod, boolean truncate) {
       this.updatePeriod = updatePeriod;
       Date date = calendar.getTime();
-      if(truncate) {
+      if (truncate) {
         date = updatePeriod.truncate(date);
         calendar.setTime(date);
       }
@@ -155,7 +157,7 @@ public class CubeTestSetup {
   public static class GeneralDateOffsetProvider extends HashMap<UpdatePeriod, DateOffsetProvider> {
     @Override
     public DateOffsetProvider get(Object key) {
-      if(!containsKey(key) && key instanceof UpdatePeriod) {
+      if (!containsKey(key) && key instanceof UpdatePeriod) {
         UpdatePeriod up = (UpdatePeriod)key;
         put(up, new DateOffsetProvider(up));
       }

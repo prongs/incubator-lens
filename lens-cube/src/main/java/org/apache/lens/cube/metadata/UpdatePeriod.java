@@ -353,11 +353,21 @@ public enum UpdatePeriod implements Named {
   public Date getFloorDate(Date date) {
     Calendar cal = Calendar.getInstance();
     cal.setTime(date);
+    switch(this) {
+    case MONTHLY:
+      cal.set(DAY_OF_MONTH, 1);
+      break;
+    case WEEKLY:
+      cal.set(Calendar.DAY_OF_WEEK, 1);
+      break;
+    }
     switch (this) {
     case YEARLY:
       cal.set(MONTH, 0);
     case MONTHLY:
-      cal.set(DAY_OF_MONTH, 1);
+      // Already covered
+    case WEEKLY:
+      // Already covered
     case DAILY:
       cal.set(Calendar.HOUR_OF_DAY, 0);
     case HOURLY:
@@ -366,13 +376,6 @@ public enum UpdatePeriod implements Named {
       cal.set(Calendar.SECOND, 0);
     case SECONDLY:
     case CONTINUOUS:
-      cal.set(Calendar.MILLISECOND, 0);
-      break;
-    case WEEKLY:
-      cal.set(Calendar.DAY_OF_WEEK, 1);
-      cal.set(Calendar.HOUR_OF_DAY, 0);
-      cal.set(Calendar.MINUTE, 0);
-      cal.set(Calendar.SECOND, 0);
       cal.set(Calendar.MILLISECOND, 0);
       break;
     }

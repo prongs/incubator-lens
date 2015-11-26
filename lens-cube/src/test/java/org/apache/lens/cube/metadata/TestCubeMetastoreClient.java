@@ -23,6 +23,7 @@ import static org.apache.lens.cube.metadata.MetastoreUtil.*;
 import static org.apache.lens.cube.metadata.UpdatePeriod.*;
 import static org.apache.lens.cube.parse.CubeTestSetup.*;
 import static org.apache.lens.server.api.util.LensUtil.getHashMap;
+
 import static org.testng.Assert.*;
 
 import java.util.*;
@@ -1380,6 +1381,13 @@ public class TestCubeMetastoreClient {
     }
     return values;
   }
+  private TimePartition[] toPartitionArray(UpdatePeriod updatePeriod, int... offsets) throws LensException {
+    Date[] dates = new Date[offsets.length];
+    for (int i = 0; i < dates.length; i++) {
+      dates[i] = getDateWithOffset(updatePeriod, offsets[i]);
+    }
+    return toPartitionArray(updatePeriod, dates);
+  }
 
   @Test(priority = 2)
   public void testCubeFactWithWeight() throws Exception {
@@ -1992,8 +2000,7 @@ public class TestCubeMetastoreClient {
     String c1TableName = getFactOrDimtableStorageTableName(cubeDim.getName(), c1);
     assertEquals(client.getAllParts(c1TableName).size(), 8);
 
-    assertEquals(getLatestValues(c1TableName, HOURLY, partColNames, null),
-      toPartitionArray(HOURLY, getDateWithOffset(HOURLY, 0), getDateWithOffset(HOURLY, 0), getDateWithOffset(HOURLY, 1)));
+    assertEquals(getLatestValues(c1TableName, HOURLY, partColNames, null), toPartitionArray(HOURLY, 0, 0, 1));
 
     Map<String, Date> timeParts4 = getTimePartitionByOffsets(getDatePartitionKey(), 0, itPart.getName(), 1,
       etPart.getName(), -1);
@@ -2006,8 +2013,7 @@ public class TestCubeMetastoreClient {
     client.addPartitions(Arrays.asList(partSpec4, partSpec5), c1);
 
     assertEquals(client.getAllParts(c1TableName).size(), 10);
-    assertEquals(getLatestValues(c1TableName, HOURLY, partColNames, null),
-      toPartitionArray(HOURLY, getDateWithOffset(HOURLY, 1), getDateWithOffset(HOURLY, 1), getDateWithOffset(HOURLY, 1)));
+    assertEquals(getLatestValues(c1TableName, HOURLY, partColNames, null), toPartitionArray(HOURLY, 1, 1, 1));
     Map<String, Date> timeParts6 = getTimePartitionByOffsets(getDatePartitionKey(), -2, itPart.getName(), -1,
       etPart.getName(), -2);
     final StoragePartitionDesc partSpec6 = new StoragePartitionDesc(cubeDim.getName(), timeParts6, null, HOURLY);
@@ -2022,28 +2028,23 @@ public class TestCubeMetastoreClient {
 
     client.addPartition(partSpec7, c1);
     assertEquals(client.getAllParts(c1TableName).size(), 12);
-    assertEquals(getLatestValues(c1TableName, HOURLY, partColNames, null),
-      toPartitionArray(HOURLY, getDateWithOffset(HOURLY, 1), getDateWithOffset(HOURLY, 1), getDateWithOffset(HOURLY, 1)));
+    assertEquals(getLatestValues(c1TableName, HOURLY, partColNames, null), toPartitionArray(HOURLY, 1, 1, 1));
 
     client.dropPartition(cubeDim.getName(), c1, timeParts5, null, HOURLY);
     assertEquals(client.getAllParts(c1TableName).size(), 11);
-    assertEquals(getLatestValues(c1TableName, HOURLY, partColNames, null),
-      toPartitionArray(HOURLY, getDateWithOffset(HOURLY, 0), getDateWithOffset(HOURLY, 1), getDateWithOffset(HOURLY, 1)));
+    assertEquals(getLatestValues(c1TableName, HOURLY, partColNames, null), toPartitionArray(HOURLY, 0, 1, 1));
 
     client.dropPartition(cubeDim.getName(), c1, timeParts7, null, HOURLY);
     assertEquals(client.getAllParts(c1TableName).size(), 10);
-    assertEquals(getLatestValues(c1TableName, HOURLY, partColNames, null),
-      toPartitionArray(HOURLY, getDateWithOffset(HOURLY, 0), getDateWithOffset(HOURLY, 1), getDateWithOffset(HOURLY, 1)));
+    assertEquals(getLatestValues(c1TableName, HOURLY, partColNames, null), toPartitionArray(HOURLY, 0, 1, 1));
 
     client.dropPartition(cubeDim.getName(), c1, timeParts2, nonTimeSpec, HOURLY);
     assertEquals(client.getAllParts(c1TableName).size(), 9);
-    assertEquals(getLatestValues(c1TableName, HOURLY, partColNames, null),
-      toPartitionArray(HOURLY, getDateWithOffset(HOURLY, 0), getDateWithOffset(HOURLY, 1), getDateWithOffset(HOURLY, 0)));
+    assertEquals(getLatestValues(c1TableName, HOURLY, partColNames, null), toPartitionArray(HOURLY, 0, 1, 0));
 
     client.dropPartition(cubeDim.getName(), c1, timeParts4, null, HOURLY);
     assertEquals(client.getAllParts(c1TableName).size(), 8);
-    assertEquals(getLatestValues(c1TableName, HOURLY, partColNames, null),
-      toPartitionArray(HOURLY, getDateWithOffset(HOURLY, 0), getDateWithOffset(HOURLY, 0), getDateWithOffset(HOURLY, 0)));
+    assertEquals(getLatestValues(c1TableName, HOURLY, partColNames, null), toPartitionArray(HOURLY, 0, 0, 0));
 
     client.dropPartition(cubeDim.getName(), c1, timeParts3, nonTimeSpec, HOURLY);
     assertEquals(client.getAllParts(c1TableName).size(), 5);
