@@ -165,13 +165,13 @@ public class TestCubeMetastoreClient {
       new FieldSchema("msr4", "bigint", "fourth measure"), "Measure4", null, "COUNT", null));
     cubeMeasures.add(new ColumnMeasure(
       new FieldSchema("msrstarttime", "int", "measure with start time"),
-      "Measure With Starttime", null, null, null, getDateWithOffset(HOURLY, 0), null, null, 0.0, 999999.0));
+      "Measure With Starttime", null, null, null, NOW, null, null, 0.0, 999999.0));
     cubeMeasures.add(new ColumnMeasure(
       new FieldSchema("msrendtime", "float", "measure with end time"),
-      "Measure With Endtime", null, "SUM", "RS", getDateWithOffset(HOURLY, 0), getDateWithOffset(HOURLY, 0), null));
+      "Measure With Endtime", null, "SUM", "RS", NOW, NOW, null));
     cubeMeasures.add(new ColumnMeasure(
       new FieldSchema("msrcost", "double", "measure with cost"), "Measure With cost",
-      null, "MAX", null, getDateWithOffset(HOURLY, 0), getDateWithOffset(HOURLY, 0), 100.0));
+      null, "MAX", null, NOW, NOW, 100.0));
     cubeMeasures.add(new ColumnMeasure(
       new FieldSchema("msrcost2", "bigint", "measure with cost"),
       "Measure With cost2", null, "MAX", null, null, null, 100.0, 0.0, 999999999999999999999999999.0));
@@ -221,12 +221,12 @@ public class TestCubeMetastoreClient {
 
     List<CubeDimAttribute> locationHierarchyWithStartTime = new ArrayList<>();
     locationHierarchyWithStartTime.add(new ReferencedDimAtrribute(new FieldSchema("zipcode2", "int", "zip"),
-      "Zip refer2", new TableReference("zipdim", "zipcode"), getDateWithOffset(HOURLY, 0), getDateWithOffset(HOURLY, 0),
+      "Zip refer2", new TableReference("zipdim", "zipcode"), NOW, NOW,
       100.0, true, 1000L));
     locationHierarchyWithStartTime.add(new ReferencedDimAtrribute(new FieldSchema("cityid2", "int", "city"),
-      "City refer2", new TableReference("citydim", "id"), getDateWithOffset(HOURLY, 0), null, null));
+      "City refer2", new TableReference("citydim", "id"), NOW, null, null));
     locationHierarchyWithStartTime.add(new ReferencedDimAtrribute(new FieldSchema("stateid2", "int", "state"),
-      "state refer2", new TableReference("statedim", "id"), getDateWithOffset(HOURLY, 0), null, 100.0));
+      "state refer2", new TableReference("statedim", "id"), NOW, null, 100.0));
     locationHierarchyWithStartTime.add(new ReferencedDimAtrribute(new FieldSchema("countryid2", "int", "country"),
       "Country refer2", new TableReference("countrydim", "id"), null, null, null));
     locationHierarchyWithStartTime.add(new BaseDimAttribute(new FieldSchema("regionname2", "string", "region"),
@@ -235,10 +235,10 @@ public class TestCubeMetastoreClient {
     cubeDimensions
       .add(new HierarchicalDimAttribute("location2", "localtion hierarchy2", locationHierarchyWithStartTime));
     cubeDimensions.add(new BaseDimAttribute(new FieldSchema("dim1startTime", "string", "basedim"),
-      "Dim With starttime", getDateWithOffset(HOURLY, 0), null, 100.0));
+      "Dim With starttime", NOW, null, 100.0));
     cubeDimensions.add(new ReferencedDimAtrribute(new FieldSchema("dim2start", "string", "ref dim"),
       "Dim2 with starttime", new TableReference("testdim2", "id"),
-      getDateWithOffset(HOURLY, 0), getDateWithOffset(HOURLY, 0), 100.0));
+      NOW, NOW, 100.0));
 
     List<TableReference> multiRefs = new ArrayList<>();
     multiRefs.add(new TableReference("testdim2", "id"));
@@ -248,12 +248,12 @@ public class TestCubeMetastoreClient {
     cubeDimensions.add(new ReferencedDimAtrribute(new FieldSchema("dim3", "string", "multi ref dim"), "Dim3 refer",
       multiRefs));
     cubeDimensions.add(new ReferencedDimAtrribute(new FieldSchema("dim3start", "string", "multi ref dim"),
-      "Dim3 with starttime", multiRefs, getDateWithOffset(HOURLY, 0), null, 100.0));
+      "Dim3 with starttime", multiRefs, NOW, null, 100.0));
 
     cubeDimensions.add(new BaseDimAttribute(new FieldSchema("region", "string", "region dim"), "region", null, null,
       null, null, regions));
     cubeDimensions.add(new BaseDimAttribute(new FieldSchema("regionstart", "string", "region dim"),
-      "Region with starttime", getDateWithOffset(HOURLY, 0), null, 100.0, null, regions));
+      "Region with starttime", NOW, null, 100.0, null, regions));
     JoinChain zipCity = new JoinChain("cityFromZip", "Zip City", "zip city desc");
     List<TableReference> chain = new ArrayList<>();
     chain.add(new TableReference(cubeName, "zipcode"));
@@ -1375,19 +1375,12 @@ public class TestCubeMetastoreClient {
     return values;
   }
 
-  private TimePartition[] toPartitionArray(UpdatePeriod updatePeriod, Date... dates) throws LensException {
-    TimePartition[] values = new TimePartition[dates.length];
-    for (int i = 0; i < dates.length; i++) {
-      values[i] = TimePartition.of(updatePeriod, dates[i]);
+  private TimePartition[] toPartitionArray(UpdatePeriod updatePeriod, int... offsets) throws LensException {
+    TimePartition[] values = new TimePartition[offsets.length];
+    for (int i = 0; i < offsets.length; i++) {
+      values[i] = TimePartition.of(updatePeriod, getDateWithOffset(updatePeriod, offsets[i]));
     }
     return values;
-  }
-  private TimePartition[] toPartitionArray(UpdatePeriod updatePeriod, int... offsets) throws LensException {
-    Date[] dates = new Date[offsets.length];
-    for (int i = 0; i < dates.length; i++) {
-      dates[i] = getDateWithOffset(updatePeriod, offsets[i]);
-    }
-    return toPartitionArray(updatePeriod, dates);
   }
 
   @Test(priority = 2)
@@ -1753,7 +1746,7 @@ public class TestCubeMetastoreClient {
     String storageTableName = getFactOrDimtableStorageTableName(dimName, c1);
     assertFalse(client.dimTableLatestPartitionExists(storageTableName));
 
-    Map<String, Date> timePartsNow = getHashMap(getDatePartitionKey(), getDateWithOffset(HOURLY, 0));
+    Map<String, Date> timePartsNow = getHashMap(getDatePartitionKey(), NOW);
     StoragePartitionDesc sPartSpec0 = new StoragePartitionDesc(cubeDim.getName(), timePartsNow, null, HOURLY);
 
     client.addPartition(sPartSpec0, c1);
@@ -1874,18 +1867,18 @@ public class TestCubeMetastoreClient {
     Map<String, Date> timeParts = new HashMap<>();
     Map<String, String> nonTimeParts = new HashMap<>();
 
-    timeParts.put(getDatePartitionKey(), getDateWithOffset(HOURLY, 0));
+    timeParts.put(getDatePartitionKey(), NOW);
     nonTimeParts.put("region", "asia");
     StoragePartitionDesc sPartSpec = new StoragePartitionDesc(dimName, timeParts, nonTimeParts, HOURLY);
     client.addPartition(sPartSpec, c3);
-    expectedLatestValues.put("asia", getDateWithOffset(HOURLY, 0));
+    expectedLatestValues.put("asia", NOW);
     assertLatestForRegions(storageTableName, expectedLatestValues);
 
     timeParts.put(getDatePartitionKey(), getDateWithOffset(HOURLY, -1));
     nonTimeParts.put("region", "africa");
     sPartSpec = new StoragePartitionDesc(dimName, timeParts, nonTimeParts, HOURLY);
     client.addPartition(sPartSpec, c3);
-    expectedLatestValues.put("asia", getDateWithOffset(HOURLY, 0));
+    expectedLatestValues.put("asia", NOW);
     expectedLatestValues.put("africa", getDateWithOffset(HOURLY, -1));
     assertLatestForRegions(storageTableName, expectedLatestValues);
 
@@ -1893,7 +1886,7 @@ public class TestCubeMetastoreClient {
     nonTimeParts.put("region", "africa");
     sPartSpec = new StoragePartitionDesc(dimName, timeParts, nonTimeParts, HOURLY);
     client.addPartition(sPartSpec, c3);
-    expectedLatestValues.put("asia", getDateWithOffset(HOURLY, 0));
+    expectedLatestValues.put("asia", NOW);
     expectedLatestValues.put("africa", getDateWithOffset(HOURLY, 1));
     assertLatestForRegions(storageTableName, expectedLatestValues);
 
@@ -1906,11 +1899,11 @@ public class TestCubeMetastoreClient {
     assertLatestForRegions(storageTableName, expectedLatestValues);
 
     client.dropPartition(dimName, c3, timeParts, nonTimeParts, HOURLY);
-    expectedLatestValues.put("asia", getDateWithOffset(HOURLY, 0));
+    expectedLatestValues.put("asia", NOW);
     expectedLatestValues.put("africa", getDateWithOffset(HOURLY, 1));
     assertLatestForRegions(storageTableName, expectedLatestValues);
 
-    timeParts.put(getDatePartitionKey(), getDateWithOffset(HOURLY, 0));
+    timeParts.put(getDatePartitionKey(), NOW);
     client.dropPartition(dimName, c3, timeParts, nonTimeParts, HOURLY);
     expectedLatestValues.remove("asia");
     assertLatestForRegions(storageTableName, expectedLatestValues);

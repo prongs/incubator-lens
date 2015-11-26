@@ -1390,7 +1390,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
     assertEquals(ctx.candidateFacts.size(), 1);
     CandidateFact candidateFact = ctx.candidateFacts.iterator().next();
     Set<FactPartition> partsQueried = new TreeSet<>(candidateFact.getPartsQueried());
-    Date ceilDay = DAILY.getCeilDate(getDateWithOffset(HOURLY, -48));
+    Date ceilDay = DAILY.getCeilDate(getDateWithOffset(DAILY, -2));
     Date nextDay = DateUtils.addDays(ceilDay, 1);
     Date nextToNextDay = DateUtils.addDays(nextDay, 1);
     HashSet<String> storageTables = Sets.newHashSet();
@@ -1399,7 +1399,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
     }
     TreeSet<FactPartition> expectedPartsQueried = Sets.newTreeSet();
     for (TimePartition p : Iterables.concat(
-      TimePartition.of(HOURLY, getDateWithOffset(HOURLY, -48)).rangeUpto(TimePartition.of(HOURLY, ceilDay)),
+      TimePartition.of(HOURLY, getDateWithOffset(DAILY, -2)).rangeUpto(TimePartition.of(HOURLY, ceilDay)),
       TimePartition.of(DAILY, ceilDay).rangeUpto(TimePartition.of(DAILY, nextDay)),
       TimePartition.of(HOURLY, nextDay).rangeUpto(TimePartition.of(HOURLY, NOW)))) {
       FactPartition fp = new FactPartition("it", p, null, storageTables);

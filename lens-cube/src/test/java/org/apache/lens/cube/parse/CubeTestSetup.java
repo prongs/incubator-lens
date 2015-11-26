@@ -187,7 +187,7 @@ public class CubeTestSetup {
     // Figure out if current hour is 0th hour
     zerothHour = getDateStringWithOffset(HOURLY, 0).endsWith("-00");
 
-    TWODAYS_BACK = getDateWithOffset(HOURLY, -48);
+    TWODAYS_BACK = getDateWithOffset(DAILY, -2);
     System.out.println("Test TWODAYS_BACK:" + TWODAYS_BACK);
 
     // two months back
