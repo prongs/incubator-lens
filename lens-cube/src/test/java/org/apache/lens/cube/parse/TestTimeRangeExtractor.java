@@ -19,12 +19,14 @@
 
 package org.apache.lens.cube.parse;
 
+import static org.apache.lens.cube.metadata.DateFactory.*;
 import static org.apache.lens.cube.parse.CubeTestSetup.*;
 
 import java.util.List;
 
 import org.apache.lens.cube.error.LensCubeErrorCode;
 import org.apache.lens.cube.metadata.TestCubeMetastoreClient;
+import org.apache.lens.cube.metadata.TimeRange;
 import org.apache.lens.cube.metadata.UpdatePeriod;
 import org.apache.lens.server.api.error.LensException;
 
@@ -59,7 +61,7 @@ public class TestTimeRangeExtractor extends TestQueryRewrite {
   @Test
   public void testTimeRangeValidation() throws Exception {
     // reverse range
-    String timeRange2 = CubeTestSetup.getTimeRangeString(UpdatePeriod.DAILY, 0, -2, UpdatePeriod.HOURLY);
+    String timeRange2 = getTimeRangeString(UpdatePeriod.DAILY, 0, -2, UpdatePeriod.HOURLY);
     try {
       // this should throw exception because from date is after to date
       driver.rewrite("SELECT cityid, testCube.msr2 from" + " testCube where " + timeRange2);
@@ -73,7 +75,7 @@ public class TestTimeRangeExtractor extends TestQueryRewrite {
   @Test
   public void testEqualTimeRangeValidation() throws Exception {
     // zero range
-    String equalTimeRange = CubeTestSetup.getTimeRangeString(UpdatePeriod.HOURLY, 0, 0);
+    String equalTimeRange = getTimeRangeString(UpdatePeriod.HOURLY, 0, 0);
     try {
       // this should throw exception because from date and to date are same
       driver.rewrite("SELECT cityid, testCube.msr2 from" + " testCube where " + equalTimeRange);

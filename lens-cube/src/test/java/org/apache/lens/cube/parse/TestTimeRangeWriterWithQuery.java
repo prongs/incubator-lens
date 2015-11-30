@@ -20,6 +20,7 @@
 package org.apache.lens.cube.parse;
 
 import static org.apache.lens.cube.error.LensCubeErrorCode.CANNOT_USE_TIMERANGE_WRITER;
+import static org.apache.lens.cube.metadata.DateFactory.*;
 import static org.apache.lens.cube.metadata.UpdatePeriod.CONTINUOUS;
 import static org.apache.lens.cube.metadata.UpdatePeriod.DAILY;
 import static org.apache.lens.cube.parse.CubeQueryConfUtil.FAIL_QUERY_ON_PARTIAL_DATA;
@@ -48,7 +49,7 @@ import lombok.extern.slf4j.Slf4j;
 public class TestTimeRangeWriterWithQuery extends TestQueryRewrite {
 
   private Configuration conf;
-  private final String cubeName = CubeTestSetup.TEST_CUBE_NAME;
+  private final String cubeName = TEST_CUBE_NAME;
 
   @BeforeTest
   public void setupDriver() throws Exception {
@@ -87,7 +88,7 @@ public class TestTimeRangeWriterWithQuery extends TestQueryRewrite {
       th = e;
       log.error("Semantic exception while testing cube query.", e);
     }
-    if (!CubeTestSetup.isZerothHour()) {
+    if (!isZerothHour()) {
       Assert.assertNotNull(th);
       Assert
       .assertEquals(th.getErrorCode(), CANNOT_USE_TIMERANGE_WRITER.getLensErrorInfo().getErrorCode());
@@ -100,7 +101,7 @@ public class TestTimeRangeWriterWithQuery extends TestQueryRewrite {
     String hqlQuery = rewrite("select SUM(msr2) from testCube" + " where " + twoDaysInRangeClause, conf);
     Map<String, String> whereClauses = new HashMap<String, String>();
     whereClauses.put(
-      CubeTestSetup.getDbName() + "c1_testfact",
+      getDbName() + "c1_testfact",
       TestBetweenTimeRangeWriter.getBetweenClause(cubeName, "dt",
         getDateWithOffset(DAILY, -2), getDateWithOffset(DAILY, 0), CONTINUOUS.format()));
     String expected = getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null, null, whereClauses);
@@ -117,7 +118,7 @@ public class TestTimeRangeWriterWithQuery extends TestQueryRewrite {
 
     whereClauses = new HashMap<String, String>();
     whereClauses.put(
-      CubeTestSetup.getDbName() + "c1_testfact",
+      getDbName() + "c1_testfact",
       TestBetweenTimeRangeWriter.getBetweenClause(cubeName, "dt", getDateWithOffset(DAILY, -2),
         getDateWithOffset(DAILY, 0), CONTINUOUS.format())
         + " OR"
@@ -131,9 +132,9 @@ public class TestTimeRangeWriterWithQuery extends TestQueryRewrite {
     conf.set(CubeQueryConfUtil.PART_WHERE_CLAUSE_DATE_FORMAT, "yyyy-MM-dd HH:mm:ss");
     hqlQuery = rewrite("select SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE, conf);
     whereClauses = new HashMap<String, String>();
-    whereClauses.put(CubeTestSetup.getDbName() + "c1_testfact", TestBetweenTimeRangeWriter.getBetweenClause(cubeName,
-      "dt", getUptoHour(CubeTestSetup.TWODAYS_BACK),
-      getUptoHour(CubeTestSetup.NOW), TestTimeRangeWriter.DB_FORMAT));
+    whereClauses.put(getDbName() + "c1_testfact", TestBetweenTimeRangeWriter.getBetweenClause(cubeName,
+      "dt", getUptoHour(TWODAYS_BACK),
+      getUptoHour(NOW), TestTimeRangeWriter.DB_FORMAT));
     expected = getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null, null, whereClauses);
     System.out.println("HQL:" + hqlQuery);
     TestCubeRewriter.compareQueries(hqlQuery, expected);
@@ -153,9 +154,9 @@ public class TestTimeRangeWriterWithQuery extends TestQueryRewrite {
       "SELECT test_time_dim, msr2 FROM testCube where " + TWO_DAYS_RANGE_TTD;
     String hqlQuery = rewrite(query, tconf);
     Map<String, String> whereClauses = new HashMap<String, String>();
-    whereClauses.put(CubeTestSetup.getDbName() + "c4_testfact2", TestBetweenTimeRangeWriter.getBetweenClause("hourdim",
-      "full_hour", getUptoHour(CubeTestSetup.TWODAYS_BACK),
-      getUptoHour(getOneLess(CubeTestSetup.NOW, UpdatePeriod.HOURLY.calendarField())), TestTimeRangeWriter.DB_FORMAT));
+    whereClauses.put(getDbName() + "c4_testfact2", TestBetweenTimeRangeWriter.getBetweenClause("hourdim",
+      "full_hour", getUptoHour(TWODAYS_BACK),
+      getUptoHour(getOneLess(NOW, UpdatePeriod.HOURLY.calendarField())), TestTimeRangeWriter.DB_FORMAT));
     System.out.println("HQL:" + hqlQuery);
     String expected =
       getExpectedQuery(cubeName, "select hourdim.full_hour, sum(testcube.msr2) FROM ", " join " + getDbName()
@@ -190,9 +191,9 @@ public class TestTimeRangeWriterWithQuery extends TestQueryRewrite {
 
     whereClauses = new HashMap<>();
     whereClauses.put(
-      CubeTestSetup.getDbName() + "c4_testfact2",
-      TestBetweenTimeRangeWriter.getBetweenClause("hourdim", "full_hour", getUptoHour(CubeTestSetup.TWODAYS_BACK),
-        getUptoHour(getOneLess(CubeTestSetup.NOW, UpdatePeriod.HOURLY.calendarField())),
+      getDbName() + "c4_testfact2",
+      TestBetweenTimeRangeWriter.getBetweenClause("hourdim", "full_hour", getUptoHour(TWODAYS_BACK),
+        getUptoHour(getOneLess(NOW, UpdatePeriod.HOURLY.calendarField())),
         TestTimeRangeWriter.DB_FORMAT)
         + " OR "
         + TestBetweenTimeRangeWriter.getBetweenClause("hourdim", "full_hour", getUptoHour(BEFORE_6_DAYS),
@@ -231,9 +232,9 @@ public class TestTimeRangeWriterWithQuery extends TestQueryRewrite {
       "SELECT test_time_dim2, msr2 FROM testCube where " + TWO_DAYS_RANGE_TTD2;
     String hqlQuery = rewrite(query, tconf);
     Map<String, String> whereClauses = new HashMap<String, String>();
-    whereClauses.put(CubeTestSetup.getDbName() + "c4_testfact2", TestBetweenTimeRangeWriter.getBetweenClause(
-      "timehourchain", "full_hour", getUptoHour(CubeTestSetup.TWODAYS_BACK),
-      getUptoHour(getOneLess(CubeTestSetup.NOW, UpdatePeriod.HOURLY.calendarField())), TestTimeRangeWriter.DB_FORMAT));
+    whereClauses.put(getDbName() + "c4_testfact2", TestBetweenTimeRangeWriter.getBetweenClause(
+      "timehourchain", "full_hour", getUptoHour(TWODAYS_BACK),
+      getUptoHour(getOneLess(NOW, UpdatePeriod.HOURLY.calendarField())), TestTimeRangeWriter.DB_FORMAT));
     System.out.println("HQL:" + hqlQuery);
     String expected =
       getExpectedQuery(cubeName, "select timehourchain.full_hour, sum(testcube.msr2) FROM ", " join " + getDbName()
@@ -269,9 +270,9 @@ public class TestTimeRangeWriterWithQuery extends TestQueryRewrite {
 
     whereClauses = new HashMap<String, String>();
     whereClauses.put(
-      CubeTestSetup.getDbName() + "c4_testfact2",
-      TestBetweenTimeRangeWriter.getBetweenClause("timehourchain", "full_hour", getUptoHour(CubeTestSetup.TWODAYS_BACK),
-        getUptoHour(getOneLess(CubeTestSetup.NOW, UpdatePeriod.HOURLY.calendarField())),
+      getDbName() + "c4_testfact2",
+      TestBetweenTimeRangeWriter.getBetweenClause("timehourchain", "full_hour", getUptoHour(TWODAYS_BACK),
+        getUptoHour(getOneLess(NOW, UpdatePeriod.HOURLY.calendarField())),
         TestTimeRangeWriter.DB_FORMAT)
         + " OR "
         + TestBetweenTimeRangeWriter.getBetweenClause("timehourchain", "full_hour", getUptoHour(BEFORE_6_DAYS),

@@ -19,10 +19,12 @@
 
 package org.apache.lens.cube.parse;
 
+import static org.apache.lens.cube.metadata.DateFactory.NOW;
+import static org.apache.lens.cube.metadata.DateFactory.TWODAYS_BACK;
+import static org.apache.lens.cube.metadata.UpdatePeriod.DAILY;
+
 import java.text.DateFormat;
 import java.util.Date;
-
-import org.apache.lens.cube.metadata.UpdatePeriod;
 
 import org.testng.Assert;
 
@@ -48,9 +50,9 @@ public class TestBetweenTimeRangeWriter extends TestTimeRangeWriter {
     String expected = null;
     if (format == null) {
       expected =
-        getBetweenClause("test", "dt", CubeTestSetup.TWODAYS_BACK, CubeTestSetup.NOW, UpdatePeriod.DAILY.format());
+        getBetweenClause("test", "dt", TWODAYS_BACK, NOW, DAILY.format());
     } else {
-      expected = getBetweenClause("test", "dt", CubeTestSetup.TWODAYS_BACK, CubeTestSetup.NOW, format);
+      expected = getBetweenClause("test", "dt", TWODAYS_BACK, NOW, format);
     }
     Assert.assertEquals(expected, whereClause);
   }

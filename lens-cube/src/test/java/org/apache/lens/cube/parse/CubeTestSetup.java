@@ -22,11 +22,11 @@ package org.apache.lens.cube.parse;
 import static java.util.Calendar.DAY_OF_MONTH;
 import static java.util.Calendar.HOUR_OF_DAY;
 
+import static org.apache.lens.cube.metadata.DateFactory.*;
 import static org.apache.lens.cube.metadata.UpdatePeriod.*;
 
 import static org.testng.Assert.*;
 
-import java.text.DateFormat;
 import java.util.*;
 
 import org.apache.lens.cube.metadata.*;
@@ -96,28 +96,6 @@ public class CubeTestSetup {
   public static final String DERIVED_CUBE_NAME2 = "der2";
   public static final String DERIVED_CUBE_NAME3 = "der3";
 
-  // Time Instances as Date Type
-  public static final Date NOW;
-  public static final Date TWODAYS_BACK;
-  public static final Date TWO_MONTHS_BACK;
-  public static final Date BEFORE_6_DAYS;
-  public static final Date BEFORE_4_DAYS;
-
-  // Time Ranges
-  public static final String LAST_HOUR_TIME_RANGE;
-  public static final String TWO_DAYS_RANGE;
-  public static final String TWO_DAYS_RANGE_TTD;
-  public static final String TWO_DAYS_RANGE_TTD_BEFORE_4_DAYS;
-  public static final String TWO_DAYS_RANGE_TTD2;
-  public static final String TWO_DAYS_RANGE_TTD2_BEFORE_4_DAYS;
-  public static final String TWO_DAYS_RANGE_IT;
-  public static final String THIS_YEAR_RANGE;
-  public static final String LAST_YEAR_RANGE;
-  public static final String TWO_MONTHS_RANGE_UPTO_MONTH;
-  public static final String TWO_MONTHS_RANGE_UPTO_HOURS;
-  public static final String TWO_DAYS_RANGE_BEFORE_4_DAYS;
-
-  private static boolean zerothHour;
   private static String c0 = "C0";
   private static String c1 = "C1";
   private static String c2 = "C2";
@@ -127,99 +105,10 @@ public class CubeTestSetup {
   private static Map<String, String> factValidityProperties = Maps.newHashMap();
   @Getter
   private static Map<String, List<UpdatePeriod>> storageToUpdatePeriodMap = new LinkedHashMap<>();
-  public static class DateOffsetProvider extends HashMap<Integer, Date> {
-    private final UpdatePeriod updatePeriod;
-    Calendar calendar = Calendar.getInstance();
-
-    public DateOffsetProvider(UpdatePeriod updatePeriod) {
-      this(updatePeriod, false);
-    }
-    public DateOffsetProvider(UpdatePeriod updatePeriod, boolean truncate) {
-      this.updatePeriod = updatePeriod;
-      Date date = calendar.getTime();
-      if (truncate) {
-        date = updatePeriod.truncate(date);
-        calendar.setTime(date);
-      }
-      put(0, date);
-    }
-
-    @Override
-    public Date get(Object key) {
-      if (!containsKey(key) && key instanceof Integer) {
-        calendar.setTime(super.get(0));
-        calendar.add(updatePeriod.calendarField(), (Integer) key);
-        put((Integer) key, calendar.getTime());
-      }
-      return super.get(key);
-    }
-  }
-  public static class GeneralDateOffsetProvider extends HashMap<UpdatePeriod, DateOffsetProvider> {
-    @Override
-    public DateOffsetProvider get(Object key) {
-      if (!containsKey(key) && key instanceof UpdatePeriod) {
-        UpdatePeriod up = (UpdatePeriod)key;
-        put(up, new DateOffsetProvider(up));
-      }
-      return super.get(key);
-    }
-    public Date get(UpdatePeriod updatePeriod, int offset) {
-      return get(updatePeriod).get(offset);
-    }
-  }
-  public static final GeneralDateOffsetProvider GENERAL_DATE_OFFSET_PROVIDER = new GeneralDateOffsetProvider();
-
-
-  public static Date getDateWithOffset(UpdatePeriod up, int offset) {
-    return GENERAL_DATE_OFFSET_PROVIDER.get(up, offset);
-  }
-  public static String getDateStringWithOffset(UpdatePeriod up, int offset) {
-    return getDateStringWithOffset(up, offset, up);
-  }
-  public static String getDateStringWithOffset(UpdatePeriod up, int offset, UpdatePeriod formatWith) {
-    return formatWith.format(GENERAL_DATE_OFFSET_PROVIDER.get(up, offset));
-  }
   static {
-    // Keep in sync
-    NOW = getDateWithOffset(HOURLY, 0);
-    log.debug("Test now:{}", NOW);
-
-    // Figure out if current hour is 0th hour
-    zerothHour = getDateStringWithOffset(HOURLY, 0).endsWith("-00");
-
-    TWODAYS_BACK = getDateWithOffset(DAILY, -2);
-    System.out.println("Test TWODAYS_BACK:" + TWODAYS_BACK);
-
-    // two months back
-    TWO_MONTHS_BACK = getDateWithOffset(MONTHLY, -2);
-    System.out.println("Test TWO_MONTHS_BACK:" + TWO_MONTHS_BACK);
-
-    // Before 4days
-    BEFORE_4_DAYS = getDateWithOffset(DAILY, -4);
-    BEFORE_6_DAYS = getDateWithOffset(DAILY, -6);
-
-    TWO_DAYS_RANGE_BEFORE_4_DAYS = getTimeRangeString(DAILY, -6, -4, HOURLY);
-
-    TWO_DAYS_RANGE = getTimeRangeString(HOURLY, -48, 0);
-    TWO_DAYS_RANGE_TTD = getTimeRangeString("test_time_dim", DAILY, -2, 0, HOURLY);
-    TWO_DAYS_RANGE_TTD_BEFORE_4_DAYS = getTimeRangeString("test_time_dim", DAILY, -6, -4, HOURLY);
-    TWO_DAYS_RANGE_TTD2 = getTimeRangeString("test_time_dim2", DAILY, -2, 0, HOURLY);
-    TWO_DAYS_RANGE_TTD2_BEFORE_4_DAYS = getTimeRangeString("test_time_dim2", DAILY, -6, -4, HOURLY);
-    TWO_DAYS_RANGE_IT = getTimeRangeString("it", DAILY, -2, 0, HOURLY);
-    THIS_YEAR_RANGE = getTimeRangeString(YEARLY, 0, 1);
-    LAST_YEAR_RANGE = getTimeRangeString(YEARLY, -1, 0);
-    TWO_MONTHS_RANGE_UPTO_MONTH = getTimeRangeString(MONTHLY, -2, 0);
-    TWO_MONTHS_RANGE_UPTO_HOURS = getTimeRangeString(MONTHLY, -2, 0, HOURLY);
-
-    // calculate LAST_HOUR_TIME_RANGE
-    LAST_HOUR_TIME_RANGE = getTimeRangeString(HOURLY, -1, 0);
     factValidityProperties.put(MetastoreConstants.FACT_RELATIVE_START_TIME, "now.year - 90 days");
   }
 
-
-  public static boolean isZerothHour() {
-    return zerothHour;
-  }
 
   public static String getDateUptoHours(Date dt) {
     return HOURLY.format(dt);
@@ -394,7 +283,7 @@ public class CubeTestSetup {
     Set<String> hourlyparts = new HashSet<>();
     Set<String> dailyparts = new HashSet<>();
     Date dayStart;
-    if (!CubeTestSetup.isZerothHour()) {
+    if (!isZerothHour()) {
       addParts(hourlyparts, HOURLY, from, DateUtil.getCeilDate(from, DAILY));
       addParts(hourlyparts, HOURLY, DateUtil.getFloorDate(to, DAILY),
         DateUtil.getFloorDate(to, HOURLY));
@@ -416,7 +305,7 @@ public class CubeTestSetup {
     List<String> hourlyparts = new ArrayList<String>();
     List<String> dailyparts = new ArrayList<String>();
     Date dayStart;
-    if (!CubeTestSetup.isZerothHour()) {
+    if (!isZerothHour()) {
       addParts(hourlyparts, HOURLY, from, DateUtil.getCeilDate(from, DAILY));
       addParts(hourlyparts, HOURLY, DateUtil.getFloorDate(to, DAILY),
         DateUtil.getFloorDate(to, HOURLY));
@@ -440,7 +329,7 @@ public class CubeTestSetup {
     List<String> monthlyparts = new ArrayList<String>();
     Date dayStart = TWO_MONTHS_BACK;
     Date monthStart = TWO_MONTHS_BACK;
-    if (!CubeTestSetup.isZerothHour()) {
+    if (!isZerothHour()) {
       addParts(hourlyparts, HOURLY, TWO_MONTHS_BACK,
         DateUtil.getCeilDate(TWO_MONTHS_BACK, DAILY));
       addParts(hourlyparts, HOURLY, DateUtil.getFloorDate(NOW, DAILY),
@@ -492,7 +381,7 @@ public class CubeTestSetup {
 
     Date dayStart = TWO_MONTHS_BACK;
     Date monthStart = TWO_MONTHS_BACK;
-    if (!CubeTestSetup.isZerothHour()) {
+    if (!isZerothHour()) {
       addParts(hourlyparts, HOURLY, TWO_MONTHS_BACK,
         DateUtil.getCeilDate(TWO_MONTHS_BACK, DAILY));
       addParts(hourlyparts, HOURLY, DateUtil.getFloorDate(NOW, DAILY),
@@ -2672,41 +2561,5 @@ public class CubeTestSetup {
     System.out.println("--" + label + "--AST--");
     System.out.println("--query- " + query);
     HQLParser.printAST(HQLParser.parseHQL(query, new HiveConf()));
-  }
-
-  public static String getTimeRangeString(final String timeDim, final String startDate, final String endDate) {
-    return "time_range_in("+timeDim+", '" + startDate + "','" + endDate + "')";
-  }
-  public static String getTimeRangeString(final String timeDim, final UpdatePeriod updatePeriod,
-    final int startOffset, final int endOffset) {
-    return getTimeRangeString(timeDim,
-      getDateStringWithOffset(updatePeriod, startOffset), getDateStringWithOffset(updatePeriod, endOffset));
-  }
-  public static String getTimeRangeString(final String startDate, final String endDate) {
-    return getTimeRangeString("d_time", startDate, endDate);
-  }
-  public static String getTimeRangeString(final UpdatePeriod updatePeriod,
-    final int startOffset, final int endOffset) {
-    return getTimeRangeString("d_time", updatePeriod, startOffset, endOffset);
-  }
-  public static String getTimeRangeString(String partCol, UpdatePeriod updatePeriod, int startOffset, int endOffset,
-    UpdatePeriod formatWith) {
-    return getTimeRangeString(partCol,
-      formatWith.format(getDateWithOffset(updatePeriod, startOffset)),
-      formatWith.format(getDateWithOffset(updatePeriod, endOffset)));
-  }
-  public static String getTimeRangeString(String partCol, UpdatePeriod updatePeriod, int startOffset, int endOffset,
-    DateFormat formatWith) {
-    return getTimeRangeString(partCol,
-      formatWith.format(getDateWithOffset(updatePeriod, startOffset)),
-      formatWith.format(getDateWithOffset(updatePeriod, endOffset)));
-  }
-  public static String getTimeRangeString(UpdatePeriod updatePeriod, int startOffset, int endOffset,
-    UpdatePeriod formatWith) {
-    return getTimeRangeString("d_time", updatePeriod, startOffset, endOffset, formatWith);
-  }
-  public static String getTimeRangeString(UpdatePeriod updatePeriod, int startOffset, int endOffset,
-    DateFormat formatWith) {
-    return getTimeRangeString("d_time", updatePeriod, startOffset, endOffset, formatWith);
   }
 }

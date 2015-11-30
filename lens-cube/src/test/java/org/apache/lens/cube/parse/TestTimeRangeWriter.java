@@ -19,8 +19,8 @@
 
 package org.apache.lens.cube.parse;
 
+import static org.apache.lens.cube.metadata.DateFactory.*;
 import static org.apache.lens.cube.metadata.UpdatePeriod.*;
-import static org.apache.lens.cube.parse.CubeTestSetup.getDateWithOffset;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -52,7 +52,7 @@ public abstract class TestTimeRangeWriter {
   public void validateSingle(String whereClause, DateFormat format) {
     List<String> parts = new ArrayList<String>();
     if (format == null) {
-      parts.add(CubeTestSetup.getDateStringWithOffset(DAILY, -1));
+      parts.add(getDateStringWithOffset(DAILY, -1));
     } else {
       parts.add(format.format(getDateWithOffset(DAILY, -1)));
     }
