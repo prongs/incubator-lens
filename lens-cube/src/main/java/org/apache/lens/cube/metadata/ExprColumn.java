@@ -23,6 +23,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.*;
 
 import org.apache.lens.cube.parse.HQLParser;
+import org.apache.lens.server.api.error.LensException;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.StringUtils;
@@ -148,7 +149,7 @@ public class ExprColumn extends CubeColumn {
           if (StringUtils.isNotBlank(expr)) {
             astNode = HQLParser.parseExpr(getExpr());
           }
-        } catch (ParseException e) {
+        } catch (LensException e) {
           throw new IllegalArgumentException("Expression can't be parsed: " + getExpr(), e);
         }
       }
@@ -368,7 +369,7 @@ public class ExprColumn extends CubeColumn {
    * @param expression
    * @throws ParseException
    */
-  public void addExpression(ExprSpec expression) throws ParseException {
+  public void addExpression(ExprSpec expression) throws LensException {
     if (expression == null || expression.getExpr().isEmpty()) {
       throw new IllegalArgumentException("Empty expression not allowed");
     }

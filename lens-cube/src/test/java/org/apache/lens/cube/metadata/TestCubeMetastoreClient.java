@@ -395,7 +395,7 @@ public class TestCubeMetastoreClient {
       expr1.setExpr("contact(countrydim.name");
       stateCountryExpr.addExpression(expr1);
       fail("Expected add expression to fail because of syntax error");
-    } catch (ParseException exc) {
+    } catch (LensException exc) {
       // Pass
     }
     city.alterExpression(stateCountryExpr);

@@ -170,9 +170,14 @@ public final class HQLParser {
     return tree;
   }
 
-  public static ASTNode parseExpr(String expr) throws ParseException {
+  public static ASTNode parseExpr(String expr) throws LensException {
     ParseDriver driver = new ParseDriver();
-    ASTNode tree = driver.parseExpression(expr);
+    ASTNode tree;
+    try {
+      tree = driver.parseExpression(expr);
+    } catch (ParseException e) {
+      throw new LensException(e);
+    }
     return ParseUtils.findRootNonNullToken(tree);
   }
 
