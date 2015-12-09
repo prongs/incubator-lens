@@ -74,7 +74,6 @@ import org.apache.lens.server.util.UtilityMethods;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -88,7 +87,6 @@ import org.slf4j.LoggerFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 
@@ -371,7 +369,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       throw new LensException("No drivers configured");
     }
     File driversBaseDir = new File(System.getProperty(LensConfConstants.CONFIG_LOCATION,
-        LensConfConstants.DEFAULT_CONFIG_LOCATION), LensConfConstants.DRIVERS_BASE_DIR);
+      LensConfConstants.DEFAULT_CONFIG_LOCATION), LensConfConstants.DRIVERS_BASE_DIR);
     if (!driversBaseDir.isDirectory()) {
       throw new LensException("No drivers found at location " + driversBaseDir.getAbsolutePath());
     }
@@ -385,10 +383,11 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       }
       loadDriversForType(driverTypeAndClass[0], driverTypeAndClass[1], driversBaseDir);
     }
-    if (drivers.isEmpty()){
-      throw new LensException("No drivers loaded. Please check the drivers in :"+driversBaseDir);
+    if (drivers.isEmpty()) {
+      throw new LensException("No drivers loaded. Please check the drivers in :" + driversBaseDir);
     }
   }
+
   /**
    * Loads drivers of a particular type
    *
@@ -417,9 +416,9 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
     String driverName = null;
     for (File driverPath : driverPaths) {
       try {
-        if (!driverPath.isDirectory()){
+        if (!driverPath.isDirectory()) {
           log.warn("Ignoring resource {} while loading drivers. A driver directory was expected instead",
-              driverPath.getAbsolutePath());
+            driverPath.getAbsolutePath());
           continue;
         }
         driverName = driverPath.getName();
@@ -432,7 +431,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
         log.info("Driver {} for type {} is loaded", driverPath.getName(), driverType);
       } catch (Exception e) {
         log.error("Could not load driver {} of type {}", driverPath.getName(), driverType, e);
-        throw new LensException("Could not load driver "+driverPath.getName()+ " of type "+ driverType);
+        throw new LensException("Could not load driver " + driverPath.getName() + " of type " + driverType);
       }
     }
   }
@@ -630,6 +629,8 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
                   /* Query is not going to be added to waiting queries. No need to keep the lock.
                   First release lock, then launch query */
                   removalFromLaunchedQueriesLock.unlock();
+                  launchedQueries.add(query);
+                  log.info("Added to launched queries. QueryId:{}", query.getQueryHandleString());
                   launchQuery(query);
                 } else {
 
@@ -646,8 +647,9 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
             } catch (LensException e) {
 
               log.error("Error launching query: {}", query.getQueryHandle(), e);
+              LensErrorTO to = e.buildLensErrorTO(this.errorCollection);
               String reason = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
-              setFailedStatus(query, "Launching query failed", reason, e.buildLensErrorTO(this.errorCollection));
+              setFailedStatus(query, "Launching query failed", reason, to);
               continue;
 
             } catch (Exception e) {
@@ -685,8 +687,6 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       query.setLaunchTime(System.currentTimeMillis());
       query.clearTransientStateAfterLaunch();
 
-      launchedQueries.add(query);
-      log.info("Added to launched queries. QueryId:{}", query.getQueryHandleString());
       fireStatusChangeEvent(query, newStatus, oldStatus);
     }
 
@@ -777,8 +777,14 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
 
     QueryStatus before = ctx.getStatus();
     ctx.setStatus(new QueryStatus(0.0f, null, FAILED, statusMsg, false, null, reason, lensErrorTO));
-    updateFinishedQuery(ctx, before);
     fireStatusChangeEvent(ctx, ctx.getStatus(), before);
+    updateFinishedQuery(ctx, before);
+  }
+
+  private boolean retry(QueryContext ctx) {
+    log.info("Failed with code: " + ctx.getStatus().getErrorCode() + ", full: "
+      + ctx.getStatus().getLensErrorTOErrorMsg());
+    return false;
   }
 
   /**
@@ -848,7 +854,8 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
             ctx.setStatus(ctx.getDriverStatus().toQueryStatus());
           } catch (LensException exc) {
             // Driver gave exception while updating status
-            setFailedStatus(ctx, "Status update failed", exc.getMessage(), exc.buildLensErrorTO(this.errorCollection));
+            LensErrorTO to = exc.buildLensErrorTO(this.errorCollection);
+            setFailedStatus(ctx, "Status update failed", exc.getMessage(), to);
             log.error("Status update failed for {}", handle, exc);
             return;
           }
@@ -859,10 +866,10 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
             || !ctx.isResultAvailableInDriver())) {
             setSuccessState(ctx);
           } else {
+            fireStatusChangeEvent(ctx, ctx.getStatus(), before);
             if (ctx.getStatus().finished()) {
               updateFinishedQuery(ctx, before);
             }
-            fireStatusChangeEvent(ctx, ctx.getStatus(), before);
           }
         }
         if (ctx.queued()) {
@@ -2445,7 +2452,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
           break;
         case CLOSED:
           allQueries.remove(ctx.getQueryHandle());
-          log.info("Removed closed query from all Queries:"+ctx.getQueryHandle());
+          log.info("Removed closed query from all Queries:" + ctx.getQueryHandle());
         }
       }
       queuedQueries.addAll(allRestoredQueuedQueries);
