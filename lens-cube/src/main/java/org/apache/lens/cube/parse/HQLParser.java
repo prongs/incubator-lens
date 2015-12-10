@@ -18,8 +18,8 @@
  */
 package org.apache.lens.cube.parse;
 
-import static org.apache.lens.cube.error.LensCubeErrorCode.SYNTAX_ERROR;
 import static org.apache.lens.cube.error.LensCubeErrorCode.COULD_NOT_PARSE_EXPRESSION;
+import static org.apache.lens.cube.error.LensCubeErrorCode.SYNTAX_ERROR;
 
 import static org.apache.hadoop.hive.ql.parse.HiveParser.*;
 
