@@ -146,7 +146,7 @@ public class ExprColumn extends CubeColumn {
       if (astNode == null) {
         try {
           if (StringUtils.isNotBlank(expr)) {
-            astNode = HQLParser.parseExpr(getExpr());
+            astNode = MetastoreUtil.parseExpr(getExpr());
           }
         } catch (LensException e) {
           throw new IllegalArgumentException("Expression can't be parsed: " + getExpr(), e);
@@ -374,7 +374,7 @@ public class ExprColumn extends CubeColumn {
     }
 
     // Validate if expression can be correctly parsed
-    HQLParser.parseExpr(expression.getExpr());
+    MetastoreUtil.parseExpr(expression.getExpr());
     synchronized (expressionSet) {
       expressionSet.add(expression);
     }
