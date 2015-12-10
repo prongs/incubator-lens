@@ -174,7 +174,11 @@ public class TestCubeMetastoreClient {
     cubeMeasures.add(new ColumnMeasure(
       new FieldSchema("msrcost2", "bigint", "measure with cost"),
       "Measure With cost2", null, "MAX", null, null, null, 100.0, 0.0, 999999999999999999999999999.0));
-
+    Set<CubeMeasure> dummyMeasure = Sets.newHashSet();
+    for (int i = 0; i < 5000; i++) {
+      dummyMeasure.add(new ColumnMeasure(new FieldSchema("dummy_msr" + i, "bigint", "dummy measure " + i),
+        "", null, "SUM", null, null, null, 100.0, 0.0, 999999999999999999999999999.0));
+    }
     cubeDimensions = new HashSet<>();
     List<CubeDimAttribute> locationHierarchy = new ArrayList<>();
     locationHierarchy.add(new ReferencedDimAtrribute(new FieldSchema("zipcode", "int", "zip"), "Zip refer",
@@ -192,6 +196,11 @@ public class TestCubeMetastoreClient {
     cubeDimensions.add(new BaseDimAttribute(new FieldSchema("dim1", "string", "basedim")));
     cubeDimensions.add(new ReferencedDimAtrribute(new FieldSchema("dim2", "id", "ref dim"), "Dim2 refer",
       new TableReference("testdim2", "id")));
+    Set<CubeDimAttribute> dummyDimAttributes = Sets.newHashSet();
+    for (int i = 0; i < 5000; i++) {
+      dummyDimAttributes.add(new BaseDimAttribute(new FieldSchema("dummy_dim" + i, "string", "dummy dim " + i),
+        "dummy_dim" + i, null, null, null, null, regions));
+    }
 
     ExprSpec expr1 = new ExprSpec();
     expr1.setExpr("avg(msr1 + msr2)");
@@ -275,9 +284,17 @@ public class TestCubeMetastoreClient {
     joinChains.add(cityChain);
     cubeDimensions.add(new ReferencedDimAtrribute(new FieldSchema("zipcityname", "string", "zip city name"),
       "Zip city name", "cityFromZip", "name", null, null, null));
+    cubeMeasures.addAll(dummyMeasure);
+    cubeDimensions.addAll(dummyDimAttributes);
     cube = new Cube(cubeName, cubeMeasures, cubeDimensions, cubeExpressions, joinChains, emptyHashMap, 0.0);
     measures = Sets.newHashSet("msr1", "msr2", "msr3");
+    for(CubeMeasure measure: dummyMeasure) {
+      measures.add(measure.getName());
+    }
     dimensions = Sets.newHashSet("dim1", "dim2", "dim3");
+    for(CubeDimAttribute dimAttribute: dummyDimAttributes) {
+      dimensions.add(dimAttribute.getName());
+    }
     derivedCube = new DerivedCube(derivedCubeName, measures, dimensions, cube);
 
     CUBE_PROPERTIES.put(MetastoreUtil.getCubeTimedDimensionListKey(cubeNameWithProps), "dt,mydate");
@@ -1291,6 +1308,7 @@ public class TestCubeMetastoreClient {
         "complete name differs at element " + i);
     }
   }
+
   private void assertTimeline(EndsAndHolesPartitionTimeline endsAndHolesPartitionTimeline,
     StoreAllPartitionTimeline storeAllPartitionTimeline, UpdatePeriod updatePeriod,
     int firstOffset, int latestOffset, int... holeOffsets) throws LensException {
