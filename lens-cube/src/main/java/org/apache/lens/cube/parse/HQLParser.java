@@ -19,9 +19,9 @@
 package org.apache.lens.cube.parse;
 
 import static org.apache.lens.cube.error.LensCubeErrorCode.SYNTAX_ERROR;
+import static org.apache.lens.cube.error.LensCubeErrorCode.COULD_NOT_PARSE_EXPRESSION;
 
 import static org.apache.hadoop.hive.ql.parse.HiveParser.*;
-import static org.apache.hadoop.hive.ql.parse.HiveParser.Number;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -176,7 +176,7 @@ public final class HQLParser {
     try {
       tree = driver.parseExpression(expr);
     } catch (ParseException e) {
-      throw new LensException(SYNTAX_ERROR.getLensErrorInfo(), e, e.getMessage());
+      throw new LensException(COULD_NOT_PARSE_EXPRESSION.getLensErrorInfo(), e, e.getMessage());
     }
     return ParseUtils.findRootNonNullToken(tree);
   }

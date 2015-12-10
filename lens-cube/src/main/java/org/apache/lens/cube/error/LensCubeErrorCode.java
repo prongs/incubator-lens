@@ -55,11 +55,11 @@ public enum LensCubeErrorCode {
   NO_CANDIDATE_DIM_STORAGE_TABLES(3029, 1300),
   NO_STORAGE_TABLE_AVAIABLE(3030, 1400),
   STORAGE_UNION_DISABLED(3031, 100),
-  EXPRESSION_NOT_PARSABLE(3032, 100),
+  COULD_NOT_PARSE_EXPRESSION(3032, 100),
   // Error codes greater than 3100 are errors while doing a metastore operation.
   ERROR_IN_ENTITY_DEFINITION(3101, 100),
   TIMELINE_ABSENT(3102, 100),
-  COULD_NOT_PARSE_EXPRESSION(3103, 100);
+  EXPRESSION_NOT_PARSABLE(3103, 100);
 
   public LensErrorInfo getLensErrorInfo() {
     return this.errorInfo;
