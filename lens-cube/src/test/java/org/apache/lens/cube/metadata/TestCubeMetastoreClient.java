@@ -305,7 +305,7 @@ public class TestCubeMetastoreClient {
       new DerivedCube(derivedCubeNameWithProps, measures, dimensions, CUBE_PROPERTIES, 0L, cubeWithProps);
   }
 
-  private static void defineUberDims() {
+  private static void defineUberDims() throws LensException {
     // Define zip dimension
     zipAttrs.add(new BaseDimAttribute(new FieldSchema("zipcode", "int", "code")));
     zipAttrs.add(new BaseDimAttribute(new FieldSchema("f1", "string", "field1")));
