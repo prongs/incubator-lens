@@ -19,7 +19,6 @@
 package org.apache.lens.cube.metadata;
 
 import static java.util.Calendar.MONTH;
-import static java.util.Calendar.YEAR;
 
 import java.text.DateFormat;
 import java.text.ParseException;
