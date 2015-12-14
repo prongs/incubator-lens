@@ -19,14 +19,22 @@
 
 package org.apache.lens.cube.metadata;
 
+import static org.apache.lens.cube.error.LensCubeErrorCode.EXPRESSION_NOT_PARSABLE;
 import static org.apache.lens.cube.metadata.MetastoreConstants.*;
 
 import java.text.ParseException;
 import java.util.*;
 
+import org.apache.lens.server.api.error.LensException;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.metadata.Partition;
+import org.apache.hadoop.hive.ql.parse.ASTNode;
+import org.apache.hadoop.hive.ql.parse.ParseDriver;
+import org.apache.hadoop.hive.ql.parse.ParseUtils;
+
+import com.google.common.collect.Sets;
 
 public class MetastoreUtil {
   private MetastoreUtil() {
@@ -394,11 +402,23 @@ public class MetastoreUtil {
 
   private static final int MAX_PARAM_LENGTH = 3999;
 
+  public static Set<Named> getNamedSetFromStringSet(Set<String> strings) {
+    Set<Named> nameds = Sets.newHashSet();
+    for(final String s: strings) {
+      nameds.add(new Named() {
+        @Override
+        public String getName() {
+          return s;
+        }
+      });
+    }
+    return nameds;
+  }
   public static <E extends Named> void addNameStrings(Map<String, String> props, String key, Collection<E> set) {
     addNameStrings(props, key, set, MAX_PARAM_LENGTH);
   }
 
-  static <E extends Named> void addNameStrings(Map<String, String> props, String key,
+  public static <E extends Named> void addNameStrings(Map<String, String> props, String key,
     Collection<E> set, int maxLength) {
     List<String> namedStrings = getNamedStrs(set, maxLength);
     props.put(key + ".size", String.valueOf(namedStrings.size()));
@@ -521,5 +541,15 @@ public class MetastoreUtil {
       }
     }
     return null;
+  }
+  public static ASTNode parseExpr(String expr) throws LensException {
+    ParseDriver driver = new ParseDriver();
+    ASTNode tree;
+    try {
+      tree = driver.parseExpression(expr);
+    } catch (org.apache.hadoop.hive.ql.parse.ParseException e) {
+      throw new LensException(EXPRESSION_NOT_PARSABLE.getLensErrorInfo(), e, e.getMessage(), expr);
+    }
+    return ParseUtils.findRootNonNullToken(tree);
   }
 }
