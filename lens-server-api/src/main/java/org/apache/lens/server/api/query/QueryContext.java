@@ -444,16 +444,12 @@ public class QueryContext extends AbstractQueryContext {
     }
   }
 
-  public void close() {
+  public void close() throws LensException {
     setFinishedQueryPersisted(true);
-    try {
       if (getSelectedDriver() != null) {
         getLastDriverAttempt().close();
       }
       log.info("{} Closed query {}", getSelectedDriver().getFullyQualifiedName(), getQueryHandle());
-    } catch (Exception e) {
-      log.warn("Exception while closing query with selected driver.", e);
-    }
   }
 
   public void launch() throws LensException {

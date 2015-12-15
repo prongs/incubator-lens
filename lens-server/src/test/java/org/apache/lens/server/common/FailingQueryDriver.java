@@ -39,7 +39,7 @@ public class FailingQueryDriver extends MockDriver {
   }
 
   @Override
-  public void executeAsync(final QueryContext context) throws LensException {
+  public Attempt executeAsync(final QueryContext context) throws LensException {
     throw new LensException("Simulated Launch Failure");
   }
 }
