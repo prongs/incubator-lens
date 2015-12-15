@@ -191,7 +191,7 @@ public class TestRemoteHiveDriver extends TestHiveDriver {
                 thrDriver.updateStatus(qctx);
                 if (qctx.getDriverStatus().isFinished()) {
                   log.info("@@ " + handle.getHandleId() + " >> " + qctx.getDriverStatus().getState());
-                  thrDriver.closeQuery(handle);
+                  thrDriver.closeAttempt(handle);
                   break;
                 }
                 Thread.sleep(POLL_DELAY);

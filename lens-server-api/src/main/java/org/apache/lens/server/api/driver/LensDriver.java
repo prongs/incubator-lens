@@ -20,11 +20,12 @@ package org.apache.lens.server.api.driver;
 
 import java.io.Externalizable;
 
-import org.apache.lens.api.query.QueryHandle;
 import org.apache.lens.api.query.QueryPrepareHandle;
 import org.apache.lens.server.api.error.LensException;
 import org.apache.lens.server.api.events.LensEventListener;
-import org.apache.lens.server.api.query.*;
+import org.apache.lens.server.api.query.AbstractQueryContext;
+import org.apache.lens.server.api.query.PreparedQueryContext;
+import org.apache.lens.server.api.query.QueryContext;
 import org.apache.lens.server.api.query.collect.WaitingQueriesSelectionPolicy;
 import org.apache.lens.server.api.query.constraint.QueryLaunchingConstraint;
 import org.apache.lens.server.api.query.cost.QueryCost;
@@ -36,7 +37,7 @@ import com.google.common.collect.ImmutableSet;
 /**
  * The Interface LensDriver.
  */
-public interface LensDriver extends Externalizable {
+public interface LensDriver<T extends LensDriver.Attempt> extends Externalizable {
   /**
    * Get driver configuration
    */
@@ -117,17 +118,19 @@ public interface LensDriver extends Externalizable {
    * @param context The query context
    * @throws LensException the lens exception
    */
-  void executeAsync(QueryContext context) throws LensException;
+  T executeAsync(QueryContext context) throws LensException;
 
   /**
    * Register for query completion notification.
    *
+   *
+   * @param queryContext
    * @param handle        the handle
    * @param timeoutMillis the timeout millis
    * @param listener      the listener
    * @throws LensException the lens exception
    */
-  void registerForCompletionNotification(QueryHandle handle, long timeoutMillis, QueryCompletionListener listener)
+  void registerForCompletionNotification(QueryContext queryContext, Attempt handle, long timeoutMillis, QueryCompletionListener listener)
     throws LensException;
 
   /**
@@ -153,24 +156,7 @@ public interface LensDriver extends Externalizable {
    * @param handle The query handle
    * @throws LensException the lens exception
    */
-  void closeResultSet(QueryHandle handle) throws LensException;
-
-  /**
-   * Cancel the execution of the query, specified by the handle.
-   *
-   * @param handle The query handle.
-   * @return true if cancel was successful, false otherwise
-   * @throws LensException the lens exception
-   */
-  boolean cancelQuery(QueryHandle handle) throws LensException;
-
-  /**
-   * Close the query specified by the handle, releases all the resources held by the query.
-   *
-   * @param handle The query handle
-   * @throws LensException the lens exception
-   */
-  void closeQuery(QueryHandle handle) throws LensException;
+  void closeResultSet(QueryContext handle) throws LensException;
 
   /**
    * Close the driver, releasing all resouces used up by the driver.
@@ -208,4 +194,13 @@ public interface LensDriver extends Externalizable {
    * (Examples: hive/hive1, jdbc/mysql1 )
    */
   String getFullyQualifiedName();
+
+  interface Attempt {
+    /**
+     * The driver op handle.
+     */
+    DriverQueryStatus getStatus();
+    void close() throws LensException;
+    boolean cancel() throws LensException;
+  }
 }

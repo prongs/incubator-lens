@@ -395,7 +395,7 @@ public class TestHiveDriver {
     assertEquals(1, driver.getHiveHandleSize());
     validateExecuteAsync(context, DriverQueryState.FAILED, true, false);
     assertEquals(1, driver.getHiveHandleSize());
-    driver.closeQuery(context.getQueryHandle());
+    driver.closeAttempt(context.getQueryHandle());
     assertEquals(0, driver.getHiveHandleSize());
     // Async select query
     String select = "SELECT ID FROM test_execute_sync";
@@ -406,7 +406,7 @@ public class TestHiveDriver {
     assertNotNull(context.getDriverConf(driver).get("mapred.job.priority"));
     assertEquals(1, driver.getHiveHandleSize());
     validateExecuteAsync(context, DriverQueryState.SUCCESSFUL, false, false);
-    driver.closeQuery(context.getQueryHandle());
+    driver.closeAttempt(context.getQueryHandle());
     assertEquals(0, driver.getHiveHandleSize());
 
     conf.setBoolean(LensConfConstants.QUERY_PERSISTENT_RESULT_INDRIVER, true);
@@ -414,7 +414,7 @@ public class TestHiveDriver {
     driver.executeAsync(context);
     assertEquals(1, driver.getHiveHandleSize());
     validateExecuteAsync(context, DriverQueryState.SUCCESSFUL, true, false);
-    driver.closeQuery(context.getQueryHandle());
+    driver.closeAttempt(context.getQueryHandle());
     assertEquals(0, driver.getHiveHandleSize());
 
     conf.set(LensConfConstants.QUERY_OUTPUT_DIRECTORY_FORMAT,
@@ -426,7 +426,7 @@ public class TestHiveDriver {
     driver.executeAsync(context);
     assertEquals(1, driver.getHiveHandleSize());
     validateExecuteAsync(context, DriverQueryState.SUCCESSFUL, true, true);
-    driver.closeQuery(context.getQueryHandle());
+    driver.closeAttempt(context.getQueryHandle());
     assertEquals(0, driver.getHiveHandleSize());
   }
 
@@ -490,7 +490,7 @@ public class TestHiveDriver {
     driver.cancelQuery(context.getQueryHandle());
     driver.updateStatus(context);
     assertEquals(context.getDriverStatus().getState(), DriverQueryState.CANCELED, "Expecting query to be cancelled");
-    driver.closeQuery(context.getQueryHandle());
+    driver.closeAttempt(context.getQueryHandle());
     assertEquals(0, driver.getHiveHandleSize());
 
     try {
@@ -580,7 +580,7 @@ public class TestHiveDriver {
     driver.executeAsync(ctx);
     assertEquals(1, driver.getHiveHandleSize());
     validateExecuteAsync(ctx, DriverQueryState.SUCCESSFUL, true, false);
-    driver.closeQuery(ctx.getQueryHandle());
+    driver.closeAttempt(ctx.getQueryHandle());
     assertEquals(0, driver.getHiveHandleSize());
 
     conf.set(LensConfConstants.QUERY_OUTPUT_DIRECTORY_FORMAT,
@@ -591,14 +591,14 @@ public class TestHiveDriver {
     resultSet = driver.execute(ctx);
     assertEquals(0, driver.getHiveHandleSize());
     validatePersistentResult(resultSet, TEST_DATA_FILE, ctx.getHDFSResultDir(), true);
-    driver.closeQuery(ctx.getQueryHandle());
+    driver.closeAttempt(ctx.getQueryHandle());
     assertEquals(0, driver.getHiveHandleSize());
 
     ctx = createContext("SELECT ID, null, ID FROM test_persistent_result_set", conf);
     driver.executeAsync(ctx);
     assertEquals(1, driver.getHiveHandleSize());
     validateExecuteAsync(ctx, DriverQueryState.SUCCESSFUL, true, true);
-    driver.closeQuery(ctx.getQueryHandle());
+    driver.closeAttempt(ctx.getQueryHandle());
     assertEquals(0, driver.getHiveHandleSize());
   }
 
@@ -696,7 +696,7 @@ public class TestHiveDriver {
     validateExecuteAsync(qctx, DriverQueryState.SUCCESSFUL, true, false);
     assertEquals(1, driver.getHiveHandleSize());
 
-    driver.closeQuery(qctx.getQueryHandle());
+    driver.closeAttempt(qctx.getQueryHandle());
     assertEquals(0, driver.getHiveHandleSize());
 
     // for backward compatibility
@@ -713,7 +713,7 @@ public class TestHiveDriver {
     assertEquals(1, driver.getHiveHandleSize());
     validateExecuteAsync(qctx, DriverQueryState.SUCCESSFUL, true, false);
 
-    driver.closeQuery(qctx.getQueryHandle());
+    driver.closeAttempt(qctx.getQueryHandle());
     driver.closePreparedQuery(pctx.getPrepareHandle());
     assertEquals(0, driver.getHiveHandleSize());
   }
@@ -765,7 +765,7 @@ public class TestHiveDriver {
     assertTrue(plan.getTableWeights().containsKey(dataBase + ".explain_test_1"));
     assertTrue(plan.getTableWeights().containsKey(dataBase + ".explain_test_2"));
     assertTrue(plan.getPlan() != null && !plan.getPlan().isEmpty());
-    driver.closeQuery(plan.getHandle());
+    driver.closeAttempt(plan.getHandle());
   }
 
   /**
@@ -794,7 +794,7 @@ public class TestHiveDriver {
     HivePersistentResultSet persistentResultSet = (HivePersistentResultSet) resultSet;
     String path = persistentResultSet.getOutputPath();
     assertEquals(ctx.getDriverResultPath(), path);
-    driver.closeQuery(plan2.getHandle());
+    driver.closeAttempt(plan2.getHandle());
   }
 
   /**

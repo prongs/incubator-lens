@@ -32,7 +32,7 @@ import lombok.Getter;
  * Abstract class for Lens Driver Implementations. Provides default
  * implementations and some utility methods for drivers
  */
-public abstract class AbstractLensDriver implements LensDriver {
+public abstract class AbstractLensDriver<T extends LensDriver.Attempt> implements LensDriver<T> {
   /**
    * Separator used for constructing fully qualified name and driver resource path
    */

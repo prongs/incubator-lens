@@ -19,6 +19,7 @@
 package org.apache.lens.server.api.query;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -31,6 +32,7 @@ import org.apache.lens.api.query.QueryStatus.Status;
 import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.driver.DriverQueryStatus;
 import org.apache.lens.server.api.driver.LensDriver;
+import org.apache.lens.server.api.driver.QueryCompletionListener;
 import org.apache.lens.server.api.error.LensException;
 import org.apache.lens.server.api.query.collect.WaitingQueriesSelectionPolicy;
 import org.apache.lens.server.api.query.constraint.QueryLaunchingConstraint;
@@ -131,18 +133,17 @@ public class QueryContext extends AbstractQueryContext {
   @Setter
   private long closedTime;
 
-  /**
-   * The driver op handle.
-   */
-  @Getter
-  @Setter
-  private String driverOpHandle;
 
-  /**
-   * The driver status.
-   */
   @Getter
-  final DriverQueryStatus driverStatus;
+  private final List<LensDriver.Attempt> driverAttempts;
+
+  public LensDriver.Attempt getLastDriverAttempt() {
+    return driverAttempts.get(driverAttempts.size() - 1);
+  }
+
+  public DriverQueryStatus getDriverStatus() {
+    return driverAttempts.get(driverAttempts.size() - 1).getStatus();
+  }
 
   /**
    * The query output formatter.
@@ -238,7 +239,8 @@ public class QueryContext extends AbstractQueryContext {
       this.setSelectedDriver(selectedDriver);
     }
     this.lensConf = qconf;
-    this.driverStatus = new DriverQueryStatus();
+    // Add one attempt
+    driverAttempts = Lists.newArrayList();
   }
 
   /**
@@ -309,8 +311,9 @@ public class QueryContext extends AbstractQueryContext {
       getSelectedDriver() != null ? getSelectedDriver().getFullyQualifiedName() : null,
       getSelectedDriverQuery(),
       status,
-      resultSetPath, driverOpHandle, lensConf, submissionTime, launchTime, driverStatus.getDriverStartTime(),
-      driverStatus.getDriverFinishTime(), endTime, closedTime, queryName);
+      // TODO: take care of handle
+      resultSetPath, "blah", lensConf, submissionTime, launchTime, getDriverStatus().getDriverStartTime(),
+      getDriverStatus().getDriverFinishTime(), endTime, closedTime, queryName);
   }
 
   public boolean isResultAvailableInDriver() {
@@ -319,7 +322,7 @@ public class QueryContext extends AbstractQueryContext {
     // if result is persisted in driver driverStatus.isResultSetAvailable() will be false
     // so, for select queries, if result is persisted in driver, we return true sothat the result can be fetched thru
     // persistent resultset
-    return isDriverPersistent() || driverStatus.isResultSetAvailable();
+    return isDriverPersistent() || getDriverStatus().isResultSetAvailable();
   }
 
   /**
@@ -439,5 +442,46 @@ public class QueryContext extends AbstractQueryContext {
       setDriverCost(driver, queryCostCalculator.calculateCost(this, driver));
     }
     return decidePriority(driver, queryPriorityDecider);
+  }
+
+  public void close() {
+    setFinishedQueryPersisted(true);
+    try {
+      if (getSelectedDriver() != null) {
+        getLastDriverAttempt().close();
+      }
+      log.info("{} Closed query {}", getSelectedDriver().getFullyQualifiedName(), getQueryHandle());
+    } catch (Exception e) {
+      log.warn("Exception while closing query with selected driver.", e);
+    }
+  }
+
+  public void launch() throws LensException {
+    getDriverAttempts().add(getSelectedDriver().executeAsync(this));
+    setLaunchTime(System.currentTimeMillis());
+    clearTransientStateAfterLaunch();
+    log.info("Attempt #{} launched on {} for {}", getDriverAttempts().size(),
+      getSelectedDriver().getFullyQualifiedName(), getQueryHandle());
+  }
+
+  public void registerForCompletionNotification(long timeoutMillis, QueryCompletionListener listener) throws
+    LensException {
+    //TODO: register for notification for each attempt
+    getSelectedDriver().registerForCompletionNotification(this, getLastDriverAttempt(), timeoutMillis, listener);
+  }
+
+  public boolean cancel() throws LensException {
+    if (finished()) {
+      return false;
+    }
+
+    if (launched() || running()) {
+      boolean ret = getLastDriverAttempt().cancel();
+      if (!ret) {
+        return false;
+      }
+    }
+    log.info("{} Cancelled query {}", getSelectedDriver().getFullyQualifiedName(), getQueryHandle());
+    return true;
   }
 }

@@ -48,7 +48,6 @@ import org.apache.lens.server.api.query.cost.FactPartitionBasedQueryCost;
 import org.apache.lens.server.api.query.cost.QueryCost;
 
 import org.apache.commons.lang.Validate;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
@@ -63,14 +62,41 @@ import org.antlr.runtime.tree.Tree;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * Driver for elastic search
  */
 @Slf4j
-public class ESDriver extends AbstractLensDriver {
+public class ESDriver extends AbstractLensDriver<ESDriver.Attempt> {
+  @Data
+  public static class Attempt implements LensDriver.Attempt {
+    final QueryContext context;
+    final Future<LensResultSet> futureResult;
+    final DriverQueryStatus status;
+    QueryCompletionListener listener;
+
+    @Override
+    public void close() throws LensException {
+      cancel();
+    }
+
+    @Override
+    public boolean cancel() throws LensException {
+      try {
+        boolean cancelled = futureResult.cancel(true);
+        if (cancelled) {
+          if (listener != null) {
+            listener.onError(context.getQueryHandle(), context.getQueryHandle() + " cancelled");
+          }
+        }
+        return cancelled;
+      } catch (NullPointerException e) {
+        throw new LensException("The query does not exist or was already purged", e);
+      }
+    }
+  }
 
   private static final AtomicInteger THID = new AtomicInteger();
   private static final double STREAMING_PARTITION_COST = 0;
@@ -85,7 +111,6 @@ public class ESDriver extends AbstractLensDriver {
    * States
    */
   private final Map<String, ESQuery> rewrittenQueriesCache = Maps.newConcurrentMap();
-  private final Map<QueryHandle, Future<LensResultSet>> resultSetMap = Maps.newConcurrentMap();
   private final Map<QueryHandle, QueryCompletionListener> handleListenerMap = Maps.newConcurrentMap();
 
   @Override
@@ -146,22 +171,22 @@ public class ESDriver extends AbstractLensDriver {
   }
 
   @Override
-  public void executeAsync(final QueryContext context) {
+  public Attempt executeAsync(final QueryContext context) {
     final Future<LensResultSet> futureResult
       = asyncQueryPool.submit(new ESQueryExecuteCallable(context, SessionState.get()));
-    resultSetMap.put(context.getQueryHandle(), futureResult);
+    return new Attempt(context, futureResult, new DriverQueryStatus());
   }
 
   @Override
-  public void registerForCompletionNotification(QueryHandle handle, long timeoutMillis,
-                                                QueryCompletionListener listener) {
-    handleListenerMap.put(handle, listener);
+  public void registerForCompletionNotification(QueryContext queryContext, LensDriver.Attempt handle,
+    long timeoutMillis, QueryCompletionListener listener) {
+    ((Attempt) queryContext.getLastDriverAttempt()).listener = listener;
   }
 
   @Override
   public void updateStatus(QueryContext context) {
     final QueryHandle queryHandle = context.getQueryHandle();
-    final Future<LensResultSet> lensResultSetFuture = resultSetMap.get(queryHandle);
+    final Future<LensResultSet> lensResultSetFuture = ((Attempt) context.getLastDriverAttempt()).getFutureResult();
     if (lensResultSetFuture == null) {
       context.getDriverStatus().setState(DriverQueryStatus.DriverQueryState.CLOSED);
       context.getDriverStatus().setStatusMessage(queryHandle + " closed");
@@ -183,7 +208,7 @@ public class ESDriver extends AbstractLensDriver {
       /**
        * removing the result set as soon as the fetch is done
        */
-      return resultSetMap.remove(context.getQueryHandle()).get();
+      return ((Attempt) context.getLastDriverAttempt()).getFutureResult().get();
     } catch (NullPointerException e) {
       throw new LensException("The results for the query "
         + context.getQueryHandleString()
@@ -194,43 +219,17 @@ public class ESDriver extends AbstractLensDriver {
   }
 
   @Override
-  public void closeResultSet(QueryHandle handle) throws LensException {
+  public void closeResultSet(QueryContext context) throws LensException {
     try {
-      resultSetMap.remove(handle);
+      context.getLastDriverAttempt().close();
     } catch (NullPointerException e) {
       throw new LensException("The query does not exist or was already purged", e);
     }
-  }
-
-  @Override
-  public boolean cancelQuery(QueryHandle handle) throws LensException {
-    try {
-      boolean cancelled = resultSetMap.get(handle).cancel(true);
-      if (cancelled) {
-        notifyQueryCancellation(handle);
-      }
-      return cancelled;
-    } catch (NullPointerException e) {
-      throw new LensException("The query does not exist or was already purged", e);
-    }
-  }
-
-  @Override
-  public void closeQuery(QueryHandle handle) throws LensException {
-    cancelQuery(handle);
-    closeResultSet(handle);
-    handleListenerMap.remove(handle);
   }
 
   @Override
   public void close() throws LensException {
-    for(QueryHandle handle : resultSetMap.keySet()) {
-      try {
-        closeQuery(handle);
-      } catch (LensException e) {
-        log.error("Error while closing query {}", handle.getHandleIdString(), e);
-      }
-    }
+    //TODO: close all
   }
 
   @Override
@@ -311,7 +310,7 @@ public class ESDriver extends AbstractLensDriver {
   }
 
   private String keyFor(AbstractQueryContext context) {
-    return String.valueOf(context.getFinalDriverQuery(this)!=null) + ":" + context.getDriverQuery(this);
+    return String.valueOf(context.getFinalDriverQuery(this) != null) + ":" + context.getDriverQuery(this);
   }
 
   ESClient getESClient() {

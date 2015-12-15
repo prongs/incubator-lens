@@ -549,7 +549,7 @@ public class TestJdbcDriver {
 
     executeAsync(context);
     QueryHandle handle = context.getQueryHandle();
-    driver.registerForCompletionNotification(handle, 0, listener);
+    driver.registerForCompletionNotification(this, handle, 0, listener);
 
     while (true) {
       driver.updateStatus(context);
@@ -595,10 +595,10 @@ public class TestJdbcDriver {
         assertEquals(vals.get(0).getClass(), Integer.class);
       }
 
-      driver.closeQuery(handle);
+      driver.closeAttempt(handle);
       // Close again, should get not found
       try {
-        driver.closeQuery(handle);
+        driver.closeAttempt(handle);
         fail("Close again should have thrown exception");
       } catch (LensException ex) {
         assertTrue(ex.getMessage().contains("not found") && ex.getMessage().contains(handle.getHandleId().toString()));
@@ -643,7 +643,7 @@ public class TestJdbcDriver {
       Thread.sleep(1000);
     }
 
-    driver.closeQuery(validCtx.getQueryHandle());
+    driver.closeAttempt(validCtx.getQueryHandle());
   }
 
   private void executeAsync(QueryContext ctx) throws LensException {
@@ -716,7 +716,7 @@ public class TestJdbcDriver {
 
     assertTrue(context.getDriverStatus().getDriverStartTime() > 0);
     assertTrue(context.getDriverStatus().getDriverFinishTime() > 0);
-    driver.closeQuery(handle);
+    driver.closeAttempt(handle);
   }
 
   /**
@@ -751,7 +751,7 @@ public class TestJdbcDriver {
 
     executeAsync(ctx);
     QueryHandle handle = ctx.getQueryHandle();
-    driver.registerForCompletionNotification(handle, 0, listener);
+    driver.registerForCompletionNotification(this, handle, 0, listener);
 
     while (true) {
       driver.updateStatus(ctx);
@@ -774,7 +774,7 @@ public class TestJdbcDriver {
     } catch (LensException e) {
       log.error("Encountered Lens exception", e);
     }
-    driver.closeQuery(handle);
+    driver.closeAttempt(handle);
   }
 
   @Test

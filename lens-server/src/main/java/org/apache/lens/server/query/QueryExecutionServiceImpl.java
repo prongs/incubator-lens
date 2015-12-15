@@ -682,11 +682,8 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
 
       // Check if we need to pass session's effective resources to selected driver
       addSessionResourcesToDriver(query);
-      query.getSelectedDriver().executeAsync(query);
+      query.launch();
       query.setStatusSkippingTransitionTest(newStatus);
-      query.setLaunchTime(System.currentTimeMillis());
-      query.clearTransientStateAfterLaunch();
-
       fireStatusChangeEvent(query, newStatus, oldStatus);
     }
 
@@ -1004,14 +1001,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
                 continue;
               }
               synchronized (finished.ctx) {
-                finished.ctx.setFinishedQueryPersisted(true);
-                try {
-                  if (finished.getCtx().getSelectedDriver() != null) {
-                    finished.getCtx().getSelectedDriver().closeQuery(finished.getQueryHandle());
-                  }
-                } catch (Exception e) {
-                  log.warn("Exception while closing query with selected driver.", e);
-                }
+                finished.ctx.close();
                 log.info("Purging: {}", finished.getQueryHandle());
                 allQueries.remove(finished.getQueryHandle());
                 resultSets.remove(finished.getQueryHandle());
@@ -1943,8 +1933,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
     }
     synchronized (ctx) {
       if (!ctx.getStatus().finished()) {
-        getQueryContext(sessionHandle, handle).getSelectedDriver()
-          .registerForCompletionNotification(handle, timeoutMillis, listener);
+        getQueryContext(sessionHandle, handle).registerForCompletionNotification(timeoutMillis, listener);
         try {
           synchronized (listener) {
             listener.wait(timeoutMillis);
@@ -2087,7 +2076,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       acquire(sessionHandle);
       resultSets.remove(queryHandle);
       // Ask driver to close result set
-      getQueryContext(queryHandle).getSelectedDriver().closeResultSet(queryHandle);
+      getQueryContext(queryHandle).getSelectedDriver().closeResultSet(getQueryContext(queryHandle));
     } finally {
       release(sessionHandle);
     }
@@ -2107,20 +2096,11 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       QueryContext ctx = getQueryContext(sessionHandle, queryHandle);
 
       synchronized (ctx) {
-
-        if (ctx.finished()) {
-          return false;
+        if(ctx.cancel()) {
+          setCancelledStatus(ctx, "Query is cancelled");
+          return true;
         }
-
-        if (ctx.launched() || ctx.running()) {
-          boolean ret = ctx.getSelectedDriver().cancelQuery(queryHandle);
-          if (!ret) {
-            return false;
-          }
-        }
-
-        setCancelledStatus(ctx, "Query is cancelled");
-        return true;
+        return false;
       }
     } finally {
       release(sessionHandle);
