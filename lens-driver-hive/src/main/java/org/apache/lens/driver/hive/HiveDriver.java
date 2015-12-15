@@ -35,6 +35,8 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lens.api.LensConf;
 import org.apache.lens.api.LensSessionHandle;
+import org.apache.lens.api.Priority;
+import org.apache.lens.api.query.QueryHandle;
 import org.apache.lens.api.query.QueryPrepareHandle;
 import org.apache.lens.cube.query.cost.FactPartitionBasedQueryCostCalculator;
 import org.apache.lens.server.api.LensConfConstants;
@@ -439,10 +441,12 @@ public class HiveDriver extends AbstractLensDriver<HiveDriver.Attempt> {
 
   private QueryCost calculateQueryCost(AbstractQueryContext qctx) throws LensException {
     if (qctx.isOlapQuery()) {
-      return queryCostCalculator.calculateCost(qctx, this);
-    } else {
-      return new FactPartitionBasedQueryCost(Double.MAX_VALUE);
+      QueryCost cost = queryCostCalculator.calculateCost(qctx, this);
+      if (cost != null) {
+        return cost;
+      }
     }
+    return new FactPartitionBasedQueryCost(Double.MAX_VALUE);
   }
 
   @Override
@@ -598,22 +602,7 @@ public class HiveDriver extends AbstractLensDriver<HiveDriver.Attempt> {
       addPersistentPath(ctx);
       Configuration qdconf = ctx.getDriverConf(this);
       qdconf.set("mapred.job.name", ctx.getQueryHandle().toString());
-      //Query is already explained.
-      log.info("whetherCalculatePriority: {}", whetherCalculatePriority);
-      if (whetherCalculatePriority) {
-        try {
-          // Inside try since non-data fetching queries can also be executed by async method.
-          String priority = ctx.calculateCostAndDecidePriority(this, queryCostCalculator, queryPriorityDecider)
-            .toString();
-          qdconf.set("mapred.job.priority", priority);
-          log.info("set priority to {}", priority);
-        } catch (Exception e) {
-          // not failing query launch when setting priority fails
-          // priority will be set to usually NORMAL - the default in underlying system.
-          log.error("could not set priority for lens session id:{} User query: {}", ctx.getLensSessionIdentifier(),
-            ctx.getUserQuery(), e);
-        }
-      }
+      decidePriority(ctx);
       queryHook.preLaunch(ctx);
       SessionHandle sessionHandle = getSession(ctx);
       OperationHandle op = getClient().executeStatementAsync(sessionHandle, ctx.getSelectedDriverQuery(),
@@ -803,6 +792,27 @@ public class HiveDriver extends AbstractLensDriver<HiveDriver.Attempt> {
   @Override
   public ImmutableSet<WaitingQueriesSelectionPolicy> getWaitingQuerySelectionPolicies() {
     return selectionPolicies;
+  }
+
+  @Override
+  public Priority decidePriority(QueryContext ctx) {
+    if (whetherCalculatePriority && ctx.getDriverConf(this).get("mapred.job.priority") == null) {
+      try {
+        // Inside try since non-data fetching queries can also be executed by async method.
+        Priority priority = ctx.decidePriority(this, queryPriorityDecider);
+        String priorityStr = priority.toString();
+        ctx.getDriverConf(this).set("mapred.job.priority", priorityStr);
+        log.info("set priority to {}", priority);
+        return priority;
+      } catch (Exception e) {
+        // not failing query launch when setting priority fails
+        // priority will be set to usually NORMAL - the default in underlying system.
+        log.error("could not set priority for lens session id:{} User query: {}", ctx.getLensSessionIdentifier(),
+          ctx.getUserQuery(), e);
+        return null;
+      }
+    }
+    return null;
   }
 
   protected CLIServiceClient getClient() throws LensException {

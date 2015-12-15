@@ -209,8 +209,9 @@ public abstract class AbstractQueryContext implements Serializable {
     return getDriverContext().getDriverRewriterPlan(driver);
   }
 
-
-
+  public String getQueue() {
+    return getConf().get(LensConfConstants.MAPRED_JOB_QUEUE_NAME);
+  }
 
   /**
    * Runnable to wrap estimate computation for a driver. Failure cause and success status
