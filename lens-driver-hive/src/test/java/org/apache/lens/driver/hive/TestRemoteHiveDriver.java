@@ -24,6 +24,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lens.api.query.QueryHandle;
@@ -166,13 +167,15 @@ public class TestRemoteHiveDriver extends TestHiveDriver {
     final long POLL_DELAY = 500;
     List<Thread> thrs = new ArrayList<Thread>();
     final AtomicInteger errCount = new AtomicInteger();
+    final CopyOnWriteArrayList<LensException> exceptions  = new CopyOnWriteArrayList<>();
     for (int q = 0; q < QUERIES; q++) {
       final QueryContext qctx;
       try {
         qctx = createContext("SELECT * FROM test_multithreads", conf, thrDriver);
-        thrDriver.executeAsync(qctx);
+        qctx.launch();
       } catch (LensException e) {
         errCount.incrementAndGet();
+        exceptions.add(e);
         log.info(q + " executeAsync error: " + e.getCause());
         continue;
       }
@@ -198,6 +201,7 @@ public class TestRemoteHiveDriver extends TestHiveDriver {
               } catch (LensException e) {
                 log.error("Got Exception " + e.getCause(), e);
                 errCount.incrementAndGet();
+                exceptions.add(e);
                 break;
               } catch (InterruptedException e) {
                 log.error("Encountred Interrupted exception", e);
@@ -224,7 +228,11 @@ public class TestRemoteHiveDriver extends TestHiveDriver {
     log.info("@@ Completed all pollers. Total thrift errors: " + errCount.get());
     assertEquals(launchedQueries, QUERIES);
     assertEquals(thrs.size(), QUERIES * THREADS);
-    assertEquals(errCount.get(), 0);
+    StringBuilder sb = new StringBuilder();
+    for(LensException e: exceptions){
+      sb.append(Arrays.toString(e.getStackTrace())).append("\n\n");
+    }
+    assertEquals(errCount.get(), 0, sb.toString());
   }
 
   /**
@@ -265,9 +273,9 @@ public class TestRemoteHiveDriver extends TestHiveDriver {
     driverConf.setBoolean(LensConfConstants.QUERY_PERSISTENT_RESULT_INDRIVER, true);
     // Fire two queries
     QueryContext ctx1 = createContext("SELECT * FROM " + tableName, driverConf, oldDriver);
-    oldDriver.executeAsync(ctx1);
+    ctx1.launch();
     QueryContext ctx2 = createContext("SELECT ID FROM " + tableName, driverConf, oldDriver);
-    oldDriver.executeAsync(ctx2);
+    ctx2.launch();
 //    Assert.assertEquals(2, oldDriver.getHiveHandleSize());
 
     byte[] ctx1bytes = persistContext(ctx1);

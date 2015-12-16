@@ -75,16 +75,19 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class JDBCDriver extends AbstractLensDriver<JDBCDriver.Attempt> {
   @Data
-  public class Attempt implements LensDriver.Attempt {
+  public class Attempt extends AbstractLensDriver.Attempt {
     //TODO: merge context into this.
     private final JdbcQueryContext context;
-    private final DriverQueryStatus status;
 
     @Override
     public void close() throws LensException {
+      if(context.isClosed()) {
+        throw new LensException("Query not found:" + context.getLensContext().getQueryHandleString());
+      }
       checkConfigured();
       context.getResultFuture().cancel(true);
       context.closeResult();
+      context.isClosed = true;
     }
 
     /**
@@ -174,6 +177,9 @@ public class JDBCDriver extends AbstractLensDriver<JDBCDriver.Attempt> {
     @Getter
     @Setter
     private QueryResult queryResult;
+    @Getter
+    @Setter
+    private long startTime;
 
     /**
      * Instantiates a new jdbc query context.
@@ -213,7 +219,6 @@ public class JDBCDriver extends AbstractLensDriver<JDBCDriver.Attempt> {
       if (queryResult != null) {
         queryResult.close();
       }
-      isClosed = true;
     }
 
     public String getQueryHandleString() {
@@ -308,7 +313,7 @@ public class JDBCDriver extends AbstractLensDriver<JDBCDriver.Attempt> {
     public QueryCallable(JdbcQueryContext queryContext, @NonNull LogSegregationContext logSegregationContext) {
       this.queryContext = queryContext;
       this.logSegregationContext = logSegregationContext;
-      queryContext.getLensContext().getDriverStatus().setDriverStartTime(System.currentTimeMillis());
+      queryContext.setStartTime(System.currentTimeMillis());
     }
 
     /*
@@ -318,15 +323,12 @@ public class JDBCDriver extends AbstractLensDriver<JDBCDriver.Attempt> {
      */
     @Override
     public QueryResult call() {
-
       logSegregationContext.setLogSegragationAndQueryId(this.queryContext.getQueryHandleString());
-
       Statement stmt;
       Connection conn = null;
       QueryResult result = new QueryResult();
       try {
         queryContext.setQueryResult(result);
-
         try {
           conn = getConnection();
           result.conn = conn;
@@ -888,6 +890,7 @@ public class JDBCDriver extends AbstractLensDriver<JDBCDriver.Attempt> {
     JdbcQueryContext queryContext = new JdbcQueryContext(context, logSegregationContext);
     queryContext.setPrepared(false);
     queryContext.setRewrittenQuery(rewrittenQuery);
+    context.getDriverAttempts().add(new Attempt(queryContext));
     return new QueryCallable(queryContext, logSegregationContext).call();
     // LOG.info("Execute " + context.getQueryHandle());
   }
@@ -915,7 +918,7 @@ public class JDBCDriver extends AbstractLensDriver<JDBCDriver.Attempt> {
       throw new LensException("Query execution rejected: " + context.getQueryHandle() + " reason:" + e.getMessage(), e);
     }
     log.info("{} ExecuteAsync: {}", getFullyQualifiedName(), context.getQueryHandle());
-    return new Attempt(jdbcCtx, new DriverQueryStatus());
+    return new Attempt(jdbcCtx);
   }
 
   /**

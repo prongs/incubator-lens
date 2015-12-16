@@ -71,10 +71,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ESDriver extends AbstractLensDriver<ESDriver.Attempt> {
   @Data
-  public static class Attempt implements LensDriver.Attempt {
+  public static class Attempt extends AbstractLensDriver.Attempt {
     final QueryContext context;
     final Future<LensResultSet> futureResult;
-    final DriverQueryStatus status;
     QueryCompletionListener listener;
 
     @Override
@@ -174,17 +173,17 @@ public class ESDriver extends AbstractLensDriver<ESDriver.Attempt> {
   public Attempt executeAsync(final QueryContext context) {
     final Future<LensResultSet> futureResult
       = asyncQueryPool.submit(new ESQueryExecuteCallable(context, SessionState.get()));
-    return new Attempt(context, futureResult, new DriverQueryStatus());
+    return new Attempt(context, futureResult);
   }
 
   @Override
   public void registerForCompletionNotification(QueryContext queryContext, LensDriver.Attempt handle,
-    long timeoutMillis, QueryCompletionListener listener) {
+    long timeoutMillis, QueryCompletionListener listener) throws LensException {
     ((Attempt) queryContext.getLastDriverAttempt()).listener = listener;
   }
 
   @Override
-  public void updateStatus(QueryContext context) {
+  public void updateStatus(QueryContext context) throws LensException {
     final QueryHandle queryHandle = context.getQueryHandle();
     final Future<LensResultSet> lensResultSetFuture = ((Attempt) context.getLastDriverAttempt()).getFutureResult();
     if (lensResultSetFuture == null) {

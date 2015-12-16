@@ -136,7 +136,10 @@ public class QueryContext extends AbstractQueryContext {
   @Getter
   private final List<LensDriver.Attempt> driverAttempts;
 
-  public LensDriver.Attempt getLastDriverAttempt() {
+  public LensDriver.Attempt getLastDriverAttempt() throws LensException {
+    if(driverAttempts.isEmpty()) {
+      throw new LensException("No attemps found");
+    }
     return driverAttempts.get(driverAttempts.size() - 1);
   }
 
@@ -446,15 +449,16 @@ public class QueryContext extends AbstractQueryContext {
 
   public void close() throws LensException {
     setFinishedQueryPersisted(true);
-      if (getSelectedDriver() != null) {
-        getLastDriverAttempt().close();
-      }
-      log.info("{} Closed query {}", getSelectedDriver().getFullyQualifiedName(), getQueryHandle());
+    if (getSelectedDriver() != null && !getLastDriverAttempt().isClosed()) {
+      getLastDriverAttempt().close();
+      getSelectedDriver().updateStatus(this);
+    }
+    log.info("{} Closed query {}", getSelectedDriver().getFullyQualifiedName(), getQueryHandle());
   }
 
   public void launch() throws LensException {
-    getDriverAttempts().add(getSelectedDriver().executeAsync(this));
     setLaunchTime(System.currentTimeMillis());
+    getDriverAttempts().add(getSelectedDriver().executeAsync(this));
     clearTransientStateAfterLaunch();
     log.info("Attempt #{} launched on {} for {}", getDriverAttempts().size(),
       getSelectedDriver().getFullyQualifiedName(), getQueryHandle());
@@ -471,11 +475,9 @@ public class QueryContext extends AbstractQueryContext {
       return false;
     }
 
-    if (launched() || running()) {
-      boolean ret = getLastDriverAttempt().cancel();
-      if (!ret) {
-        return false;
-      }
+    boolean ret = getLastDriverAttempt().cancel();
+    if (!ret) {
+      return false;
     }
     log.info("{} Cancelled query {}", getSelectedDriver().getFullyQualifiedName(), getQueryHandle());
     return true;

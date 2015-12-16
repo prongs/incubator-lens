@@ -50,7 +50,7 @@ import lombok.Data;
  */
 public class MockDriver extends AbstractLensDriver<MockDriver.Attempt> {
   @Data
-  public class Attempt implements LensDriver.Attempt {
+  public class Attempt extends AbstractLensDriver.Attempt {
     final String query;
     final DriverQueryStatus status;
 

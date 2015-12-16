@@ -403,7 +403,7 @@ public class TestHiveDriver {
     Configuration failConf = new Configuration(conf);
     failConf.set("hive.exec.driver.run.hooks", FailHook.class.getCanonicalName());
     QueryContext context = createContext(expectFail, failConf);
-    driver.executeAsync(context);
+    context.launch();
     assertHandleSize(handleSize + 1);
     validateExecuteAsync(context, DriverQueryState.FAILED, true, false);
     assertHandleSize(handleSize + 1);
@@ -413,7 +413,7 @@ public class TestHiveDriver {
     String select = "SELECT ID FROM test_execute_sync";
     conf.setBoolean(LensConfConstants.QUERY_PERSISTENT_RESULT_INDRIVER, false);
     context = createContext(select, conf);
-    driver.executeAsync(context);
+    context.launch();
     assertNotNull(context.getDriverConf(driver).get("mapred.job.name"));
     assertNotNull(context.getDriverConf(driver).get("mapred.job.priority"));
     assertHandleSize(handleSize + 1);
@@ -423,7 +423,7 @@ public class TestHiveDriver {
 
     conf.setBoolean(LensConfConstants.QUERY_PERSISTENT_RESULT_INDRIVER, true);
     context = createContext(select, conf);
-    driver.executeAsync(context);
+    context.launch();
     assertHandleSize(handleSize + 1);
     validateExecuteAsync(context, DriverQueryState.SUCCESSFUL, true, false);
     context.close();
@@ -435,7 +435,7 @@ public class TestHiveDriver {
         + " 'field.delim'=','  ) STORED AS TEXTFILE ");
     select = "SELECT ID, null, ID FROM test_execute_sync";
     context = createContext(select, conf);
-    driver.executeAsync(context);
+    context.launch();
     assertHandleSize(handleSize + 1);
     validateExecuteAsync(context, DriverQueryState.SUCCESSFUL, true, true);
     context.close();
@@ -499,7 +499,7 @@ public class TestHiveDriver {
     createTestTable("test_cancel_async");
     conf.setBoolean(LensConfConstants.QUERY_PERSISTENT_RESULT_INDRIVER, false);
     QueryContext context = createContext("SELECT ID FROM test_cancel_async", conf);
-    driver.executeAsync(context);
+    context.launch();
     context.cancel();
     driver.updateStatus(context);
     assertEquals(context.getDriverStatus().getState(), DriverQueryState.CANCELED, "Expecting query to be cancelled");
@@ -510,7 +510,7 @@ public class TestHiveDriver {
       context.cancel();
       fail("Cancel on closed query should throw error");
     } catch (LensException exc) {
-      assertTrue(exc.getMessage().startsWith("Query not found"));
+      assertTrue(exc.getMessage().startsWith("Query not found"), "Message wrong: " + exc.getMessage());
     }
   }
 
@@ -591,7 +591,7 @@ public class TestHiveDriver {
     assertHandleSize(handleSize);
 
     ctx = createContext("SELECT ID FROM test_persistent_result_set", conf);
-    driver.executeAsync(ctx);
+    ctx.launch();
     assertHandleSize(handleSize + 1);
     validateExecuteAsync(ctx, DriverQueryState.SUCCESSFUL, true, false);
     ctx.close();
@@ -609,7 +609,7 @@ public class TestHiveDriver {
     assertHandleSize(handleSize);
 
     ctx = createContext("SELECT ID, null, ID FROM test_persistent_result_set", conf);
-    driver.executeAsync(ctx);
+    ctx.launch();
     assertHandleSize(handleSize + 1);
     validateExecuteAsync(ctx, DriverQueryState.SUCCESSFUL, true, true);
     ctx.close();
@@ -722,7 +722,7 @@ public class TestHiveDriver {
     // test execute prepare async
     conf.setBoolean(LensConfConstants.QUERY_PERSISTENT_RESULT_INDRIVER, true);
     qctx = createContext(pctx, conf);
-    driver.executeAsync(qctx);
+    qctx.launch();
     //TODO: fix this
 //    assertNotNull(qctx.getDriverOpHandle());
     validateExecuteAsync(qctx, DriverQueryState.SUCCESSFUL, true, false);
@@ -742,7 +742,7 @@ public class TestHiveDriver {
     // test execute prepare async
     qctx = createContext(pctx, conf);
     qctx.setQueryHandle(new QueryHandle(pctx.getPrepareHandle().getPrepareHandleId()));
-    driver.executeAsync(qctx);
+    qctx.launch();
     assertHandleSize(handleSize + 1);
     validateExecuteAsync(qctx, DriverQueryState.SUCCESSFUL, true, false);
 

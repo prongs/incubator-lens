@@ -19,6 +19,7 @@
 package org.apache.lens.server.api.driver;
 
 import java.io.Externalizable;
+import java.io.Serializable;
 
 import org.apache.lens.api.Priority;
 import org.apache.lens.api.query.QueryHandle;
@@ -205,12 +206,14 @@ public interface LensDriver<T extends LensDriver.Attempt> extends Externalizable
    */
   Priority decidePriority(QueryContext queryContext);
 
-  interface Attempt {
+  interface Attempt extends Serializable {
     /**
      * The driver op handle.
      */
     DriverQueryStatus getStatus();
     void close() throws LensException;
     boolean cancel() throws LensException;
+    void setClosed();
+    boolean isClosed();
   }
 }

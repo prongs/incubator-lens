@@ -27,13 +27,35 @@ import org.apache.lens.server.api.query.QueryContext;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 
+import lombok.Data;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 /**
  * Abstract class for Lens Driver Implementations. Provides default
  * implementations and some utility methods for drivers
  */
 public abstract class AbstractLensDriver<T extends LensDriver.Attempt> implements LensDriver<T> {
+  @Data
+  @NoArgsConstructor
+  public static abstract class Attempt implements LensDriver.Attempt {
+    boolean closed = false;
+    DriverQueryStatus status = new DriverQueryStatus();
+    {
+      status.setDriverStartTime(System.currentTimeMillis());
+    }
+    public boolean isClosed() {
+      if(!closed) {
+        closed = getStatus().getState().equals(DriverQueryStatus.DriverQueryState.CLOSED);
+      }
+      return closed;
+    }
+
+    @Override
+    public void setClosed() {
+      closed = true;
+    }
+  }
   /**
    * Separator used for constructing fully qualified name and driver resource path
    */
