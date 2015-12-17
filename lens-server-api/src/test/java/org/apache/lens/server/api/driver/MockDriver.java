@@ -56,7 +56,6 @@ public class MockDriver extends AbstractLensDriver {
   @AllArgsConstructor
   public class Attempt extends AbstractLensDriver.Attempt {
     String query;
-    DriverQueryStatus status;
 
     @Override
     public void close() throws LensException {
@@ -300,7 +299,7 @@ public class MockDriver extends AbstractLensDriver {
   @Override
   public Attempt executeAsync(QueryContext context) throws LensException {
     this.query = context.getSelectedDriverQuery();
-    return new Attempt(query, new DriverQueryStatus());
+    return new Attempt(query);
   }
 
   /*
