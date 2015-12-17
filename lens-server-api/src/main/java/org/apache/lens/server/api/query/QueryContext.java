@@ -308,13 +308,18 @@ public class QueryContext extends AbstractQueryContext {
    * @return the lens query
    */
   public LensQuery toLensQuery() {
+    long driverStartTime = 0, driverEndTime = 0;
+    if(!getDriverAttempts().isEmpty()) {
+      driverStartTime = getDriverStatus().getDriverStartTime();
+      driverEndTime = getDriverStatus().getDriverFinishTime();
+    }
     return new LensQuery(queryHandle, userQuery, super.getSubmittedUser(), priority, isPersistent,
       getSelectedDriver() != null ? getSelectedDriver().getFullyQualifiedName() : null,
       getSelectedDriverQuery(),
       status,
       // TODO: take care of handle
-      resultSetPath, "blah", lensConf, submissionTime, launchTime, getDriverStatus().getDriverStartTime(),
-      getDriverStatus().getDriverFinishTime(), endTime, closedTime, queryName);
+      resultSetPath, "blah", lensConf, submissionTime, launchTime, driverStartTime,
+      driverEndTime, endTime, closedTime, queryName);
   }
 
   public boolean isResultAvailableInDriver() {
@@ -457,8 +462,8 @@ public class QueryContext extends AbstractQueryContext {
   }
 
   public void launch() throws LensException {
-    setLaunchTime(System.currentTimeMillis());
     getDriverAttempts().add(getSelectedDriver().executeAsync(this));
+    setLaunchTime(System.currentTimeMillis());
     clearTransientStateAfterLaunch();
     log.info("Attempt #{} launched on {} for {}", getDriverAttempts().size(),
       getSelectedDriver().getFullyQualifiedName(), getQueryHandle());
