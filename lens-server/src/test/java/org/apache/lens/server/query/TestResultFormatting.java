@@ -19,11 +19,9 @@
 package org.apache.lens.server.query;
 
 import static org.apache.lens.server.LensServerTestUtil.*;
-
 import static org.testng.Assert.*;
 
 import java.io.IOException;
-import java.util.HashMap;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
@@ -45,6 +43,7 @@ import org.apache.lens.server.api.query.InMemoryOutputFormatter;
 import org.apache.lens.server.api.query.PersistedOutputFormatter;
 import org.apache.lens.server.api.query.QueryContext;
 import org.apache.lens.server.api.query.QueryExecutionService;
+import org.apache.lens.server.api.util.LensUtil;
 import org.apache.lens.server.common.TestResourceFile;
 
 import org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe;
@@ -82,7 +81,9 @@ public class TestResultFormatting extends LensJerseyTest {
   public void setUp() throws Exception {
     super.setUp();
     queryService = LensServices.get().getService(QueryExecutionService.NAME);
-    lensSessionId = queryService.openSession("foo", "bar", new HashMap<String, String>());
+    lensSessionId = queryService.openSession("foo", "bar", LensUtil.<String, String>getHashMap(
+      LensConfConstants.QUERY_PERSISTENT_RESULT_INDRIVER, "true"
+    ));
     createTable(testTable, target(), lensSessionId,
       "(ID INT, IDSTR STRING, IDARR ARRAY<INT>, IDSTRARR ARRAY<STRING>)");
     loadDataFromClasspath(testTable, TestResourceFile.TEST_DATA2_FILE.getValue(), target(), lensSessionId);

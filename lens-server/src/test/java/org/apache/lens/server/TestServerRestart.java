@@ -21,11 +21,16 @@ package org.apache.lens.server;
 import static org.apache.lens.server.LensServerTestUtil.createTable;
 import static org.apache.lens.server.LensServerTestUtil.loadData;
 import static org.apache.lens.server.common.RestAPITestUtil.execute;
-
 import static org.testng.Assert.assertEquals;
 
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
@@ -33,14 +38,22 @@ import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import org.apache.lens.api.*;
+import org.apache.lens.api.APIResult;
 import org.apache.lens.api.APIResult.Status;
-import org.apache.lens.api.query.*;
+import org.apache.lens.api.LensConf;
+import org.apache.lens.api.LensSessionHandle;
+import org.apache.lens.api.StringList;
+import org.apache.lens.api.query.LensQuery;
+import org.apache.lens.api.query.PersistentQueryResult;
+import org.apache.lens.api.query.QueryHandle;
+import org.apache.lens.api.query.QueryStatus;
 import org.apache.lens.api.result.LensAPIResult;
 import org.apache.lens.driver.hive.TestRemoteHiveDriver;
+import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.error.LensException;
 import org.apache.lens.server.api.query.QueryExecutionService;
 import org.apache.lens.server.api.session.SessionService;
+import org.apache.lens.server.api.util.LensUtil;
 import org.apache.lens.server.common.TestResourceFile;
 import org.apache.lens.server.query.QueryExecutionServiceImpl;
 import org.apache.lens.server.query.TestQueryService;
@@ -137,7 +150,8 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
     QueryExecutionServiceImpl queryService = LensServices.get().getService(QueryExecutionService.NAME);
     Assert.assertTrue(queryService.getHealthStatus().isHealthy());
 
-    LensSessionHandle lensSessionId = queryService.openSession("foo", "bar", new HashMap<String, String>());
+    LensSessionHandle lensSessionId = queryService.openSession("foo", "bar", LensUtil.<String, String>getHashMap(
+      LensConfConstants.QUERY_PERSISTENT_RESULT_INDRIVER, "true"));
     // Create data file
     createRestartTestDataFile();
 
