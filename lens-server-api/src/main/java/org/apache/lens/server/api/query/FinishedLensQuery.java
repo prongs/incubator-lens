@@ -190,8 +190,10 @@ public class FinishedLensQuery {
     this.result = ctx.getResultSetPath();
     this.status = ctx.getStatus().getStatus().name();
     this.errorMessage = ctx.getStatus().getErrorMessage();
-    this.driverStartTime = ctx.getDriverStatus().getDriverStartTime();
-    this.driverEndTime = ctx.getDriverStatus().getDriverFinishTime();
+    if (ctx.getDriverStatus() != null) {
+      this.driverStartTime = ctx.getDriverStatus().getDriverStartTime();
+      this.driverEndTime = ctx.getDriverStatus().getDriverFinishTime();
+    }
     if (ctx.getQueryName() != null) {
       this.queryName = ctx.getQueryName().toLowerCase();
     }
@@ -215,9 +217,11 @@ public class FinishedLensQuery {
     qctx.setLaunchTime(this.startTime);
     qctx.setEndTime(getEndTime());
     qctx.setStatusSkippingTransitionTest(new QueryStatus(0.0, null, QueryStatus.Status.valueOf(getStatus()),
-        getErrorMessage() == null ? "" : getErrorMessage(), getResult() != null, null, null, null));
-    qctx.getDriverStatus().setDriverStartTime(getDriverStartTime());
-    qctx.getDriverStatus().setDriverFinishTime(getDriverEndTime());
+      getErrorMessage() == null ? "" : getErrorMessage(), getResult() != null, null, null, null));
+    //TODO: pick all attempts
+    qctx.getDriverAttempts().add(selectedDriver.newAttempt());
+    qctx.getDriverStatus().setDriverStartTime(driverStartTime);
+    qctx.getDriverStatus().setDriverFinishTime(driverEndTime);
     qctx.setResultSetPath(getResult());
     qctx.setQueryName(getQueryName());
     return qctx;

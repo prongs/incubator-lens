@@ -35,7 +35,7 @@ import lombok.NoArgsConstructor;
  * Abstract class for Lens Driver Implementations. Provides default
  * implementations and some utility methods for drivers
  */
-public abstract class AbstractLensDriver<T extends LensDriver.Attempt> implements LensDriver<T> {
+public abstract class AbstractLensDriver implements LensDriver {
   @Data
   @NoArgsConstructor
   public static abstract class Attempt implements LensDriver.Attempt {

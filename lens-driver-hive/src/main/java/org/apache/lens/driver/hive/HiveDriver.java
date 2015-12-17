@@ -78,7 +78,7 @@ import lombok.extern.slf4j.Slf4j;
  * The Class HiveDriver.
  */
 @Slf4j
-public class HiveDriver extends AbstractLensDriver<HiveDriver.Attempt> {
+public class HiveDriver extends AbstractLensDriver {
   @Data
   @NoArgsConstructor
   @AllArgsConstructor
@@ -833,6 +833,11 @@ public class HiveDriver extends AbstractLensDriver<HiveDriver.Attempt> {
       }
     }
     return null;
+  }
+
+  @Override
+  public LensDriver.Attempt newAttempt() {
+    return new Attempt();
   }
 
   protected CLIServiceClient getClient() throws LensException {

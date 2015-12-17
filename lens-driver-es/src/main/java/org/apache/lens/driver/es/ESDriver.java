@@ -62,19 +62,27 @@ import org.antlr.runtime.tree.Tree;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * Driver for elastic search
  */
 @Slf4j
-public class ESDriver extends AbstractLensDriver<ESDriver.Attempt> {
+public class ESDriver extends AbstractLensDriver {
   @Data
+  @NoArgsConstructor
+  @AllArgsConstructor
   public static class Attempt extends AbstractLensDriver.Attempt {
-    final QueryContext context;
-    final Future<LensResultSet> futureResult;
+    private QueryContext context;
+    private Future<LensResultSet> futureResult;
     QueryCompletionListener listener;
+
+    public Attempt(QueryContext context, Future<LensResultSet> futureResult) {
+      this(context, futureResult, null);
+    }
 
     @Override
     public void close() throws LensException {
@@ -244,6 +252,11 @@ public class ESDriver extends AbstractLensDriver<ESDriver.Attempt> {
   @Override
   public ImmutableSet<WaitingQueriesSelectionPolicy> getWaitingQuerySelectionPolicies() {
     return ImmutableSet.copyOf(Sets.<WaitingQueriesSelectionPolicy>newHashSet());
+  }
+
+  @Override
+  public LensDriver.Attempt newAttempt() {
+    return new Attempt();
   }
 
   private void notifyComplIfRegistered(QueryHandle queryHandle) {

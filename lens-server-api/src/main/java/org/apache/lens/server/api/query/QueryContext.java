@@ -144,7 +144,7 @@ public class QueryContext extends AbstractQueryContext {
   }
 
   public DriverQueryStatus getDriverStatus() {
-    return driverAttempts.get(driverAttempts.size() - 1).getStatus();
+    return driverAttempts.isEmpty() ? null : driverAttempts.get(driverAttempts.size() - 1).getStatus();
   }
 
   /**

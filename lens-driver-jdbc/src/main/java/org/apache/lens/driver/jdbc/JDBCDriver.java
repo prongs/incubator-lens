@@ -63,21 +63,20 @@ import org.apache.hadoop.hive.ql.parse.ASTNode;
 import org.apache.hadoop.hive.ql.parse.HiveParser;
 
 import com.google.common.collect.ImmutableSet;
-import lombok.Data;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * This driver is responsible for running queries against databases which can be queried using the JDBC API.
  */
 @Slf4j
-public class JDBCDriver extends AbstractLensDriver<JDBCDriver.Attempt> {
+public class JDBCDriver extends AbstractLensDriver {
   @Data
+  @NoArgsConstructor
+  @AllArgsConstructor
   public class Attempt extends AbstractLensDriver.Attempt {
     //TODO: merge context into this.
-    private final JdbcQueryContext context;
+    private JdbcQueryContext context;
 
     @Override
     public void close() throws LensException {
@@ -1053,6 +1052,11 @@ public class JDBCDriver extends AbstractLensDriver<JDBCDriver.Attempt> {
   @Override
   public ImmutableSet<WaitingQueriesSelectionPolicy> getWaitingQuerySelectionPolicies() {
     return this.selectionPolicies;
+  }
+
+  @Override
+  public LensDriver.Attempt newAttempt() {
+    return new Attempt();
   }
 
   /*

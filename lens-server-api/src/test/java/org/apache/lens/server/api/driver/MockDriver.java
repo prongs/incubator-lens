@@ -43,16 +43,20 @@ import org.apache.hive.service.cli.ColumnDescriptor;
 
 import com.beust.jcommander.internal.Sets;
 import com.google.common.collect.ImmutableSet;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * The Class MockDriver.
  */
-public class MockDriver extends AbstractLensDriver<MockDriver.Attempt> {
+public class MockDriver extends AbstractLensDriver {
   @Data
+  @NoArgsConstructor
+  @AllArgsConstructor
   public class Attempt extends AbstractLensDriver.Attempt {
-    final String query;
-    final DriverQueryStatus status;
+    String query;
+    DriverQueryStatus status;
 
     @Override
     public void close() throws LensException {
@@ -116,6 +120,11 @@ public class MockDriver extends AbstractLensDriver<MockDriver.Attempt> {
   @Override
   public String getFullyQualifiedName() {
     return "mock/fail1";
+  }
+
+  @Override
+  public LensDriver.Attempt newAttempt() {
+    return new Attempt();
   }
 
   /**

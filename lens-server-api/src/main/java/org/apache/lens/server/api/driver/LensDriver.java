@@ -40,7 +40,7 @@ import com.google.common.collect.ImmutableSet;
 /**
  * The Interface LensDriver.
  */
-public interface LensDriver<T extends LensDriver.Attempt> extends Externalizable {
+public interface LensDriver extends Externalizable {
   /**
    * Get driver configuration
    */
@@ -121,7 +121,7 @@ public interface LensDriver<T extends LensDriver.Attempt> extends Externalizable
    * @param context The query context
    * @throws LensException the lens exception
    */
-  T executeAsync(QueryContext context) throws LensException;
+  Attempt executeAsync(QueryContext context) throws LensException;
 
   /**
    * Register for query completion notification.
@@ -216,4 +216,5 @@ public interface LensDriver<T extends LensDriver.Attempt> extends Externalizable
     void setClosed();
     boolean isClosed();
   }
+  Attempt newAttempt();
 }
