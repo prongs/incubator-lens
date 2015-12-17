@@ -552,7 +552,7 @@ public class TestJdbcDriver {
     driver.registerForCompletionNotification(context, context.getLastDriverAttempt(), 0, listener);
 
     while (true) {
-      driver.updateStatus(context);
+      context.updateStatus();
       System.out.println("Query: " + handle + " Status: " + context.getDriverStatus());
       if (context.getDriverStatus().isFinished()) {
         assertEquals(context.getDriverStatus().getState(), DriverQueryState.SUCCESSFUL);
@@ -625,7 +625,7 @@ public class TestJdbcDriver {
 
     for (int i = 0; i < JDBC_POOL_MAX_SIZE.getDefaultValue(); i++) {
       ctx.launch();
-      driver.updateStatus(ctx);
+      ctx.updateStatus();
       System.out.println("@@@@ QUERY " + (i + 1));
     }
 
@@ -636,7 +636,7 @@ public class TestJdbcDriver {
 
     // Wait for query to finish
     while (true) {
-      driver.updateStatus(validCtx);
+      validCtx.updateStatus();
       if (validCtx.getDriverStatus().isFinished()) {
         break;
       }
@@ -704,7 +704,7 @@ public class TestJdbcDriver {
     System.out.println("@@@ test_cancel:" + context.getQueryHandle());
     context.launch();
     boolean isCancelled = context.cancel();
-    driver.updateStatus(context);
+    context.updateStatus();
 
     if (isCancelled) {
       assertEquals(context.getDriverStatus().getState(), DriverQueryState.CANCELED);
@@ -753,7 +753,7 @@ public class TestJdbcDriver {
     driver.registerForCompletionNotification(ctx, ctx.getLastDriverAttempt(), 0, listener);
 
     while (true) {
-      driver.updateStatus(ctx);
+      ctx.updateStatus();
       System.out.println("Query: " + handle + " Status: " + ctx.getDriverStatus());
       if (ctx.getDriverStatus().isFinished()) {
         assertEquals(ctx.getDriverStatus().getState(), DriverQueryState.FAILED);

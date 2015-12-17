@@ -191,7 +191,7 @@ public class TestRemoteHiveDriver extends TestHiveDriver {
           public void run() {
             for (int i = 0; i < 1000; i++) {
               try {
-                thrDriver.updateStatus(qctx);
+                qctx.updateStatus();
                 if (qctx.getDriverStatus().isFinished()) {
                   log.info("@@ " + handle.getHandleId() + " >> " + qctx.getDriverStatus().getState());
                   qctx.close();

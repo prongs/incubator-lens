@@ -847,8 +847,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
         if (!ctx.queued() && !ctx.finished() && !ctx.getDriverStatus().isFinished()) {
           log.debug("Updating status for {}", ctx.getQueryHandle());
           try {
-            ctx.getSelectedDriver().updateStatus(ctx);
-            ctx.setStatus(ctx.getDriverStatus().toQueryStatus());
+            ctx.updateStatus();
           } catch (LensException exc) {
             // Driver gave exception while updating status
             LensErrorTO to = exc.buildLensErrorTO(this.errorCollection);
@@ -2077,7 +2076,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       acquire(sessionHandle);
       resultSets.remove(queryHandle);
       // Ask driver to close result set
-      getQueryContext(queryHandle).getSelectedDriver().closeResultSet(getQueryContext(queryHandle));
+      getQueryContext(queryHandle).closeResultSet();
     } finally {
       release(sessionHandle);
     }

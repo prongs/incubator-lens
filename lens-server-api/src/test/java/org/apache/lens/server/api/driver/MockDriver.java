@@ -66,6 +66,18 @@ public class MockDriver extends AbstractLensDriver {
     public boolean cancel() throws LensException {
       return false;
     }
+
+    @Override
+    public void closeResultSet() {
+
+    }
+
+    @Override
+    public void updateStatus() throws LensException {
+      getStatus().setProgress(1.0);
+      getStatus().setStatusMessage("Done");
+      getStatus().setState(DriverQueryState.SUCCESSFUL);
+    }
   }
 
   private static AtomicInteger mockDriverId = new AtomicInteger();
@@ -169,18 +181,6 @@ public class MockDriver extends AbstractLensDriver {
   @Override
   public DriverQueryPlan explain(AbstractQueryContext explainCtx) throws LensException {
     return new MockQueryPlan(explainCtx.getUserQuery());
-  }
-
-  /*
-   * (non-Javadoc)
-   *
-   * @see org.apache.lens.server.api.driver.LensDriver#updateStatus(org.apache.lens.server.api.query.QueryContext)
-   */
-  @Override
-  public void updateStatus(QueryContext context) throws LensException {
-    context.getDriverStatus().setProgress(1.0);
-    context.getDriverStatus().setStatusMessage("Done");
-    context.getDriverStatus().setState(DriverQueryState.SUCCESSFUL);
   }
 
   /*
@@ -359,15 +359,6 @@ public class MockDriver extends AbstractLensDriver {
     };
   }
 
-  /*
-   * (non-Javadoc)
-   *
-   * @see org.apache.lens.server.api.driver.LensDriver#closeResultSet(org.apache.lens.api.query.QueryHandle)
-   */
-  @Override
-  public void closeResultSet(QueryContext handle) throws LensException {
-    // TODO Auto-generated method stub
-  }
 
   /*
    * (non-Javadoc)

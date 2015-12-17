@@ -22,7 +22,6 @@ import java.io.Externalizable;
 import java.io.Serializable;
 
 import org.apache.lens.api.Priority;
-import org.apache.lens.api.query.QueryHandle;
 import org.apache.lens.api.query.QueryPrepareHandle;
 import org.apache.lens.server.api.error.LensException;
 import org.apache.lens.server.api.events.LensEventListener;
@@ -32,6 +31,7 @@ import org.apache.lens.server.api.query.QueryContext;
 import org.apache.lens.server.api.query.collect.WaitingQueriesSelectionPolicy;
 import org.apache.lens.server.api.query.constraint.QueryLaunchingConstraint;
 import org.apache.lens.server.api.query.cost.QueryCost;
+import org.apache.lens.server.api.query.priority.QueryPriorityDecider;
 
 import org.apache.hadoop.conf.Configuration;
 
@@ -133,16 +133,9 @@ public interface LensDriver extends Externalizable {
    * @param listener      the listener
    * @throws LensException the lens exception
    */
-  void registerForCompletionNotification(QueryContext queryContext, Attempt handle, long timeoutMillis, QueryCompletionListener listener)
+  void registerForCompletionNotification(QueryContext queryContext, Attempt handle, long timeoutMillis,
+    QueryCompletionListener listener)
     throws LensException;
-
-  /**
-   * Update driver query status in the context object.
-   *
-   * @param context The query context
-   * @throws LensException the lens exception
-   */
-  void updateStatus(QueryContext context) throws LensException;
 
   /**
    * Fetch the results of the query, specified by the handle.
@@ -152,14 +145,6 @@ public interface LensDriver extends Externalizable {
    * @throws LensException the lens exception
    */
   LensResultSet fetchResultSet(QueryContext context) throws LensException;
-
-  /**
-   * Close the resultset for the query.
-   *
-   * @param handle The query handle
-   * @throws LensException the lens exception
-   */
-  void closeResultSet(QueryContext handle) throws LensException;
 
   /**
    * Close the driver, releasing all resouces used up by the driver.
@@ -211,10 +196,19 @@ public interface LensDriver extends Externalizable {
      * The driver op handle.
      */
     DriverQueryStatus getStatus();
+
     void close() throws LensException;
+
     boolean cancel() throws LensException;
+
     void setClosed();
+
     boolean isClosed();
+
+    void closeResultSet();
+
+    void updateStatus() throws LensException;
   }
+
   Attempt newAttempt();
 }

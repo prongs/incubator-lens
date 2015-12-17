@@ -137,7 +137,7 @@ public class QueryContext extends AbstractQueryContext {
   private final List<LensDriver.Attempt> driverAttempts;
 
   public LensDriver.Attempt getLastDriverAttempt() throws LensException {
-    if(driverAttempts.isEmpty()) {
+    if (driverAttempts.isEmpty()) {
       throw new LensException("No attemps found");
     }
     return driverAttempts.get(driverAttempts.size() - 1);
@@ -309,7 +309,7 @@ public class QueryContext extends AbstractQueryContext {
    */
   public LensQuery toLensQuery() {
     long driverStartTime = 0, driverEndTime = 0;
-    if(!getDriverAttempts().isEmpty()) {
+    if (!getDriverAttempts().isEmpty()) {
       driverStartTime = getDriverStatus().getDriverStartTime();
       driverEndTime = getDriverStatus().getDriverFinishTime();
     }
@@ -456,7 +456,7 @@ public class QueryContext extends AbstractQueryContext {
     setFinishedQueryPersisted(true);
     if (getSelectedDriver() != null && !getLastDriverAttempt().isClosed()) {
       getLastDriverAttempt().close();
-      getSelectedDriver().updateStatus(this);
+      getLastDriverAttempt().updateStatus();
     }
     log.info("{} Closed query {}", getSelectedDriver().getFullyQualifiedName(), getQueryHandle());
   }
@@ -486,5 +486,39 @@ public class QueryContext extends AbstractQueryContext {
     }
     log.info("{} Cancelled query {}", getSelectedDriver().getFullyQualifiedName(), getQueryHandle());
     return true;
+  }
+
+  public void closeResultSet() throws LensException {
+    getLastDriverAttempt().closeResultSet();
+  }
+
+  public void updateStatus() throws LensException {
+    log.debug("GetStatus: {}", getQueryHandle());
+    getLastDriverAttempt().updateStatus();
+    DriverQueryStatus driverStatus = getLastDriverAttempt().getStatus();
+    DriverQueryStatus.DriverQueryState state = driverStatus.getState();
+    StringBuilder sb = new StringBuilder();
+    sb.append("Query ").append(getQueryHandle()).append(" ");
+    switch (state) {
+    case CANCELED:
+    case CLOSED:
+      sb.append("has been ").append(state.name().toLowerCase());
+      break;
+    case FAILED:
+      sb.append("execution Failed");
+      break;
+    case SUCCESSFUL:
+      sb.append("is successful");
+      break;
+    case INITIALIZED:
+    case RUNNING:
+    case PENDING:
+      sb.append("is ").append(state.name().toLowerCase()).append(" on driver ")
+        .append(getSelectedDriver().getFullyQualifiedName());
+      break;
+
+    }
+    driverStatus.setStatusMessage(sb.toString());
+    setStatus(getDriverStatus().toQueryStatus());
   }
 }

@@ -455,7 +455,7 @@ public class TestHiveDriver {
   protected void validateExecuteAsync(QueryContext ctx, DriverQueryState finalState, boolean isPersistent,
     boolean formatNulls, HiveDriver driver) throws Exception {
     waitForAsyncQuery(ctx, driver);
-    driver.updateStatus(ctx);
+    ctx.updateStatus();
     assertEquals(ctx.getDriverStatus().getState(), finalState, "Expected query to finish with" + finalState);
     assertTrue(ctx.getDriverStatus().getDriverFinishTime() > 0);
     if (finalState.equals(DriverQueryState.SUCCESSFUL)) {
@@ -501,7 +501,7 @@ public class TestHiveDriver {
     QueryContext context = createContext("SELECT ID FROM test_cancel_async", conf);
     context.launch();
     context.cancel();
-    driver.updateStatus(context);
+    context.updateStatus();
     assertEquals(context.getDriverStatus().getState(), DriverQueryState.CANCELED, "Expecting query to be cancelled");
     context.close();
     assertHandleSize(handleSize);
@@ -625,7 +625,7 @@ public class TestHiveDriver {
    */
   private void waitForAsyncQuery(QueryContext ctx, HiveDriver driver) throws Exception {
     while (true) {
-      driver.updateStatus(ctx);
+      ctx.updateStatus();
       System.out.println("#W Waiting for query " + ctx.getQueryHandle() + " status: "
         + ctx.getDriverStatus().getState());
       assertNotNull(ctx.getDriverStatus());

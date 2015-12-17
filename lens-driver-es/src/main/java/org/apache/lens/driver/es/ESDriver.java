@@ -86,7 +86,10 @@ public class ESDriver extends AbstractLensDriver {
 
     @Override
     public void close() throws LensException {
-      cancel();
+      if(!isClosed()) {
+        cancel();
+        setClosed();
+      }
     }
 
     @Override
@@ -101,6 +104,25 @@ public class ESDriver extends AbstractLensDriver {
         return cancelled;
       } catch (NullPointerException e) {
         throw new LensException("The query does not exist or was already purged", e);
+      }
+    }
+
+    @Override
+    public void closeResultSet() {
+      // NO-OP
+    }
+
+    @Override
+    public void updateStatus() {
+      if (futureResult == null) {
+        getStatus().setState(DriverQueryStatus.DriverQueryState.CLOSED);
+        getStatus().setResultSetAvailable(false);
+      } else if (futureResult.isDone()) {
+        getStatus().setState(DriverQueryStatus.DriverQueryState.SUCCESSFUL);
+        getStatus().setResultSetAvailable(true);
+      } else if (futureResult.isCancelled()) {
+        getStatus().setState(DriverQueryStatus.DriverQueryState.CANCELED);
+        getStatus().setResultSetAvailable(false);
       }
     }
   }
@@ -191,25 +213,6 @@ public class ESDriver extends AbstractLensDriver {
   }
 
   @Override
-  public void updateStatus(QueryContext context) throws LensException {
-    final QueryHandle queryHandle = context.getQueryHandle();
-    final Future<LensResultSet> lensResultSetFuture = ((Attempt) context.getLastDriverAttempt()).getFutureResult();
-    if (lensResultSetFuture == null) {
-      context.getDriverStatus().setState(DriverQueryStatus.DriverQueryState.CLOSED);
-      context.getDriverStatus().setStatusMessage(queryHandle + " closed");
-      context.getDriverStatus().setResultSetAvailable(false);
-    } else if (lensResultSetFuture.isDone()) {
-      context.getDriverStatus().setState(DriverQueryStatus.DriverQueryState.SUCCESSFUL);
-      context.getDriverStatus().setStatusMessage(queryHandle + " successful");
-      context.getDriverStatus().setResultSetAvailable(true);
-    } else if (lensResultSetFuture.isCancelled()) {
-      context.getDriverStatus().setState(DriverQueryStatus.DriverQueryState.CANCELED);
-      context.getDriverStatus().setStatusMessage(queryHandle + " cancelled");
-      context.getDriverStatus().setResultSetAvailable(false);
-    }
-  }
-
-  @Override
   public LensResultSet fetchResultSet(QueryContext context) throws LensException {
     try {
       /**
@@ -222,15 +225,6 @@ public class ESDriver extends AbstractLensDriver {
         + "has already been fetched");
     } catch (InterruptedException | ExecutionException e) {
       throw new LensException("Error fetching result set!", e);
-    }
-  }
-
-  @Override
-  public void closeResultSet(QueryContext context) throws LensException {
-    try {
-      context.getLastDriverAttempt().close();
-    } catch (NullPointerException e) {
-      throw new LensException("The query does not exist or was already purged", e);
     }
   }
 
