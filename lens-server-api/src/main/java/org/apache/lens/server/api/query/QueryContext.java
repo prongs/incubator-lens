@@ -19,6 +19,7 @@
 package org.apache.lens.server.api.query;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -143,6 +144,9 @@ public class QueryContext extends AbstractQueryContext {
   @Getter
   final DriverQueryStatus driverStatus;
 
+  @Getter
+  @Setter
+  List<FailedAttempt> failedAttempts = Lists.newArrayList();
   /**
    * The query output formatter.
    */
@@ -404,6 +408,9 @@ public class QueryContext extends AbstractQueryContext {
 
   public boolean finished() {
     return this.status.finished();
+  }
+  public boolean failed() {
+    return this.status.failed();
   }
 
   public boolean launched() {

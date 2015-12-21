@@ -26,6 +26,7 @@ import static org.apache.lens.server.session.LensSessionImpl.ResourceEntry;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -74,7 +75,6 @@ import org.apache.lens.server.util.UtilityMethods;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -88,7 +88,6 @@ import org.slf4j.LoggerFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 
@@ -240,7 +239,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
    * The max finished queries.
    */
   int purgeInterval;
-
+  int maxRetries;
   /**
    * The lens server dao.
    */
@@ -371,7 +370,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       throw new LensException("No drivers configured");
     }
     File driversBaseDir = new File(System.getProperty(LensConfConstants.CONFIG_LOCATION,
-        LensConfConstants.DEFAULT_CONFIG_LOCATION), LensConfConstants.DRIVERS_BASE_DIR);
+      LensConfConstants.DEFAULT_CONFIG_LOCATION), LensConfConstants.DRIVERS_BASE_DIR);
     if (!driversBaseDir.isDirectory()) {
       throw new LensException("No drivers found at location " + driversBaseDir.getAbsolutePath());
     }
@@ -385,10 +384,11 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       }
       loadDriversForType(driverTypeAndClass[0], driverTypeAndClass[1], driversBaseDir);
     }
-    if (drivers.isEmpty()){
-      throw new LensException("No drivers loaded. Please check the drivers in :"+driversBaseDir);
+    if (drivers.isEmpty()) {
+      throw new LensException("No drivers loaded. Please check the drivers in :" + driversBaseDir);
     }
   }
+
   /**
    * Loads drivers of a particular type
    *
@@ -417,9 +417,9 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
     String driverName = null;
     for (File driverPath : driverPaths) {
       try {
-        if (!driverPath.isDirectory()){
+        if (!driverPath.isDirectory()) {
           log.warn("Ignoring resource {} while loading drivers. A driver directory was expected instead",
-              driverPath.getAbsolutePath());
+            driverPath.getAbsolutePath());
           continue;
         }
         driverName = driverPath.getName();
@@ -432,7 +432,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
         log.info("Driver {} for type {} is loaded", driverPath.getName(), driverType);
       } catch (Exception e) {
         log.error("Could not load driver {} of type {}", driverPath.getName(), driverType, e);
-        throw new LensException("Could not load driver "+driverPath.getName()+ " of type "+ driverType);
+        throw new LensException("Could not load driver " + driverPath.getName() + " of type " + driverType);
       }
     }
   }
@@ -671,13 +671,11 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
     }
 
     private void launchQuery(final QueryContext query) throws LensException {
-
       checkEstimatedQueriesState(query);
       QueryStatus oldStatus = query.getStatus();
       QueryStatus newStatus = new QueryStatus(query.getStatus().getProgress(), null,
         QueryStatus.Status.LAUNCHED, "Query is launched on driver", false, null, null, null);
       query.validateTransition(newStatus);
-
       // Check if we need to pass session's effective resources to selected driver
       addSessionResourcesToDriver(query);
       query.getSelectedDriver().executeAsync(query);
@@ -813,6 +811,12 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
         queuedQueries.remove(ctx);
         waitingQueries.remove(ctx);
       } else {
+        // Handle re-try
+        if (shouldRetry(ctx)) {
+          if (reLaunchFailedQuery(ctx)) {
+            return;
+          }
+        }
         if (removeFromLaunchedQueries(ctx)) {
           processWaitingQueriesAsync(ctx);
         }
@@ -820,6 +824,32 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
     }
     finishedQueries.add(new FinishedQuery(ctx));
     ctx.clearTransientStateAfterLaunch();
+  }
+
+  private boolean shouldRetry(QueryContext ctx) {
+    return ctx.failed() && ctx.getFailedAttempts().size() < maxRetries && ctx.getSelectedDriver().shouldRetry(ctx);
+  }
+
+  private boolean reLaunchFailedQuery(QueryContext query) {
+    QueryStatus oldStatus = query.getStatus();
+    FailedAttempt failedAttempt = query.getDriverStatus().toFailedAttempt();
+    query.getFailedAttempts().add(failedAttempt);
+    query.getDriverStatus().clear();
+    try {
+      lensServerDao.insertFailedAttempt(query, failedAttempt);
+    } catch (SQLException e) {
+      log.error("Error inserting failed attempt", e);
+    }
+    try {
+      query.getSelectedDriver().executeAsync(query);
+    } catch (LensException e) {
+      return false;
+    }
+    query.setStatusSkippingTransitionTest(new QueryStatus(0.0f, null,
+      QueryStatus.Status.LAUNCHED, "Query is launched on driver", false, null, null, null));
+    query.clearTransientStateAfterLaunch();
+    fireStatusChangeEvent(query, query.getStatus(), oldStatus);
+    return true;
   }
 
   void setSuccessState(QueryContext ctx) throws LensException {
@@ -1107,6 +1137,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       throw new IllegalStateException("Could not load drivers", e);
     }
     purgeInterval = conf.getInt(PURGE_INTERVAL, DEFAULT_PURGE_INTERVAL);
+    maxRetries = conf.getInt(QUERY_MAX_RETRIES, DEFAULT_QUERY_MAX_RETRIES);
     initalizeFinishedQueryStore(conf);
     log.info("Query execution service initialized");
   }
@@ -1121,6 +1152,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
     this.lensServerDao.init(conf);
     try {
       this.lensServerDao.createFinishedQueriesTable();
+      this.lensServerDao.createFailedAttemptsTable();
     } catch (Exception e) {
       log.warn("Unable to create finished query table, query purger will not purge queries", e);
     }
@@ -1823,8 +1855,9 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
     if (query == null) {
       throw new NotFoundException("Query not found " + queryHandle);
     }
+    List<FailedAttempt> attempts = lensServerDao.getFailedAttempts(queryHandle.toString());
     // pass the query conf instead of service conf
-    return query.toQueryContext(conf, drivers.values());
+    return query.toQueryContext(conf, drivers.values(), attempts);
   }
 
   /**
@@ -2446,7 +2479,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
           break;
         case CLOSED:
           allQueries.remove(ctx.getQueryHandle());
-          log.info("Removed closed query from all Queries:"+ctx.getQueryHandle());
+          log.info("Removed closed query from all Queries:" + ctx.getQueryHandle());
         }
       }
       queuedQueries.addAll(allRestoredQueuedQueries);

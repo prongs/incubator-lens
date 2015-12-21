@@ -28,7 +28,9 @@ import javax.sql.DataSource;
 
 import org.apache.lens.api.query.QueryHandle;
 import org.apache.lens.server.api.error.LensException;
+import org.apache.lens.server.api.query.FailedAttempt;
 import org.apache.lens.server.api.query.FinishedLensQuery;
+import org.apache.lens.server.api.query.QueryContext;
 import org.apache.lens.server.util.UtilityMethods;
 
 import org.apache.commons.dbutils.DbUtils;
@@ -38,6 +40,7 @@ import org.apache.commons.dbutils.handlers.BeanHandler;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 
+import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -96,6 +99,19 @@ public class LensServerDAO {
     }
   }
 
+  public void createFailedAttemptsTable() throws Exception {
+    String sql = "CREATE TABLE if not exists failed_attempts (handle varchar(255) not null,"
+      + "progress float, progressmessage varchar(10000), errormessage varchar(10000),"
+      + "driverstarttime bigint, driverendtime bigint) ";
+    try {
+      QueryRunner runner = new QueryRunner(ds);
+      runner.update(sql);
+      log.info("Created failed_attempts table");
+    } catch (SQLException e) {
+      log.warn("Unable to create failed_attempts table", e);
+    }
+  }
+
   /**
    * DAO method to insert a new Finished query into Table.
    *
@@ -136,6 +152,28 @@ public class LensServerDAO {
   }
 
   /**
+   * DAO method to insert a new Finished query into Table.
+   *
+   * @param query to be inserted
+   * @throws SQLException the exception
+   */
+  public void insertFailedAttempt(QueryContext query, FailedAttempt attempt) throws SQLException {
+    Connection conn = null;
+    String sql = "insert into failed_attempt(handle, progress, progressmessage, errormessage, "
+      + "driverstarttime, driverendtime) values (?, ?, ?, ?, ?, ?)";
+    try {
+      conn = getConnection();
+      QueryRunner runner = new QueryRunner();
+      runner.update(conn, sql, query.getQueryHandle().toString(),
+        attempt.getProgress(), attempt.getProgressMessage(), attempt.getErrorMessage(),
+        attempt.getDriverStartTime(), attempt.getDriverFinishTime());
+      conn.commit();
+    } finally {
+      DbUtils.closeQuietly(conn);
+    }
+  }
+
+  /**
    * Fetch Finished query from Database.
    *
    * @param handle to be fetched
@@ -144,6 +182,29 @@ public class LensServerDAO {
   public FinishedLensQuery getQuery(String handle) {
     ResultSetHandler<FinishedLensQuery> rsh = new BeanHandler<FinishedLensQuery>(FinishedLensQuery.class);
     String sql = "select * from finished_queries where handle=?";
+    QueryRunner runner = new QueryRunner(ds);
+    try {
+      return runner.query(sql, rsh, handle);
+    } catch (SQLException e) {
+      log.error("SQL exception while executing query.", e);
+    }
+    return null;
+  }
+
+  public List<FailedAttempt> getFailedAttempts(String handle) {
+    ResultSetHandler<List<FailedAttempt>> rsh = new BeanHandler<List<FailedAttempt>>(null) {
+      @Override
+      public List<FailedAttempt> handle(ResultSet rs) throws SQLException {
+        List<FailedAttempt> attempts = Lists.newArrayList();
+        while (rs.next()) {
+          FailedAttempt attempt = new FailedAttempt(rs.getDouble(1), rs.getString(2), rs.getString(3), rs.getLong(4),
+            rs.getLong(5));
+          attempts.add(attempt);
+        }
+        return attempts;
+      }
+    };
+    String sql = "select * from failed_attempts where handle=? order by driverstarttime, driverendtime";
     QueryRunner runner = new QueryRunner(ds);
     try {
       return runner.query(sql, rsh, handle);

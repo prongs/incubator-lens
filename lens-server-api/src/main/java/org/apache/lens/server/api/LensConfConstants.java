@@ -878,6 +878,8 @@ public final class LensConfConstants {
    */
   public static final String QUERY_METRIC_DRIVER_STACK_NAME = QUERY_PFX + "metric.driver.stack.name";
 
+  public static final String QUERY_MAX_RETRIES = QUERY_PFX + "max.retries";
+  public static final int DEFAULT_QUERY_MAX_RETRIES = 3;
   /**
    * Timeout for parallel query estimate calls. A driver needs to comeback with a query estimate within this timeout.
    */

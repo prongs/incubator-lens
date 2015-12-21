@@ -219,4 +219,11 @@ public interface LensDriver extends Externalizable {
    * @param queryContext
    */
   Priority decidePriority(QueryContext queryContext);
+
+  /**
+   * Should we re-try this query. Passing the whole query context.
+   * @param context
+   * @return
+   */
+  boolean shouldRetry(QueryContext context);
 }

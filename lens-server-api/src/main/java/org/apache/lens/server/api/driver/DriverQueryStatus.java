@@ -21,13 +21,16 @@ package org.apache.lens.server.api.driver;
 import java.io.Serializable;
 
 import org.apache.lens.api.query.QueryStatus;
+import org.apache.lens.server.api.query.FailedAttempt;
 
-import lombok.Getter;
-import lombok.Setter;
+import org.apache.commons.lang3.StringUtils;
+
+import lombok.Data;
 
 /**
  * The Class DriverQueryStatus.
  */
+@Data
 public class DriverQueryStatus implements Serializable {
 
   /**
@@ -84,58 +87,57 @@ public class DriverQueryStatus implements Serializable {
   /**
    * The progress.
    */
-  @Getter
-  @Setter
-  private double progress = 0.0f;
+  private double progress;
 
   /**
    * The state.
    */
-  @Getter
-  @Setter
-  private DriverQueryState state = DriverQueryState.NEW;
+  private DriverQueryState state;
 
   /**
    * The status message.
    */
-  @Getter
-  @Setter
   private String statusMessage;
 
   /**
    * The is result set available.
    */
-  @Getter
-  @Setter
-  private boolean isResultSetAvailable = false;
+  private boolean isResultSetAvailable;
 
   /**
    * The progress message.
    */
-  @Getter
-  @Setter
   private String progressMessage;
 
   /**
    * The error message.
    */
-  @Getter
-  @Setter
   private String errorMessage;
 
   /**
    * The driver start time.
    */
-  @Getter
-  @Setter
-  private Long driverStartTime = 0L;
+  private Long driverStartTime;
 
   /**
    * The driver finish time.
    */
-  @Getter
-  @Setter
-  private Long driverFinishTime = 0L;
+  private Long driverFinishTime;
+
+  {
+    clear();
+  }
+
+  public void clear() {
+    progress = 0.0f;
+    progressMessage = null;
+    state = DriverQueryState.NEW;
+    statusMessage = null;
+    isResultSetAvailable = false;
+    errorMessage = null;
+    driverStartTime = 0L;
+    driverFinishTime = 0L;
+  }
 
   /**
    * To query status.
@@ -168,19 +170,16 @@ public class DriverQueryStatus implements Serializable {
     }
 
     return new QueryStatus(progress, null, qstate, statusMessage, isResultSetAvailable, progressMessage,
-            errorMessage, null);
+      errorMessage, null);
   }
 
   /**
-   * Creates the query status.
    *
-   * @param state   the state
-   * @param dstatus the dstatus
-   * @return the query status
+   * @return a failed Attempt
    */
-  public static QueryStatus createQueryStatus(QueryStatus.Status state, DriverQueryStatus dstatus) {
-    return new QueryStatus(dstatus.progress, null, state, dstatus.statusMessage,
-            dstatus.isResultSetAvailable, dstatus.progressMessage, dstatus.errorMessage, null);
+  public FailedAttempt toFailedAttempt() {
+    return new FailedAttempt(progress, progressMessage,
+      StringUtils.isBlank(errorMessage) ? statusMessage : errorMessage, driverStartTime, driverFinishTime);
   }
 
   /*

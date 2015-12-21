@@ -20,6 +20,7 @@ package org.apache.lens.server.api.query;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 
 import org.apache.lens.api.LensConf;
 import org.apache.lens.api.query.QueryHandle;
@@ -201,7 +202,7 @@ public class FinishedLensQuery {
     }
   }
 
-  public QueryContext toQueryContext(Configuration conf, Collection<LensDriver> drivers) {
+  public QueryContext toQueryContext(Configuration conf, Collection<LensDriver> drivers, List<FailedAttempt> attempts) {
 
     if (null == selectedDriver && null != driverName) {
       selectedDriver = getDriverFromName(drivers);
@@ -215,11 +216,14 @@ public class FinishedLensQuery {
     qctx.setLaunchTime(this.startTime);
     qctx.setEndTime(getEndTime());
     qctx.setStatusSkippingTransitionTest(new QueryStatus(0.0, null, QueryStatus.Status.valueOf(getStatus()),
-        getErrorMessage() == null ? "" : getErrorMessage(), getResult() != null, null, null, null));
+      getErrorMessage() == null ? "" : getErrorMessage(), getResult() != null, null, null, null));
     qctx.getDriverStatus().setDriverStartTime(getDriverStartTime());
     qctx.getDriverStatus().setDriverFinishTime(getDriverEndTime());
     qctx.setResultSetPath(getResult());
     qctx.setQueryName(getQueryName());
+    if (attempts != null && !attempts.isEmpty()) {
+      qctx.setFailedAttempts(attempts);
+    }
     return qctx;
   }
 

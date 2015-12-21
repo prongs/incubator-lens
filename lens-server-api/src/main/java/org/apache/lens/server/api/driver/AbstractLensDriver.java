@@ -28,11 +28,13 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Abstract class for Lens Driver Implementations. Provides default
  * implementations and some utility methods for drivers
  */
+@Slf4j
 public abstract class AbstractLensDriver implements LensDriver {
   /**
    * Separator used for constructing fully qualified name and driver resource path
@@ -74,5 +76,16 @@ public abstract class AbstractLensDriver implements LensDriver {
   @Override
   public String toString() {
     return getFullyQualifiedName();
+  }
+
+  /**
+   * By deafult no retries.
+   * @param context
+   * @return
+   */
+  @Override
+  public boolean shouldRetry(QueryContext context) {
+    log.info("driver status {}, refusing to re-try", context.getDriverStatus());
+    return false;
   }
 }
