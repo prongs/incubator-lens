@@ -813,8 +813,12 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       } else {
         // Handle re-try
         if (shouldRetry(ctx)) {
-          if (reLaunchFailedQuery(ctx)) {
-            return;
+          try{
+            reLaunchFailedQuery(ctx);
+            log.info("Query {} failed in attempt {}, re-launched. Faild attempt: {}", ctx.getQueryHandle(),
+              ctx.getFailedAttempts().size(), ctx.getLastFailedAttempt());
+          } catch (LensException | SQLException e) {
+            log.error("Query {} re-launch failed.", ctx.getQueryHandle(), e);
           }
         }
         if (removeFromLaunchedQueries(ctx)) {
@@ -830,21 +834,13 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
     return ctx.failed() && ctx.getFailedAttempts().size() < maxRetries && ctx.getSelectedDriver().shouldRetry(ctx);
   }
 
-  private boolean reLaunchFailedQuery(QueryContext query) {
+  private boolean reLaunchFailedQuery(QueryContext query) throws SQLException, LensException {
     QueryStatus oldStatus = query.getStatus();
     FailedAttempt failedAttempt = query.getDriverStatus().toFailedAttempt();
     query.getFailedAttempts().add(failedAttempt);
     query.getDriverStatus().clear();
-    try {
-      lensServerDao.insertFailedAttempt(query, failedAttempt);
-    } catch (SQLException e) {
-      log.error("Error inserting failed attempt", e);
-    }
-    try {
-      query.getSelectedDriver().executeAsync(query);
-    } catch (LensException e) {
-      return false;
-    }
+    lensServerDao.insertFailedAttempt(query, failedAttempt);
+    query.getSelectedDriver().executeAsync(query);
     query.setStatusSkippingTransitionTest(new QueryStatus(0.0f, null,
       QueryStatus.Status.LAUNCHED, "Query is launched on driver", false, null, null, null));
     query.clearTransientStateAfterLaunch();
@@ -1152,9 +1148,13 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
     this.lensServerDao.init(conf);
     try {
       this.lensServerDao.createFinishedQueriesTable();
+    } catch (Exception e) {
+      log.error("Unable to create finished query table, query purger will not purge queries", e);
+    }
+    try {
       this.lensServerDao.createFailedAttemptsTable();
     } catch (Exception e) {
-      log.warn("Unable to create finished query table, query purger will not purge queries", e);
+      log.error("Unable to create failed attempts table, Failed Attempts will not be purged", e);
     }
   }
 

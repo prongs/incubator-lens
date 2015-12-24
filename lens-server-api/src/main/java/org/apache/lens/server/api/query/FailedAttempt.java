@@ -22,10 +22,23 @@ package org.apache.lens.server.api.query;
 import lombok.Data;
 
 @Data
-public class FailedAttempt {
+public class FailedAttempt implements Comparable<FailedAttempt> {
   private final double progress;
   private final String progressMessage;
   private final String errorMessage;
   private final Long driverStartTime;
   private final Long driverFinishTime;
+
+
+  @Override
+  public int compareTo(FailedAttempt o) {
+    if (o == null) {
+      return 1;
+    }
+    int startCompare = driverStartTime.compareTo(o.getDriverStartTime());
+    if (startCompare != 0) {
+      return startCompare;
+    }
+    return driverFinishTime.compareTo(o.getDriverFinishTime());
+  }
 }

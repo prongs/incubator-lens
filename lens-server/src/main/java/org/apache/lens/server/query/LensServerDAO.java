@@ -95,7 +95,7 @@ public class LensServerDAO {
       runner.update(sql);
       log.info("Created finished queries table");
     } catch (SQLException e) {
-      log.warn("Unable to create finished queries table", e);
+      log.error("Unable to create finished queries table", e);
     }
   }
 
@@ -108,7 +108,7 @@ public class LensServerDAO {
       runner.update(sql);
       log.info("Created failed_attempts table");
     } catch (SQLException e) {
-      log.warn("Unable to create failed_attempts table", e);
+      log.error("Unable to create failed_attempts table", e);
     }
   }
 

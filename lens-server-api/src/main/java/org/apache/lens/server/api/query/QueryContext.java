@@ -409,6 +409,7 @@ public class QueryContext extends AbstractQueryContext {
   public boolean finished() {
     return this.status.finished();
   }
+
   public boolean failed() {
     return this.status.failed();
   }
@@ -446,5 +447,9 @@ public class QueryContext extends AbstractQueryContext {
     if (getDriverQueryCost(driver) == null) {
       setDriverCost(driver, driver.estimate(this));
     }
+  }
+
+  public FailedAttempt getLastFailedAttempt() {
+    return getFailedAttempts().get(getFailedAttempts().size() - 1);
   }
 }
