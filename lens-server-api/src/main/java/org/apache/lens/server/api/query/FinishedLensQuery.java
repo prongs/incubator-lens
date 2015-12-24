@@ -169,6 +169,10 @@ public class FinishedLensQuery {
   @Getter
   private LensDriver selectedDriver;
 
+  @Getter
+  @Setter
+  private int numFailedAttempts;
+
   /**
    * Instantiates a new finished lens query.
    */
@@ -200,6 +204,7 @@ public class FinishedLensQuery {
     if (null != ctx.getSelectedDriver()) {
       this.driverName = ctx.getSelectedDriver().getFullyQualifiedName();
     }
+    this.numFailedAttempts = ctx.getFailedAttempts().size();
   }
 
   public QueryContext toQueryContext(Configuration conf, Collection<LensDriver> drivers, List<FailedAttempt> attempts) {

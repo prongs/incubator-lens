@@ -837,9 +837,10 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
   private boolean reLaunchFailedQuery(QueryContext query) throws SQLException, LensException {
     QueryStatus oldStatus = query.getStatus();
     FailedAttempt failedAttempt = query.getDriverStatus().toFailedAttempt();
+    // Attempt number starts with 0.
+    lensServerDao.insertFailedAttempt(query, failedAttempt, query.getFailedAttempts().size());
     query.getFailedAttempts().add(failedAttempt);
     query.getDriverStatus().clear();
-    lensServerDao.insertFailedAttempt(query, failedAttempt);
     query.getSelectedDriver().executeAsync(query);
     query.setStatusSkippingTransitionTest(new QueryStatus(0.0f, null,
       QueryStatus.Status.LAUNCHED, "Query is launched on driver", false, null, null, null));
@@ -1855,7 +1856,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
     if (query == null) {
       throw new NotFoundException("Query not found " + queryHandle);
     }
-    List<FailedAttempt> attempts = lensServerDao.getFailedAttempts(queryHandle.toString());
+    List<FailedAttempt> attempts = lensServerDao.getFailedAttempts(query);
     // pass the query conf instead of service conf
     return query.toQueryContext(conf, drivers.values(), attempts);
   }

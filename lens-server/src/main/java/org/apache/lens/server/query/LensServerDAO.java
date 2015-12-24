@@ -89,7 +89,7 @@ public class LensServerDAO {
       + "endtime bigint," + "result varchar(255)," + "status varchar(255), " + "metadata varchar(100000), "
       + "rows int, " + "filesize bigint, " + "errormessage varchar(10000), " + "driverstarttime bigint, "
       + "driverendtime bigint, " + "drivername varchar(10000), "
-      + "queryname varchar(255), " + "submissiontime bigint" + ")";
+      + "queryname varchar(255), " + "submissiontime bigint, numfailedattempts int" + ")";
     try {
       QueryRunner runner = new QueryRunner(ds);
       runner.update(sql);
@@ -101,7 +101,7 @@ public class LensServerDAO {
 
   public void createFailedAttemptsTable() throws Exception {
     String sql = "CREATE TABLE if not exists failed_attempts (handle varchar(255) not null,"
-      + "progress float, progressmessage varchar(10000), errormessage varchar(10000),"
+      + "attempt_number int, progress float, progressmessage varchar(10000), errormessage varchar(10000),"
       + "driverstarttime bigint, driverendtime bigint) ";
     try {
       QueryRunner runner = new QueryRunner(ds);
@@ -125,7 +125,7 @@ public class LensServerDAO {
       Connection conn = null;
       String sql = "insert into finished_queries (handle, userquery,submitter,"
         + "starttime,endtime,result,status,metadata,rows,filesize,"
-        + "errormessage,driverstarttime,driverendtime, drivername, queryname, submissiontime)"
+        + "errormessage,driverstarttime,driverendtime, drivername, queryname, submissiontime, numfailedattempts)"
         + " values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
       try {
         conn = getConnection();
@@ -133,7 +133,7 @@ public class LensServerDAO {
         runner.update(conn, sql, query.getHandle(), query.getUserQuery(), query.getSubmitter(), query.getStartTime(),
           query.getEndTime(), query.getResult(), query.getStatus(), query.getMetadata(), query.getRows(),
           query.getFileSize(), query.getErrorMessage(), query.getDriverStartTime(), query.getDriverEndTime(),
-          query.getDriverName(), query.getQueryName(), query.getSubmissionTime());
+          query.getDriverName(), query.getQueryName(), query.getSubmissionTime(), query.getNumFailedAttempts());
         conn.commit();
       } finally {
         DbUtils.closeQuietly(conn);
@@ -155,16 +155,17 @@ public class LensServerDAO {
    * DAO method to insert a new Finished query into Table.
    *
    * @param query to be inserted
+   * @param index
    * @throws SQLException the exception
    */
-  public void insertFailedAttempt(QueryContext query, FailedAttempt attempt) throws SQLException {
+  public void insertFailedAttempt(QueryContext query, FailedAttempt attempt, int index) throws SQLException {
     Connection conn = null;
-    String sql = "insert into failed_attempt(handle, progress, progressmessage, errormessage, "
+    String sql = "insert into failed_attempt(handle, attempt_number, progress, progressmessage, errormessage, "
       + "driverstarttime, driverendtime) values (?, ?, ?, ?, ?, ?)";
     try {
       conn = getConnection();
       QueryRunner runner = new QueryRunner();
-      runner.update(conn, sql, query.getQueryHandle().toString(),
+      runner.update(conn, sql, query.getQueryHandle().toString(), index,
         attempt.getProgress(), attempt.getProgressMessage(), attempt.getErrorMessage(),
         attempt.getDriverStartTime(), attempt.getDriverFinishTime());
       conn.commit();
@@ -191,20 +192,25 @@ public class LensServerDAO {
     return null;
   }
 
-  public List<FailedAttempt> getFailedAttempts(String handle) {
+  public List<FailedAttempt> getFailedAttempts(FinishedLensQuery query) {
+    ArrayList<FailedAttempt> failedAttempts = Lists.newArrayListWithCapacity(query.getNumFailedAttempts());
+    if(query.getNumFailedAttempts() == 0) {
+      return failedAttempts;
+    }
+    String handle = query.getHandle();
     ResultSetHandler<List<FailedAttempt>> rsh = new BeanHandler<List<FailedAttempt>>(null) {
       @Override
       public List<FailedAttempt> handle(ResultSet rs) throws SQLException {
         List<FailedAttempt> attempts = Lists.newArrayList();
         while (rs.next()) {
-          FailedAttempt attempt = new FailedAttempt(rs.getDouble(1), rs.getString(2), rs.getString(3), rs.getLong(4),
-            rs.getLong(5));
-          attempts.add(attempt);
+          FailedAttempt attempt = new FailedAttempt(rs.getDouble(2), rs.getString(3), rs.getString(4), rs.getLong(5),
+            rs.getLong(6));
+          attempts.set(rs.getInt(1), attempt);
         }
         return attempts;
       }
     };
-    String sql = "select * from failed_attempts where handle=? order by driverstarttime, driverendtime";
+    String sql = "select * from failed_attempts where handle=? order by attempt_number";
     QueryRunner runner = new QueryRunner(ds);
     try {
       return runner.query(sql, rsh, handle);
