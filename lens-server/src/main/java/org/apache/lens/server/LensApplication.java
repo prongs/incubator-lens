@@ -74,7 +74,7 @@ public class LensApplication extends Application {
 
     log.debug("LensRequestContextInitFilter added...");
     classes.add(LensRequestContextInitFilter.class);
-
+    classes.add(org.glassfish.jersey.jackson.JacksonFeature.class);
     return classes;
   }
 

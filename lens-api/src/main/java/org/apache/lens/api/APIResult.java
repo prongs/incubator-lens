@@ -27,9 +27,7 @@ import javax.xml.bind.annotation.*;
 
 import org.apache.lens.api.jaxb.LensJAXBContext;
 
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 /**
  * APIResult is the output returned by all the APIs; status-SUCCEEDED or FAILED message- detailed message.
@@ -39,7 +37,8 @@ import lombok.NoArgsConstructor;
 /**
  * Instantiates a new API result.
  */
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor(access = AccessLevel.PUBLIC)
+@Data
 public class APIResult {
 
   private static final APIResult SUCCESS = new APIResult(Status.SUCCEEDED, "");
@@ -48,6 +47,7 @@ public class APIResult {
    */
   @XmlElement
   @Getter
+  @Setter
   private Status status;
 
   /**
@@ -55,6 +55,7 @@ public class APIResult {
    */
   @XmlElement
   @Getter
+  @Setter
   private String message;
 
   /**
