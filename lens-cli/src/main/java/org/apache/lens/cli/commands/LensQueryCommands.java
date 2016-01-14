@@ -64,14 +64,39 @@ public class LensQueryCommands extends BaseLensCommand {
   private static final String DEFAULT_QUERY_HANDLE_DESCRIPTION =
     "If not provided, takes last query handle interacted with.";
 
-  /**
-   * Execute query.
-   *
-   * @param sql       the sql
-   * @param async    the asynch
-   * @param queryName the query name
-   * @return the string
-   */
+  @CliCommand(value = "select",
+    help = "Execute select query <query-string>."
+      +
+      " If <async> is true, The query is launched in async manner and query handle is returned. It's by default false."
+      + " <query name> can also be provided, though not required")
+  public String executeSelectQuery(
+    @CliOption(key = {"", "query"}, mandatory = true, help = "<query-string>") String sql,
+    @CliOption(key = {"async"}, mandatory = false, unspecifiedDefaultValue = "false",
+      specifiedDefaultValue = "true", help = "<async>") boolean async,
+    @CliOption(key = {"name"}, mandatory = false, help = "<query-name>") String queryName) {
+    return executeQuery("select " + sql, async, queryName);
+  }
+  @CliCommand(value = "cube select",
+    help = "Execute cube select query <query-string>."
+      +
+      " If <async> is true, The query is launched in async manner and query handle is returned. It's by default false."
+      + " <query name> can also be provided, though not required")
+  public String executeCubeSelectQuery(
+    @CliOption(key = {"", "query"}, mandatory = true, help = "<query-string>") String sql,
+    @CliOption(key = {"async"}, mandatory = false, unspecifiedDefaultValue = "false",
+      specifiedDefaultValue = "true", help = "<async>") boolean async,
+    @CliOption(key = {"name"}, mandatory = false, help = "<query-name>") String queryName) {
+    return executeQuery("cube select " + sql, async, queryName);
+  }
+
+    /**
+     * Execute query.
+     *
+     * @param sql       the sql
+     * @param async    the asynch
+     * @param queryName the query name
+     * @return the string
+     */
   @CliCommand(value = "query execute",
     help = "Execute query <query-string>."
       +
@@ -138,16 +163,6 @@ public class LensQueryCommands extends BaseLensCommand {
         .append(") seconds.\n");
     }
     return b.toString();
-  }
-
-  public String getOrDefaultQueryHandleString(String queryHandleString) {
-    if (queryHandleString != null) {
-      return queryHandleString;
-    }
-    if (getClient().getStatement().getQuery() != null) {
-      return getClient().getStatement().getQueryHandleString();
-    }
-    throw new IllegalArgumentException("Query handle not provided and no queries interacted with in the session.");
   }
 
   /**

@@ -48,9 +48,10 @@ public class LensLogResourceCommands extends BaseLensCommand {
     help = "show logs for the given handle <log_handle>. Handle can either be a query handle or request id. "
       + "You can optionally provide a location to save the logs as <save_location>")
   public String getLogs(
-    @CliOption(key = {"", "log_handle"}, mandatory = true, help = "<log_handle>")
+    @CliOption(key = {"", "log_handle"}, mandatory = false, help = "<log_handle>")
     String logFile, @CliOption(key = {"save_location"}, mandatory = false, help = "<save_location>") String location) {
     try {
+      logFile = getOrDefaultQueryHandleString(logFile);
       Response response = getClient().getLogs(logFile);
       if (response.getStatus() == Response.Status.OK.getStatusCode()) {
         if (StringUtils.isBlank(location)) {
