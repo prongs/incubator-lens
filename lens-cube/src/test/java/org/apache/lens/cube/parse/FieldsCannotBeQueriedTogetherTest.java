@@ -18,7 +18,7 @@
  */
 package org.apache.lens.cube.parse;
 
-import static org.apache.lens.cube.parse.CubeTestSetup.*;
+import static org.apache.lens.cube.metadata.DateFactory.*;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
@@ -46,6 +46,8 @@ public class FieldsCannotBeQueriedTogetherTest extends TestQueryRewrite {
   public void beforeClassFieldsCannotBeQueriedTogetherTest() {
     conf.setBoolean(CubeQueryConfUtil.ENABLE_SELECT_TO_GROUPBY, true);
     conf.setBoolean(CubeQueryConfUtil.DISABLE_AGGREGATE_RESOLVER, false);
+    conf.setBoolean(CubeQueryConfUtil.DISABLE_AUTO_JOINS, false);
+
   }
 
   @Test
@@ -94,7 +96,7 @@ public class FieldsCannotBeQueriedTogetherTest extends TestQueryRewrite {
     disallowed with appropriate exception. */
 
     testFieldsCannotBeQueriedTogetherError("select substrexprdim2, SUM(msr1) from basecube where " + TWO_DAYS_RANGE,
-        Arrays.asList("dim2", "d_time", "msr1"));
+        Arrays.asList("dim2", "d_time", "dim2chain.name", "msr1"));
   }
 
   @Test
@@ -107,7 +109,7 @@ public class FieldsCannotBeQueriedTogetherTest extends TestQueryRewrite {
     derived cube, hence query shall be disallowed with appropriate exception. */
 
     testFieldsCannotBeQueriedTogetherError("select substrexprdim2, sum(roundedmsr1) from basecube where "
-      + TWO_DAYS_RANGE, Arrays.asList("dim2", "d_time", "msr1"));
+      + TWO_DAYS_RANGE, Arrays.asList("dim2", "d_time", "dim2chain.name", "msr1"));
   }
 
   @Test
@@ -258,7 +260,8 @@ public class FieldsCannotBeQueriedTogetherTest extends TestQueryRewrite {
      *  disallowed */
 
     testFieldsCannotBeQueriedTogetherError("select substrexprdim2, cubeStateName, countryid, SUM(msr2) from basecube"
-            + " where " + TWO_DAYS_RANGE, Arrays.asList("countryid", "dim2", "cubestate.name",  "d_time"));
+            + " where " + TWO_DAYS_RANGE,
+      Arrays.asList("countryid", "dim2", "cubestate.name",  "d_time", "dim2chain.name"));
   }
 
   @Test
@@ -311,8 +314,7 @@ public class FieldsCannotBeQueriedTogetherTest extends TestQueryRewrite {
     Configuration queryConf = new Configuration(conf);
     queryConf.setBoolean(CubeQueryConfUtil.REPLACE_TIMEDIM_WITH_PART_COL, true);
 
-    testFieldsCannotBeQueriedTogetherError("select msr4 from basecube where " + "time_range_in(d_time, '"
-        + getDateUptoHours(TWODAYS_BACK) + "','" + getDateUptoHours(CubeTestSetup.NOW) + "')",
+    testFieldsCannotBeQueriedTogetherError("select msr4 from basecube where " + TWO_DAYS_RANGE,
         Arrays.asList("d_time", "msr4"), queryConf);
   }
 
@@ -331,8 +333,7 @@ public class FieldsCannotBeQueriedTogetherTest extends TestQueryRewrite {
     Configuration queryConf = new Configuration(conf);
     queryConf.setBoolean(CubeQueryConfUtil.REPLACE_TIMEDIM_WITH_PART_COL, false);
 
-    testFieldsCannotBeQueriedTogetherError("select msr4 from basecube where " + "time_range_in(d_time, '"
-        + getDateUptoHours(TWODAYS_BACK) + "','" + getDateUptoHours(CubeTestSetup.NOW) + "')",
+    testFieldsCannotBeQueriedTogetherError("select msr4 from basecube where " + TWO_DAYS_RANGE,
         Arrays.asList("d_time", "msr4"), queryConf);
   }
 
@@ -352,7 +353,7 @@ public class FieldsCannotBeQueriedTogetherTest extends TestQueryRewrite {
           + "Query got re-written to:" + hqlQuery);
     } catch(FieldsCannotBeQueriedTogetherException actualException) {
 
-      SortedSet<String> expectedFields = new TreeSet<String>(conflictingFields);
+      SortedSet<String> expectedFields = new TreeSet<>(conflictingFields);
 
       FieldsCannotBeQueriedTogetherException expectedException =
           new FieldsCannotBeQueriedTogetherException(new ConflictingFields(expectedFields));

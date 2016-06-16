@@ -24,6 +24,7 @@ import java.util.List;
 import org.apache.lens.api.LensSessionHandle;
 import org.apache.lens.api.metastore.*;
 import org.apache.lens.server.api.LensService;
+import org.apache.lens.server.api.SessionValidator;
 import org.apache.lens.server.api.error.LensException;
 
 import org.apache.hadoop.hive.ql.metadata.HiveException;
@@ -31,7 +32,7 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
 /**
  * Server api for OLAP Cube Metastore.
  */
-public interface CubeMetastoreService extends LensService {
+public interface CubeMetastoreService extends LensService, SessionValidator {
 
   /** The constant NAME */
   String NAME = "metastore";
@@ -570,4 +571,53 @@ public interface CubeMetastoreService extends LensService {
 
   void updatePartitions(LensSessionHandle sessionid, String tblName, String storageName,
     XPartitionList partitions) throws LensException;
+
+  /**
+   *
+   * @param sessionid         The session id
+   * @param cubeSeg           The  segmentation
+   * @throws LensException
+   */
+  void createSegmentation(LensSessionHandle sessionid, XSegmentation cubeSeg) throws LensException;
+
+  /**
+   * Create segmentation
+   *
+   * @param sessionid                    The session id
+   * @param segName                      Ssegmentation name
+   * @return {@link XSegmentation}
+   * @throws LensException
+   */
+  XSegmentation getSegmentation(LensSessionHandle sessionid, String segName) throws LensException;
+
+  /**
+   * Get segmentation given by name
+   *
+   * @param sessionid        The session id
+   * @param cubeSeg          The segmentation
+   * @throws LensException
+   */
+
+  void updateSegmentation(LensSessionHandle sessionid, XSegmentation cubeSeg) throws LensException;
+
+  /**
+   * Update segmentation
+   *
+   * @param sessionid      The session id
+   * @param cubeSegName    Segmentation name
+   * @throws LensException
+   */
+  void dropSegmentation(LensSessionHandle sessionid, String cubeSegName) throws LensException;
+
+  /**
+   * Get all segmentations belong to Cube
+   *
+   * @param sessionid    The session id
+   * @param cubeName     The cube Name
+   * @return
+   * @throws LensException
+   */
+  List<String> getAllSegmentations(LensSessionHandle sessionid, String cubeName) throws LensException;
+
+
 }

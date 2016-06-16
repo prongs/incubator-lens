@@ -18,9 +18,12 @@
  */
 package org.apache.lens.server;
 
-import static org.apache.lens.server.common.RestAPITestUtil.execute;
+import static org.apache.lens.server.LensServerTestUtil.createTable;
+import static org.apache.lens.server.LensServerTestUtil.loadData;
+import static org.apache.lens.server.api.user.MockDriverQueryHook.*;
+import static org.apache.lens.server.common.RestAPITestUtil.*;
 
-import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.*;
 
 import java.io.*;
 import java.util.*;
@@ -37,14 +40,17 @@ import org.apache.lens.api.query.*;
 import org.apache.lens.api.result.LensAPIResult;
 import org.apache.lens.driver.hive.TestRemoteHiveDriver;
 import org.apache.lens.server.api.error.LensException;
+import org.apache.lens.server.api.query.QueryContext;
 import org.apache.lens.server.api.query.QueryExecutionService;
 import org.apache.lens.server.api.session.SessionService;
+import org.apache.lens.server.api.util.LensUtil;
 import org.apache.lens.server.common.TestResourceFile;
 import org.apache.lens.server.query.QueryExecutionServiceImpl;
 import org.apache.lens.server.query.TestQueryService;
 import org.apache.lens.server.session.HiveSessionService;
 import org.apache.lens.server.session.LensSessionImpl;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hive.service.Service;
 
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
@@ -68,6 +74,11 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
   /** The data file. */
   private File dataFile;
 
+  /**
+   * No of valid hive drivers that can execute queries in this test class
+   */
+  private static final int NO_OF_HIVE_DRIVERS = 2;
+
   /*
    * (non-Javadoc)
    *
@@ -78,11 +89,11 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
     super.setUp();
   }
 
-  /*
-   * (non-Javadoc)
-   *
-   * @see org.glassfish.jersey.test.JerseyTest#tearDown()
-   */
+  @Override
+  public Map<String, String> getServerConfOverWrites() {
+    return LensUtil.getHashMap("lens.server.state.persistence.interval.millis", "1000");
+  }
+
   @AfterTest
   public void tearDown() throws Exception {
     super.tearDown();
@@ -135,72 +146,58 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
     createRestartTestDataFile();
 
     // Create a test table
-    LensTestUtil.createTable("test_server_restart", target(), lensSessionId);
-    LensTestUtil.loadData("test_server_restart", TestResourceFile.TEST_DATA_FILE.getValue(), target(), lensSessionId);
+    createTable("test_server_restart", target(), lensSessionId, defaultMT);
+    loadData("test_server_restart", TestResourceFile.TEST_DATA_FILE.getValue(), target(), lensSessionId, defaultMT);
     log.info("Loaded data");
 
     // test post execute op
-    final WebTarget target = target().path("queryapi/queries");
-
-    List<QueryHandle> launchedQueries = new ArrayList<QueryHandle>();
+    List<QueryHandle> launchedQueries = new ArrayList<>();
     final int NUM_QUERIES = 10;
 
-    boolean killed = false;
+    boolean isQuerySubmitterPaused = false;
+    QueryHandle handleForMockDriverQueryHookTest = null;
     for (int i = 0; i < NUM_QUERIES; i++) {
-      if (!killed && i > NUM_QUERIES / 3) {
+      if (!isQuerySubmitterPaused && i > NUM_QUERIES / 3) {
         // Kill the query submitter thread to make sure some queries stay in accepted queue
         try {
-          queryService.pauseQuerySubmitter();
+          queryService.pauseQuerySubmitter(true);
           log.info("Stopped query submitter");
           Assert.assertFalse(queryService.getHealthStatus().isHealthy());
         } catch (Exception exc) {
           log.error("Could not kill query submitter", exc);
         }
-        killed = true;
+        isQuerySubmitterPaused = true;
       }
 
-      final FormDataMultiPart mp = new FormDataMultiPart();
-      mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("sessionid").build(), lensSessionId,
-        MediaType.APPLICATION_XML_TYPE));
-      mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("query").build(),
-        "select COUNT(ID) from test_server_restart"));
-      mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("operation").build(), "execute"));
-      mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("conf").fileName("conf").build(),
-        new LensConf(), MediaType.APPLICATION_XML_TYPE));
-      final QueryHandle handle = target.request().post(Entity.entity(mp, MediaType.MULTIPART_FORM_DATA_TYPE),
-        new GenericType<LensAPIResult<QueryHandle>>() {}).getData();
-
-      Assert.assertNotNull(handle);
-      LensQuery ctx = target.path(handle.toString()).queryParam("sessionid", lensSessionId).request()
-        .get(LensQuery.class);
-      QueryStatus stat = ctx.getStatus();
+      final QueryHandle handle = executeAndGetHandle(target(), Optional.of(lensSessionId),
+        Optional.of("select COUNT(ID) from test_server_restart"), Optional.<LensConf>absent(), defaultMT);
+      LensQuery ctx = getLensQuery(target(), lensSessionId, handle, defaultMT);
       log.info("{} submitted query {} state: {}", i, handle, ctx.getStatus().getStatus());
       launchedQueries.add(handle);
+      if (i == (NUM_QUERIES-1)) {
+        //checking this only for one of the queued queries. A queued query has all the config information available in
+        // server memory. (Some of the information is lost after query is purged)
+        testMockDriverQueryHookPostDriverSelection(queryService, handle, false);
+        handleForMockDriverQueryHookTest = handle;
+        log.info("Testing query {} for MockDriverQueryHook", handleForMockDriverQueryHookTest);
+      }
     }
 
     // Restart the server
     log.info("Restarting lens server!");
-    restartLensServer();
+    restartLensServer(getServerConf(), true);
     log.info("Restarted lens server!");
     queryService = LensServices.get().getService(QueryExecutionService.NAME);
+    Assert.assertFalse(queryService.getHealthStatus().isHealthy());
+    testMockDriverQueryHookPostDriverSelection(queryService, handleForMockDriverQueryHookTest, true);
+    queryService.pauseQuerySubmitter(false);
     Assert.assertTrue(queryService.getHealthStatus().isHealthy());
 
     // All queries should complete after server restart
     for (QueryHandle handle : launchedQueries) {
       log.info("Polling query {}", handle);
       try {
-        LensQuery ctx = target.path(handle.toString()).queryParam("sessionid", lensSessionId).request()
-          .get(LensQuery.class);
-        QueryStatus stat = ctx.getStatus();
-        while (!stat.finished()) {
-          log.info("Polling query {} Status:{}", handle, stat);
-          ctx = target.path(handle.toString()).queryParam("sessionid", lensSessionId).request().get(LensQuery.class);
-          stat = ctx.getStatus();
-          Thread.sleep(1000);
-        }
-        assertEquals(ctx.getStatus().getStatus(), QueryStatus.Status.SUCCESSFUL, "Expected to be successful " + handle);
-        PersistentQueryResult resultset = target.path(handle.toString()).path("resultset")
-          .queryParam("sessionid", lensSessionId).request().get(PersistentQueryResult.class);
+        PersistentQueryResult resultset = getLensQueryResult(target(), lensSessionId, handle, defaultMT);
         List<String> rows = TestQueryService.readResultSet(resultset, handle, true);
         assertEquals(rows.size(), 1);
         assertEquals(rows.get(0), "" + NROWS);
@@ -211,8 +208,37 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
       }
     }
     log.info("End server restart test");
-    LensTestUtil.dropTable("test_server_restart", target(), lensSessionId);
+    LensServerTestUtil.dropTable("test_server_restart", target(), lensSessionId, defaultMT);
     queryService.closeSession(lensSessionId);
+  }
+
+  /**
+   * Tests whether the driver configuration updated by mock query driver hook is
+   * 1. updated in LensConf wherever applicable and
+   * 2. is persisted and available even after server startup.
+   *
+   * @param queryService
+   * @param handle
+   * @param afterRestart
+   */
+  private void testMockDriverQueryHookPostDriverSelection(QueryExecutionServiceImpl queryService, QueryHandle handle,
+    boolean afterRestart){
+    QueryContext ctx = queryService.getQueryContext(handle);
+    assertNotNull(ctx, "Make sure that the query has not  been purged");
+    assertTrue(ctx.getStatus().queued(), "Make sure query is still in QUEUED state");
+    LensConf lensQueryConf = queryService.getQueryContext(handle).getLensConf();
+    Configuration driverConf = queryService.getQueryContext(handle).getSelectedDriverConf();
+
+    assertEquals(driverConf.get(KEY_POST_SELECT), VALUE_POST_SELECT);
+    assertEquals(lensQueryConf.getProperty(KEY_POST_SELECT), VALUE_POST_SELECT);
+
+    if (afterRestart) {
+      //This will be unavailable since if was not updated in LensConf by MockDriverQueryHook
+      assertNull(driverConf.get(UNSAVED_KEY_POST_SELECT));
+    } else {
+      assertEquals(driverConf.get(UNSAVED_KEY_POST_SELECT), UNSAVED_VALUE_POST_SELECT);
+    }
+    assertNull(lensQueryConf.getProperty(UNSAVED_KEY_POST_SELECT));
   }
 
   /**
@@ -238,41 +264,24 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
     Assert.assertTrue(sessionService.getHealthStatus().isHealthy());
 
     sessionService.addResource(lensSessionId, "FILE", dataFile.toURI().toString());
-    queryService.getSession(lensSessionId).addResource("FILE", dataFile.toURI().toString());
     log.info("@@ Added resource {}", dataFile.toURI());
 
     // Create a test table
-    LensTestUtil.createTable("test_hive_server_restart", target(), lensSessionId);
-    LensTestUtil.loadData("test_hive_server_restart", TestResourceFile.TEST_DATA_FILE.getValue(), target(),
-      lensSessionId);
+    createTable("test_hive_server_restart", target(), lensSessionId, defaultMT);
+    loadData("test_hive_server_restart", TestResourceFile.TEST_DATA_FILE.getValue(), target(),
+      lensSessionId, defaultMT);
     log.info("Loaded data");
 
     log.info("Hive Server restart test");
     // test post execute op
-    final WebTarget target = target().path("queryapi/queries");
 
-    // Submit query, restart HS2, submit another query
-    FormDataMultiPart mp = new FormDataMultiPart();
-    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("sessionid").build(), lensSessionId,
-      MediaType.APPLICATION_XML_TYPE));
-    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("query").build(),
-      "select COUNT(ID) from test_hive_server_restart"));
-    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("operation").build(), "execute"));
-    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("conf").fileName("conf").build(), new LensConf(),
-      MediaType.APPLICATION_XML_TYPE));
-    QueryHandle handle = target.request()
-      .post(Entity.entity(mp, MediaType.MULTIPART_FORM_DATA_TYPE),
-        new GenericType<LensAPIResult<QueryHandle>>() {}).getData();
-
-    Assert.assertNotNull(handle);
+    QueryHandle handle = executeAndGetHandle(target(), Optional.of(lensSessionId),
+      Optional.of("select COUNT(ID) from test_hive_server_restart"), Optional.<LensConf>absent(), defaultMT);
 
     // wait for query to move out of QUEUED state
-    LensQuery ctx = target.path(handle.toString()).queryParam("sessionid", lensSessionId).request()
-        .get(LensQuery.class);
-    QueryStatus stat = ctx.getStatus();
-    while (stat.queued()) {
-      ctx = target.path(handle.toString()).queryParam("sessionid", lensSessionId).request().get(LensQuery.class);
-      stat = ctx.getStatus();
+    LensQuery ctx = getLensQuery(target(), lensSessionId, handle, defaultMT);
+    while (ctx.getStatus().queued()) {
+      ctx = getLensQuery(target(), lensSessionId, handle, defaultMT);
       Thread.sleep(1000);
     }
 
@@ -305,47 +314,35 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
     verifyParamOnRestart(lensSessionId);
 
     // Poll for first query, we should not get any exception
-    ctx = target.path(handle.toString()).queryParam("sessionid", lensSessionId).request()
-      .get(LensQuery.class);
-    stat = ctx.getStatus();
-    while (!stat.finished()) {
-      log.info("Polling query {} Status:{}", handle, stat);
-      ctx = target.path(handle.toString()).queryParam("sessionid", lensSessionId).request().get(LensQuery.class);
-      stat = ctx.getStatus();
-      Thread.sleep(1000);
-    }
+    ctx = waitForQueryToFinish(target(), lensSessionId, handle, defaultMT);
 
-    Assert.assertTrue(stat.finished());
-    log.info("Previous query status: {}", stat.getStatusMessage());
+    Assert.assertTrue(ctx.getStatus().finished());
+    log.info("Previous query status: {}", ctx.getStatus().getStatusMessage());
 
     // After hive server restart, first few queries fail with Invalid Operation Handle followed by
-    // Invalid Session Handle. Idle behaviour is to fail with Invalid Session Handle immediately.
+    // Invalid Session Handle. Ideal behaviour is to fail with Invalid Session Handle immediately.
     // Jira Ticket raised for debugging: https://issues.apache.org/jira/browse/LENS-707
 
     final String query = "select COUNT(ID) from test_hive_server_restart";
     Response response = null;
     while (response == null || response.getStatus() == Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()) {
-      response = execute(target(), Optional.of(lensSessionId), Optional.of(query));
+      response = execute(target(), Optional.of(lensSessionId), Optional.of(query), defaultMT);
       Thread.sleep(1000);
     }
 
     handle = response.readEntity(new GenericType<LensAPIResult<QueryHandle>>() {}).getData();
 
     // Poll for second query, this should finish successfully
-    ctx = target.path(handle.toString()).queryParam("sessionid", lensSessionId).request().get(LensQuery.class);
-    stat = ctx.getStatus();
-    while (!stat.finished()) {
-      log.info("Post restart polling query {} Status:{}", handle, stat);
-      ctx = target.path(handle.toString()).queryParam("sessionid", lensSessionId).request().get(LensQuery.class);
-      stat = ctx.getStatus();
-      Thread.sleep(1000);
-    }
-    log.info("Final status for {}: {}", handle, stat.getStatus());
+    ctx = waitForQueryToFinish(target(), lensSessionId, handle, defaultMT);
+    log.info("Final status for {}: {}", handle, ctx.getStatus().getStatus());
 
     // Now we can expect that session resources have been added back exactly once
     for (int i = 0; i < sessionResources.size(); i++) {
       LensSessionImpl.ResourceEntry resourceEntry = sessionResources.get(i);
-      assertEquals(resourceEntry.getRestoreCount(), 1 + restoreCounts[i],
+      //The restore count can vary based on How many Hive Drivers were able to execute the estimate on the query
+      //successfully after Hive Server Restart.
+      Assert.assertTrue((resourceEntry.getRestoreCount() > restoreCounts[i]
+          && resourceEntry.getRestoreCount() <=  restoreCounts[i] + NO_OF_HIVE_DRIVERS),
           "Restore test failed for " + resourceEntry + " pre count=" + restoreCounts[i] + " post count=" + resourceEntry
               .getRestoreCount());
       log.info("@@ Latest count {}={}", resourceEntry, resourceEntry.getRestoreCount());
@@ -354,7 +351,7 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
     // "Expected to be successful " + handle);
 
     log.info("End hive server restart test");
-    LensTestUtil.dropTable("test_hive_server_restart", target(), lensSessionId);
+    LensServerTestUtil.dropTable("test_hive_server_restart", target(), lensSessionId, defaultMT);
     queryService.closeSession(lensSessionId);
   }
 
@@ -373,9 +370,9 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
     sessionForm.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("username").build(), "foo"));
     sessionForm.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("password").build(), "bar"));
     sessionForm.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("sessionconf").fileName("sessionconf")
-      .build(), new LensConf(), MediaType.APPLICATION_XML_TYPE));
+      .build(), new LensConf(), defaultMT));
 
-    final LensSessionHandle restartTestSession = sessionTarget.request().post(
+    final LensSessionHandle restartTestSession = sessionTarget.request(defaultMT).post(
       Entity.entity(sessionForm, MediaType.MULTIPART_FORM_DATA_TYPE), LensSessionHandle.class);
     Assert.assertNotNull(restartTestSession);
 
@@ -386,11 +383,11 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
     final WebTarget resourcetarget = target().path("session/resources");
     final FormDataMultiPart mp1 = new FormDataMultiPart();
     mp1.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("sessionid").build(), restartTestSession,
-      MediaType.APPLICATION_XML_TYPE));
+      defaultMT));
     mp1.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("type").build(), "file"));
     mp1.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("path").build(),
       "target/test-classes/lens-site.xml"));
-    APIResult result = resourcetarget.path("add").request()
+    APIResult result = resourcetarget.path("add").request(defaultMT)
       .put(Entity.entity(mp1, MediaType.MULTIPART_FORM_DATA_TYPE), APIResult.class);
     assertEquals(result.getStatus(), Status.SUCCEEDED);
 
@@ -406,22 +403,23 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
     LensSessionImpl session = sessionService.getSession(restartTestSession);
     assertEquals(session.getLensSessionPersistInfo().getResources().size(), 1);
     LensSessionImpl.ResourceEntry resourceEntry = session.getLensSessionPersistInfo().getResources().get(0);
-    assertEquals(resourceEntry.getType(), "file");
+    assertEquals(resourceEntry.getType(), "FILE");
+    Assert.assertTrue(resourceEntry.getUri().contains("target/test-classes/lens-site.xml"));
     Assert.assertTrue(resourceEntry.getLocation().contains("target/test-classes/lens-site.xml"));
 
     // close session
-    result = sessionTarget.queryParam("sessionid", restartTestSession).request().delete(APIResult.class);
+    result = sessionTarget.queryParam("sessionid", restartTestSession).request(defaultMT).delete(APIResult.class);
     assertEquals(result.getStatus(), APIResult.Status.SUCCEEDED);
   }
 
   private void setParams(LensSessionHandle lensSessionHandle) {
     FormDataMultiPart setpart = new FormDataMultiPart();
     setpart.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("sessionid").build(), lensSessionHandle,
-      MediaType.APPLICATION_XML_TYPE));
+      defaultMT));
     setpart
       .bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("key").build(), "lens.session.testRestartKey"));
     setpart.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("value").build(), "myvalue"));
-    APIResult result = target().path("session").path("params").request()
+    APIResult result = target().path("session").path("params").request(defaultMT)
       .put(Entity.entity(setpart, MediaType.MULTIPART_FORM_DATA_TYPE), APIResult.class);
     assertEquals(result.getStatus(), APIResult.Status.SUCCEEDED);
   }
@@ -429,10 +427,10 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
   private void verifyParamOnRestart(LensSessionHandle lensSessionHandle) {
 
     StringList sessionParams = target().path("session").path("params").queryParam("sessionid", lensSessionHandle)
-      .queryParam("verbose", true).queryParam("key", "lens.session.testRestartKey").request().get(StringList.class);
+      .queryParam("verbose", true).queryParam("key", "lens.session.testRestartKey").request(defaultMT)
+      .get(StringList.class);
     System.out.println("Session params:" + sessionParams.getElements());
     assertEquals(sessionParams.getElements().size(), 1);
     Assert.assertTrue(sessionParams.getElements().contains("lens.session.testRestartKey=myvalue"));
-
   }
 }

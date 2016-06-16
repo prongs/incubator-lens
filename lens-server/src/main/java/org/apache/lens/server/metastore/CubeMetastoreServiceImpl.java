@@ -21,6 +21,7 @@ package org.apache.lens.server.metastore;
 import static org.apache.lens.server.metastore.JAXBUtils.*;
 
 import java.util.*;
+import java.util.Date;
 
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotFoundException;
@@ -31,12 +32,14 @@ import org.apache.lens.cube.metadata.*;
 import org.apache.lens.cube.metadata.timeline.PartitionTimeline;
 import org.apache.lens.server.BaseLensService;
 import org.apache.lens.server.LensServerConf;
+import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.error.LensException;
 import org.apache.lens.server.api.health.HealthStatus;
 import org.apache.lens.server.api.metastore.CubeMetastoreService;
 import org.apache.lens.server.session.LensSessionImpl;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.metastore.IMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.*;
 import org.apache.hadoop.hive.ql.metadata.Hive;
@@ -505,6 +508,21 @@ public class CubeMetastoreServiceImpl extends BaseLensService implements CubeMet
   }
 
   @Override
+  public XSegmentation getSegmentation(LensSessionHandle sessionid, String cubeSegName) throws LensException {
+    try {
+      acquire(sessionid);
+      CubeMetastoreClient msClient = getClient(sessionid);
+      Segmentation cubeSeg = msClient.getSegmentation(cubeSegName);
+      return JAXBUtils.xsegmentationFromSegmentation(cubeSeg);
+    } catch (HiveException e) {
+      throw new LensException(e);
+    } finally {
+      release(sessionid);
+    }
+  }
+
+
+  @Override
   public void createFactTable(LensSessionHandle sessionid, XFactTable fact) throws LensException {
     try {
       acquire(sessionid);
@@ -524,12 +542,44 @@ public class CubeMetastoreServiceImpl extends BaseLensService implements CubeMet
   }
 
   @Override
+  public void createSegmentation(LensSessionHandle sessionid, XSegmentation cubeSeg) throws LensException {
+    try {
+      acquire(sessionid);
+      getClient(sessionid).createSegmentation(
+              cubeSeg.getCubeName(),
+              cubeSeg.getName(),
+              JAXBUtils.segmentsFromXSegments(cubeSeg.getSegements()),
+              cubeSeg.getWeight(),
+              JAXBUtils.mapFromXProperties(cubeSeg.getProperties()));
+      log.info("Created segmentation " + cubeSeg.getName());
+    } catch (HiveException e) {
+      throw new LensException(e);
+    } finally {
+      release(sessionid);
+    }
+  }
+
+
+  @Override
   public void updateFactTable(LensSessionHandle sessionid, XFactTable fact) throws LensException {
     try {
       acquire(sessionid);
       getClient(sessionid).alterCubeFactTable(fact.getName(), JAXBUtils.cubeFactFromFactTable(fact),
         JAXBUtils.storageTableMapFromXStorageTables(fact.getStorageTables()));
       log.info("Updated fact table " + fact.getName());
+    } catch (HiveException e) {
+      throw new LensException(e);
+    } finally {
+      release(sessionid);
+    }
+  }
+
+  @Override
+  public void updateSegmentation(LensSessionHandle sessionid, XSegmentation cubeSeg) throws LensException {
+    try {
+      acquire(sessionid);
+      getClient(sessionid).alterSegmentation(cubeSeg.getName(), segmentationFromXSegmentation(cubeSeg));
+      log.info("Updated segmentation " + cubeSeg.getName());
     } catch (HiveException e) {
       throw new LensException(e);
     } finally {
@@ -548,6 +598,20 @@ public class CubeMetastoreServiceImpl extends BaseLensService implements CubeMet
     } finally {
       release(sessionid);
     }
+  }
+
+  @Override
+  public void dropSegmentation(LensSessionHandle sessionid, String cubeSegName) throws LensException {
+    try {
+      acquire(sessionid);
+      getClient(sessionid).dropSegmentation(cubeSegName);
+      log.info("Dropped segemntation " + cubeSegName);
+    } catch (HiveException e) {
+      throw new LensException(e);
+    } finally {
+      release(sessionid);
+    }
+
   }
 
   @Override
@@ -570,6 +634,29 @@ public class CubeMetastoreServiceImpl extends BaseLensService implements CubeMet
     } finally {
       release(sessionid);
     }
+  }
+
+  @Override
+  public List<String> getAllSegmentations(LensSessionHandle sessionid, String cubeName) throws LensException {
+    try {
+      acquire(sessionid);
+      CubeMetastoreClient client = getClient(sessionid);
+      CubeInterface seg = client.getCube(cubeName);
+      if (cubeName != null && seg == null) {
+        throw new LensException("Could not get table: " + cubeName + " as a cube");
+      }
+      Collection<Segmentation> segs = client.getAllSegmentations(seg);
+      List<String> segNames = new ArrayList<String>(segs.size());
+      for (Segmentation cs : segs) {
+        segNames.add(cs.getName());
+      }
+      return segNames;
+    } catch (HiveException e) {
+      throw new LensException(e);
+    } finally {
+      release(sessionid);
+    }
+
   }
 
 
@@ -699,7 +786,7 @@ public class CubeMetastoreServiceImpl extends BaseLensService implements CubeMet
         storageName);
       List<Partition> parts = client.getPartitionsByFilter(storageTableName, filter);
       List<String> timePartCols = client.getTimePartColNamesOfTable(storageTableName);
-      return xpartitionListFromPartitionList(parts, timePartCols);
+      return xpartitionListFromPartitionList(fact, parts, timePartCols);
     } catch (HiveException exc) {
       throw new LensException(exc);
     } finally {
@@ -735,31 +822,31 @@ public class CubeMetastoreServiceImpl extends BaseLensService implements CubeMet
     }
   }
 
-  private CubeDimensionTable checkDimensionStorage(LensSessionHandle sessionid, String dimension, String storage)
+  private CubeDimensionTable checkDimTableStorage(LensSessionHandle sessionid, String dimTable, String storage)
     throws HiveException, LensException {
     CubeMetastoreClient client = getClient(sessionid);
-    if (!client.isDimensionTable(dimension)) {
-      throw new NotFoundException("Dimension table not found: " + dimension);
+    if (!client.isDimensionTable(dimTable)) {
+      throw new NotFoundException("Dimension table not found: " + dimTable);
     }
-    CubeDimensionTable cdt = client.getDimensionTable(dimension);
+    CubeDimensionTable cdt = client.getDimensionTable(dimTable);
     if (!cdt.getStorages().contains(storage)) {
-      throw new NotFoundException("Storage " + storage + " not found for dimension " + dimension);
+      throw new NotFoundException("Storage " + storage + " not found for dimension table " + dimTable);
     }
     return cdt;
   }
 
   @Override
   public XPartitionList getAllPartitionsOfDimTableStorage(
-    LensSessionHandle sessionid, String dimension, String storageName, String filter)
+    LensSessionHandle sessionid, String dimTable, String storageName, String filter)
     throws LensException {
     try {
       acquire(sessionid);
-      checkDimensionStorage(sessionid, dimension, storageName);
+      checkDimTableStorage(sessionid, dimTable, storageName);
       CubeMetastoreClient client = getClient(sessionid);
-      String storageTableName = MetastoreUtil.getFactOrDimtableStorageTableName(dimension, storageName);
+      String storageTableName = MetastoreUtil.getFactOrDimtableStorageTableName(dimTable, storageName);
       List<Partition> partitions = client.getPartitionsByFilter(storageTableName, filter);
       List<String> timePartCols = client.getTimePartColNamesOfTable(storageTableName);
-      return xpartitionListFromPartitionList(partitions, timePartCols);
+      return xpartitionListFromPartitionList(dimTable, partitions, timePartCols);
     } catch (HiveException exc) {
       throw new LensException(exc);
     } finally {
@@ -772,7 +859,7 @@ public class CubeMetastoreServiceImpl extends BaseLensService implements CubeMet
     String dimTblName, String storageName, XPartition partition) throws LensException {
     try {
       acquire(sessionid);
-      checkDimensionStorage(sessionid, dimTblName, storageName);
+      checkDimTableStorage(sessionid, dimTblName, storageName);
       return getClient(sessionid).addPartition(storagePartSpecFromXPartition(partition), storageName).size();
     } catch (HiveException exc) {
       throw new LensException(exc);
@@ -826,7 +913,7 @@ public class CubeMetastoreServiceImpl extends BaseLensService implements CubeMet
     String dimTblName, String storageName, XPartitionList partitions) throws LensException {
     try {
       acquire(sessionid);
-      checkDimensionStorage(sessionid, dimTblName, storageName);
+      checkDimTableStorage(sessionid, dimTblName, storageName);
       return getClient(sessionid).addPartitions(storagePartSpecListFromXPartitionList(partitions), storageName).size();
     } catch (HiveException exc) {
       throw new LensException(exc);
@@ -870,7 +957,7 @@ public class CubeMetastoreServiceImpl extends BaseLensService implements CubeMet
         String dateStr = partSpec.get(partCol);
         Date date = null;
         try {
-          date = period.format().parse(dateStr);
+          date = period.parse(dateStr);
         } catch (Exception e) {
           continue;
         }
@@ -919,11 +1006,9 @@ public class CubeMetastoreServiceImpl extends BaseLensService implements CubeMet
     String storageName, String filter) throws LensException {
     try {
       acquire(sessionid);
-      String tableName = MetastoreUtil.getStorageTableName(cubeTableName,
-        Storage.getPrefix(storageName));
+      String tableName = MetastoreUtil.getStorageTableName(cubeTableName, Storage.getPrefix(storageName));
       CubeMetastoreClient msClient = getClient(sessionid);
-      List<Partition> partitions = msClient.getPartitionsByFilter(
-        tableName, filter);
+      List<Partition> partitions = msClient.getPartitionsByFilter(tableName, filter);
       for (Partition part : partitions) {
         try {
           Map<String, Date> timeSpec = new HashMap<String, Date>();
@@ -1195,6 +1280,10 @@ public class CubeMetastoreServiceImpl extends BaseLensService implements CubeMet
       msc = getSession(sessionid).getMetaStoreClient();
       List<String> tables = msc.getAllTables(
         dbName);
+      Configuration conf = getSession(sessionid).getSessionConf();
+      if (!conf.getBoolean(LensConfConstants.EXCLUDE_CUBE_TABLES, LensConfConstants.DEFAULT_EXCLUDE_CUBE_TABLES)) {
+        return tables;
+      }
       List<String> result = new ArrayList<String>();
       if (tables != null && !tables.isEmpty()) {
         List<org.apache.hadoop.hive.metastore.api.Table> tblObjects =
@@ -1214,10 +1303,6 @@ public class CubeMetastoreServiceImpl extends BaseLensService implements CubeMet
       return result;
     } catch (Exception e) {
       throw new LensException("Error getting native tables from DB", e);
-    } finally {
-      if (null != msc) {
-        msc.close();
-      }
     }
   }
 
@@ -1242,9 +1327,8 @@ public class CubeMetastoreServiceImpl extends BaseLensService implements CubeMet
         tables = getNativeTablesFromDB(sessionid, dbName, false);
       } else {
         log.info("Getting tables from all dbs");
-        List<String> alldbs = getAllDatabases(sessionid);
-        tables = new ArrayList<String>();
-        for (String db : alldbs) {
+        tables = new ArrayList<>();
+        for (String db : getAllDatabases(sessionid)) {
           tables.addAll(getNativeTablesFromDB(sessionid, db, true));
         }
       }

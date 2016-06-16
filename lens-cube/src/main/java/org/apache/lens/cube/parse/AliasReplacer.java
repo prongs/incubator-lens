@@ -81,7 +81,7 @@ class AliasReplacer implements ContextRewriter {
 
     replaceAliases(cubeql.getWhereAST(), 0, colToTableAlias);
 
-    replaceAliases(cubeql.getJoinTree(), 0, colToTableAlias);
+    replaceAliases(cubeql.getJoinAST(), 0, colToTableAlias);
 
     // Update the aggregate expression set
     AggregateResolver.updateAggregates(cubeql.getSelectAST(), cubeql);
@@ -164,9 +164,9 @@ class AliasReplacer implements ContextRewriter {
     }
   }
 
-  static void replaceAliases(ASTNode node, int nodePos, Map<String, String> colToTableAlias) {
+  static ASTNode replaceAliases(ASTNode node, int nodePos, Map<String, String> colToTableAlias) {
     if (node == null) {
-      return;
+      return node;
     }
 
     int nodeType = node.getToken().getType();
@@ -175,7 +175,7 @@ class AliasReplacer implements ContextRewriter {
       String newAlias = colToTableAlias.get(colName.toLowerCase());
 
       if (StringUtils.isBlank(newAlias)) {
-        return;
+        return node;
       }
 
       if (nodeType == HiveParser.DOT) {
@@ -183,7 +183,6 @@ class AliasReplacer implements ContextRewriter {
         ASTNode aliasNode = (ASTNode) node.getChild(0);
         ASTNode newAliasIdent = new ASTNode(new CommonToken(HiveParser.Identifier, newAlias));
         aliasNode.setChild(0, newAliasIdent);
-        newAliasIdent.setParent(aliasNode);
       } else {
         // Just a column ref, we need to make it alias.col
         // '.' will become the parent node
@@ -192,17 +191,17 @@ class AliasReplacer implements ContextRewriter {
         ASTNode tabRefNode = new ASTNode(new CommonToken(HiveParser.TOK_TABLE_OR_COL, "TOK_TABLE_OR_COL"));
 
         tabRefNode.addChild(aliasIdentNode);
-        aliasIdentNode.setParent(tabRefNode);
         dot.addChild(tabRefNode);
-        tabRefNode.setParent(dot);
 
         ASTNode colIdentNode = new ASTNode(new CommonToken(HiveParser.Identifier, colName));
-
         dot.addChild(colIdentNode);
 
         ASTNode parent = (ASTNode) node.getParent();
-
-        parent.setChild(nodePos, dot);
+        if (parent != null) {
+          parent.setChild(nodePos, dot);
+        } else {
+          return dot;
+        }
       }
     } else {
       // recurse down
@@ -211,6 +210,7 @@ class AliasReplacer implements ContextRewriter {
         replaceAliases(child, i, colToTableAlias);
       }
     }
+    return node;
   }
 
   static void updateAliasMap(ASTNode root, CubeQueryContext cubeql) {

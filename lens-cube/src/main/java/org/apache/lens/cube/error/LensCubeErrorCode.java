@@ -21,6 +21,7 @@ package org.apache.lens.cube.error;
 import org.apache.lens.server.api.LensErrorInfo;
 
 public enum LensCubeErrorCode {
+  // Error codes less than 3100 are errors encountered while submitting a query
   // Error codes same for drivers
   SYNTAX_ERROR(3001, 0),
   FIELDS_CANNOT_BE_QUERIED_TOGETHER(3002, 0),
@@ -42,7 +43,7 @@ public enum LensCubeErrorCode {
   CANNOT_USE_TIMERANGE_WRITER(3017, 100),
   NO_DEFAULT_AGGREGATE(3018, 200),
   EXPRESSION_NOT_IN_ANY_FACT(3019, 300),
-  NO_JOIN_CONDITION_AVAIABLE(3020, 400),
+  NO_JOIN_CONDITION_AVAILABLE(3020, 400),
   NO_JOIN_PATH(3021, 500),
   COLUMN_UNAVAILABLE_IN_TIME_RANGE(3022, 600),
   NO_DIM_HAS_COLUMN(3023, 700),
@@ -53,8 +54,14 @@ public enum LensCubeErrorCode {
   NO_CANDIDATE_FACT_AVAILABLE(3028, 1200),
   NO_CANDIDATE_DIM_STORAGE_TABLES(3029, 1300),
   NO_STORAGE_TABLE_AVAIABLE(3030, 1400),
-  TIME_DIM_UNSUPPORTED(3032, 1500),
-  ERROR_IN_ENTITY_DEFINITION(3101, 100);
+  STORAGE_UNION_DISABLED(3031, 1500),
+  COULD_NOT_PARSE_EXPRESSION(3032, 1500),
+  QUERIED_TABLE_NOT_FOUND(3033, 0),
+  TIME_DIM_UNSUPPORTED(3034, 1500),
+  // Error codes greater than 3100 are errors while doing a metastore operation.
+  ERROR_IN_ENTITY_DEFINITION(3101, 100),
+  TIMELINE_ABSENT(3102, 100),
+  EXPRESSION_NOT_PARSABLE(3103, 1500);
 
   public LensErrorInfo getLensErrorInfo() {
     return this.errorInfo;

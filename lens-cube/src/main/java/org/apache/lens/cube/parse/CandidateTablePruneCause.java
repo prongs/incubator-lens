@@ -26,6 +26,7 @@ import org.apache.lens.cube.error.ConflictingFields;
 import org.apache.lens.cube.error.FieldsCannotBeQueriedTogetherException;
 import org.apache.lens.cube.error.LensCubeErrorCode;
 import org.apache.lens.server.api.error.LensException;
+import org.apache.lens.cube.metadata.TimeRange;
 
 import org.codehaus.jackson.annotate.JsonWriteNullProperties;
 

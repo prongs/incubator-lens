@@ -19,6 +19,7 @@
 
 package org.apache.lens.cube.parse;
 
+import static org.apache.lens.cube.metadata.DateFactory.*;
 import static org.apache.lens.cube.parse.CubeTestSetup.*;
 
 import org.apache.lens.cube.error.LensCubeErrorCode;
@@ -55,10 +56,10 @@ public class TestExpressionResolver extends TestQueryRewrite {
     Assert.assertEquals(th.getErrorCode(), LensCubeErrorCode.COLUMN_NOT_FOUND.getLensErrorInfo().getErrorCode());
 
     Assert.assertTrue(getLensExceptionErrorMessageInRewrite(
-        "select nocolexpr, SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE, conf).contains("nonexist"));
+      "select nocolexpr, SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE, conf).contains("nonexist"));
 
     Assert.assertTrue(getLensExceptionErrorMessageInRewrite(
-        "select invalidexpr, SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE, conf).contains("invalidexpr"));
+      "select invalidexpr, SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE, conf).contains("invalidexpr"));
 
     th = getLensExceptionInRewrite("select invalidexpr, " + "SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE,
         conf);
@@ -68,7 +69,7 @@ public class TestExpressionResolver extends TestQueryRewrite {
   @Test
   public void testCubeQueryExpressionSelection() throws Exception {
     // select with expression
-    String hqlQuery = rewrite("cube select avgmsr from testCube where " + TWO_DAYS_RANGE, conf);
+    String hqlQuery = rewrite("select avgmsr from testCube where " + TWO_DAYS_RANGE, conf);
     String expected =
       getExpectedQuery(cubeName, "select avg(testCube.msr1 + testCube.msr2) FROM ", null, null,
         getWhereForHourly2days("C1_testfact2_raw"));
@@ -144,8 +145,18 @@ public class TestExpressionResolver extends TestQueryRewrite {
       getExpectedQuery("tc", "select substr(tc.dim1, 3) as `subdim1`, avg(tc.msr1 + tc.msr2) FROM ", null,
         " and subdim1 != 'XYZ' group by substr(tc.dim1, 3)", getWhereForHourly2days("tc", "C1_testfact2_raw"));
     TestCubeRewriter.compareQueries(hqlQuery, expected);
-
   }
+
+  @Test
+  public void testCubeQueryExpressionWithAliasAsColumnName() throws Exception {
+    String hqlQuery = rewrite("select dim1 as d1, roundedmsr2 as msr2 from testCube" + " where " + TWO_DAYS_RANGE,
+      conf);
+    String expected =
+      getExpectedQuery(cubeName, "select testcube.dim1 as `d1`, round(sum(testcube.msr2)/1000) as `msr2` FROM ", null,
+        " group by testcube.dim1", getWhereForDailyAndHourly2days(cubeName, "c1_summary1"));
+    TestCubeRewriter.compareQueries(hqlQuery, expected);
+  }
+
   @Test
   public void testExpressionInGroupbyToSelect() throws Exception {
     // expression with groupby
@@ -157,8 +168,8 @@ public class TestExpressionResolver extends TestQueryRewrite {
         + " avg(testCube.msr1 + testCube.msr2) FROM ", null, " and substr(testCube.dim1, 3) != 'XYZ'"
           + " group by testCube.dim1 != 'x' AND testCube.dim2 != 10", getWhereForHourly2days("C1_testfact2_raw"));
     TestCubeRewriter.compareQueries(hqlQuery, expected);
-
   }
+
   @Test
   public void testExpressionInSelectToGroupby() throws Exception {
     String hqlQuery =
@@ -193,61 +204,35 @@ public class TestExpressionResolver extends TestQueryRewrite {
         conf);
 
     String join1 =
-      " join " + getDbName() + "c1_citytable citydim"
-        + " on testcube.cityid = citydim.id and (citydim.dt = 'latest') ";
+      " join " + getDbName() + "c1_citytable cubecity"
+        + " on testcube.cityid = cubecity.id and (cubecity.dt = 'latest') ";
     String join2 = " join" + getDbName()
-      + "c1_statetable statedim on" + " testcube.stateid = statedim.id and (statedim.dt = 'latest')";
-    String joinExpr;
+      + "c1_statetable cubestate on" + " testcube.stateid = cubestate.id and (cubestate.dt = 'latest')";
 
     String expected =
-      getExpectedQuery(cubeName, "select concat(citydim.name, \":\", statedim.name),"
+      getExpectedQuery(cubeName, "select concat(cubecity.name, \":\", cubestate.name),"
         + " avg(testcube.msr1 + testcube.msr2) FROM ", join2 + join1, null, " and substr(testcube.dim1, 3) != 'XYZ'"
-          + " group by concat(citydim.name, \":\", statedim.name)", null, getWhereForHourly2days("C1_testfact2_raw"));
+          + " group by concat(cubecity.name, \":\", cubestate.name)", null, getWhereForHourly2days("C1_testfact2_raw"));
     TestCubeRewriter.compareQueries(hqlQuery, expected);
   }
   @Test
   public void testExpressionInWhereWithJoinClausePassed() throws Exception {
-
-    String hqlQuery =
-      rewrite("select cityAndState, avgmsr from testCube tc" + " join citydim cd join statedim sd " + " where "
-        + TWO_DAYS_RANGE + " and substrexpr != 'XYZ'", conf);
-
-    String join1 = " inner join " + getDbName() + "c1_citytable cd" + " on tc.cityid = cd.id and (cd.dt = 'latest')";
-    String join2 = " inner join" + getDbName() + "c1_statetable sd on" + " tc.stateid = sd.id and (sd.dt = 'latest')";
-    String expected =
-      getExpectedQuery("tc", "select concat(cd.name, \":\", sd.name)," + " avg(tc.msr1 + tc.msr2) FROM ",
-        join2 + join1, null, " and substr(tc.dim1, 3) != 'XYZ'" + " group by concat(cd.name, \":\", sd.name)", null,
-        getWhereForHourly2days("tc", "C1_testfact2_raw"));
-    TestCubeRewriter.compareQueries(hqlQuery, expected);
+    assertLensExceptionInRewrite("select cityAndState, avgmsr from testCube tc join citydim cd join statedim sd where "
+      + TWO_DAYS_RANGE + " and substrexpr != 'XYZ'", conf, LensCubeErrorCode.NO_JOIN_CONDITION_AVAILABLE);
   }
 
-  //@Test
+  @Test
   public void testExpressionInJoinClause() throws Exception {
     // expression in join clause
-    /*
-     * This is broken right now as partial join conditions
-     *  List<String> joinWhereConds = new ArrayList<String>();
-    joinWhereConds.add(StorageUtil.getWherePartClause("dt", "statedim", StorageConstants.getPartitionsForLatest()));
-    String hqlQuery =
-      rewrite("select cityAndState, avgmsr from testCube " + " join citydim on substrexpr != 'XYZ' where "
-        + TWO_DAYS_RANGE, conf);
-
-    String joinExpr =
-      "join" + getDbName() + "c1_statetable statedim on" + " testcube.stateid = statedim.id"
-        + " inner join " + getDbName() + "c1_citytable citydim" + " on testcube.cityid = citydim.id "
-        + " and substr(testcube.dim1, 3) != 'XYZ' and (citydim.dt = 'latest') ";
-    String expected =
-      getExpectedQuery(cubeName, "select concat(citydim.name, \":\", statedim.name),"
-          + " avg(testcube.msr1 + testcube.msr2) FROM ", joinExpr, null,
-        " group by concat(citydim.name, \":\", statedim.name)", joinWhereConds,
-        getWhereForHourly2days("C1_testfact2_raw"));
-    TestCubeRewriter.compareQueries(hqlQuery, expected);*/
+    assertLensExceptionInRewrite("select cityAndState, avgmsr from testCube join citydim on substrexpr != 'XYZ' where "
+      + TWO_DAYS_RANGE, conf, LensCubeErrorCode.NO_CANDIDATE_FACT_AVAILABLE);
   }
+
   @Test
   public void testExpressionInHaving() throws Exception {
     // expression with having clause
     String hqlQuery =
-      rewrite("cube select booleancut, avgmsr from testCube" + " where " + TWO_DAYS_RANGE + " and substrexpr != 'XYZ'"
+      rewrite("select booleancut, avgmsr from testCube" + " where " + TWO_DAYS_RANGE + " and substrexpr != 'XYZ'"
         + " having msr6 > 100.0", conf);
     String expected =
       getExpectedQuery(cubeName, "select testCube.dim1 != 'x' AND testCube.dim2 != 10 ,"
@@ -262,7 +247,7 @@ public class TestExpressionResolver extends TestQueryRewrite {
   public void testExpressionInOrderby() throws Exception {
     // expression with orderby clause
     String hqlQuery =
-      rewrite("cube select avgmsr from testCube " + " where " + TWO_DAYS_RANGE + " and substrexpr != 'XYZ'"
+      rewrite("select avgmsr from testCube " + " where " + TWO_DAYS_RANGE + " and substrexpr != 'XYZ'"
         + " group by booleancut having msr6 > 100.0 order by booleancut", conf);
     String expected =
       getExpectedQuery(cubeName, "select testCube.dim1 != 'x' AND testCube.dim2 != 10 ,"
@@ -275,7 +260,7 @@ public class TestExpressionResolver extends TestQueryRewrite {
   @Test
   public void testExpressionWithAliasInOrderby() throws Exception {
     String hqlQuery =
-      rewrite("cube select booleancut bc, msr2 from testCube" + " where " + TWO_DAYS_RANGE + " and substrexpr != 'XYZ'"
+      rewrite("select booleancut bc, msr2 from testCube" + " where " + TWO_DAYS_RANGE + " and substrexpr != 'XYZ'"
         + " having msr6 > 100.0 order by bc", conf);
     String expected =
       getExpectedQuery(cubeName, "select testCube.dim1 != 'x' AND testCube.dim2 != 10 as `bc`,"
@@ -317,8 +302,9 @@ public class TestExpressionResolver extends TestQueryRewrite {
 
   @Test
   public void testExpressionFieldWithOtherFields() throws Exception {
-    // select with expression which requires dimension tables. And there is a candidate, which is removed because
-    // the other fields which require the dimension tables as expression ones, are not reachable and
+    // select with expression which requires dimension tables.
+    // And there is a candidate, which is removed because
+    // required the dimension tables in the expression are not reachable and
     // the expression is not evaluable on the candidate.
     LensException th =
       getLensExceptionInRewrite("select cityStateName, msr2expr, msr5, msr15 from testCube where "
@@ -359,15 +345,15 @@ public class TestExpressionResolver extends TestQueryRewrite {
 
     String joinExpr;
     String join1 =
-      " join " + getDbName() + "c1_ziptable zipdim on" + " citydim.zipcode = zipdim.code and (zipdim.dt = 'latest')";
-    String join2 = " join " + getDbName() + "c1_statetable statedim on"
-      + " citydim.stateid = statedim.id and (statedim.dt = 'latest')";
+      " join " + getDbName() + "c1_ziptable cityzip on" + " citydim.zipcode = cityzip.code and (cityzip.dt = 'latest')";
+    String join2 = " join " + getDbName() + "c1_statetable citystate on"
+      + " citydim.stateid = citystate.id and (citystate.dt = 'latest')";
     String join3 = " join " + getDbName()
-      + "c1_countrytable countrydim on" + " statedim.countryid = countrydim.id";
+      + "c1_countrytable citycountry on" + " citystate.countryid = citycountry.id";
     joinExpr = join2 + join3 + join1;
     String expected =
-      getExpectedQuery("citydim", "SELECT citydim.name, concat((citydim.name), \":\", (statedim.name ),"
-        + " \":\",(countrydim.name),  \":\" , ( zipdim . code )) FROM ", joinExpr, null, null, "c1_citytable", true);
+      getExpectedQuery("citydim", "SELECT citydim.name, concat((citydim.name), \":\", (citystate.name ),"
+        + " \":\",(citycountry.name),  \":\" , ( cityzip . code )) FROM ", joinExpr, null, null, "c1_citytable", true);
     TestCubeRewriter.compareQueries(hqlQuery, expected);
   }
 
@@ -398,15 +384,15 @@ public class TestExpressionResolver extends TestQueryRewrite {
 
     String joinExpr;
     String join1 =
-      " join " + getDbName() + "c1_ziptable zipdim on" + " citydim.zipcode = zipdim.code and (zipdim.dt = 'latest')";
-    String join2 = " join " + getDbName() + "c1_statetable statedim on"
-      + " citydim.stateid = statedim.id and (statedim.dt = 'latest')";
+      " join " + getDbName() + "c1_ziptable cityzip on" + " citydim.zipcode = cityzip.code and (cityzip.dt = 'latest')";
+    String join2 = " join " + getDbName() + "c1_statetable citystate on"
+      + " citydim.stateid = citystate.id and (citystate.dt = 'latest')";
     String join3 = " join " + getDbName()
-      + "c1_countrytable countrydim on" + " statedim.countryid = countrydim.id";
+      + "c1_countrytable citycountry on" + " citystate.countryid = citycountry.id";
     joinExpr = join2 + join3 + join1;
     String expected =
-      getExpectedQuery("citydim", "SELECT citydim.name as `cname`, concat((citydim.name), \":\", (statedim.name ),"
-        + " \":\",(countrydim.name),  \":\" , ( zipdim . code )) as `caddr` FROM ", joinExpr, null, null,
+      getExpectedQuery("citydim", "SELECT citydim.name as `cname`, concat((citydim.name), \":\", (citystate.name ),"
+        + " \":\",(citycountry.name),  \":\" , ( cityzip . code )) as `caddr` FROM ", joinExpr, null, null,
         "c1_citytable", true);
     TestCubeRewriter.compareQueries(hqlQuery, expected);
   }
@@ -417,14 +403,14 @@ public class TestExpressionResolver extends TestQueryRewrite {
 
     String joinExpr =
       ""
-        + " join " + getDbName() + ".c1_statetable statedim on ct.stateid = statedim.id and (statedim.dt = 'latest')"
-        + " join " + getDbName() + ".c1_countrytable countrydim on statedim.countryid = countrydim.id"
-        + " join " + getDbName() + ".c1_ziptable zipdim on ct.zipcode = zipdim.code and (zipdim.dt = 'latest')"
+        + " join " + getDbName() + "c1_statetable citystate on ct.stateid = citystate.id and (citystate.dt = 'latest')"
+        + " join " + getDbName() + "c1_countrytable citycountry on citystate.countryid = citycountry.id"
+        + " join " + getDbName() + "c1_ziptable cityzip on ct.zipcode = cityzip.code and (cityzip.dt = 'latest')"
         + "";
 
     String expected =
-      getExpectedQuery("ct", "SELECT ct.name, concat((ct.name), \":\", (statedim.name ),"
-        + " \":\",(countrydim.name),  \":\" , ( zipdim . code )) FROM ", joinExpr, null, null, "c1_citytable", true);
+      getExpectedQuery("ct", "SELECT ct.name, concat((ct.name), \":\", (citystate.name ),"
+        + " \":\",(citycountry.name),  \":\" , ( cityzip . code )) FROM ", joinExpr, null, null, "c1_citytable", true);
     TestCubeRewriter.compareQueries(hqlQuery, expected);
   }
 
@@ -443,16 +429,151 @@ public class TestExpressionResolver extends TestQueryRewrite {
 
     String joinExpr =
       ""
-        + " join " + getDbName() + ".c1_statetable statedim on ct.stateid = statedim.id and (statedim.dt = 'latest')"
-        + " join " + getDbName() + ".c1_countrytable countrydim on statedim.countryid = countrydim.id"
-        + " join " + getDbName() + ".c1_ziptable zipdim on ct.zipcode = zipdim.code and (zipdim.dt = 'latest')"
-        + "";
+        + " join " + getDbName() + "c1_statetable citystate on ct.stateid = citystate.id and (citystate.dt = 'latest')"
+        + " join " + getDbName() + "c1_countrytable citycountry on citystate.countryid = citycountry.id"
+        + " join " + getDbName() + "c1_ziptable cityzip on ct.zipcode = cityzip.code and (cityzip.dt = 'latest')";
 
     String expected =
-      getExpectedQuery("ct", "SELECT ct.name as `cname`, concat((ct.name), \":\", (statedim.name ),"
-        + " \":\",(countrydim.name),  \":\" , ( zipdim . code )) as `caddr` FROM ", joinExpr, null, null,
+      getExpectedQuery("ct", "SELECT ct.name as `cname`, concat((ct.name), \":\", (citystate.name ),"
+        + " \":\",(citycountry.name),  \":\" , ( cityzip . code )) as `caddr` FROM ", joinExpr, null, null,
         "c1_citytable", true);
     TestCubeRewriter.compareQueries(hqlQuery, expected);
+  }
+
+  @Test
+  public void testSingleColExpression() throws Exception {
+    Configuration tconf = new Configuration(conf);
+    tconf.set(CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "C2");
+    CubeQueryContext rewrittenQuery =
+      rewriteCtx("select singlecolmsr2expr from testCube where " + TWO_DAYS_RANGE, tconf);
+    String expected =
+      getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null, null,
+        getWhereForDailyAndHourly2days(cubeName, "C2_testfact"));
+    TestCubeRewriter.compareQueries(rewrittenQuery.toHQL(), expected);
+  }
+
+  @Test
+  public void testSingleDimColExpression() throws Exception {
+    Configuration tconf = new Configuration(conf);
+    tconf.set(CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "C1");
+    CubeQueryContext rewrittenQuery =
+      rewriteCtx("select singlecoldim1expr from testCube where " + TWO_DAYS_RANGE, tconf);
+    String expected =
+      getExpectedQuery(cubeName, "select distinct testcube.dim1 FROM ", null, null,
+        getWhereForDailyAndHourly2days(cubeName, "c1_summary1"));
+    TestCubeRewriter.compareQueries(rewrittenQuery.toHQL(), expected);
+  }
+
+  @Test
+  public void testSingleDimColExpressionWithAlias() throws Exception {
+    Configuration tconf = new Configuration(conf);
+    tconf.set(CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "C1");
+    CubeQueryContext rewrittenQuery =
+      rewriteCtx("select singlecoldim1expr as x from testCube where " + TWO_DAYS_RANGE, tconf);
+    String expected =
+      getExpectedQuery(cubeName, "select distinct testcube.dim1 as x FROM ", null, null,
+        getWhereForDailyAndHourly2days(cubeName, "C1_summary1"));
+    TestCubeRewriter.compareQueries(rewrittenQuery.toHQL(), expected);
+  }
+
+  @Test
+  public void testSingleDimColQualifiedExpression() throws Exception {
+    Configuration tconf = new Configuration(conf);
+    tconf.set(CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "C1");
+    CubeQueryContext rewrittenQuery =
+      rewriteCtx("select singlecoldim1qualifiedexpr from testCube where " + TWO_DAYS_RANGE, tconf);
+    String expected =
+      getExpectedQuery(cubeName, "select distinct testcube.dim1 FROM ", null, null,
+        getWhereForDailyAndHourly2days(cubeName, "C1_summary1"));
+    TestCubeRewriter.compareQueries(rewrittenQuery.toHQL(), expected);
+  }
+
+  @Test
+  public void testSingleChainIdExpression() throws Exception {
+    Configuration tconf = new Configuration(conf);
+    tconf.set(CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "C2");
+    CubeQueryContext rewrittenQuery =
+      rewriteCtx("select singlecolchainid from testCube where " + TWO_DAYS_RANGE_IT, tconf);
+    String expected =
+      getExpectedQuery(cubeName, "select distinct dim3chain.id FROM ",
+        " join " + getDbName() + "c2_testdim3tbl dim3chain on testcube.testdim3id = dim3chain.id",
+        null, null, null,
+        getWhereForDailyAndHourly2daysWithTimeDim(cubeName, "it", "C2_summary1"));
+    TestCubeRewriter.compareQueries(rewrittenQuery.toHQL(), expected);
+  }
+
+  @Test
+  public void testSingleChainRefIdExpression() throws Exception {
+    Configuration tconf = new Configuration(conf);
+    tconf.set(CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "C2");
+    CubeQueryContext rewrittenQuery =
+      rewriteCtx("select singlecolchainrefexpr from testCube where " + TWO_DAYS_RANGE_IT, tconf);
+    String expected =
+      getExpectedQuery(cubeName, "select distinct testcube.testdim3id FROM ", null, null,
+        getWhereForDailyAndHourly2daysWithTimeDim(cubeName, "it", "C2_summary1"));
+    TestCubeRewriter.compareQueries(rewrittenQuery.toHQL(), expected);
+  }
+
+  @Test
+  public void testSingleChainRefColExpression() throws Exception {
+    Configuration tconf = new Configuration(conf);
+    tconf.set(CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "C2");
+    CubeQueryContext rewrittenQuery =
+      rewriteCtx("select singlecolchainfield from testCube where " + TWO_DAYS_RANGE, tconf);
+    String expected =
+      getExpectedQuery(cubeName, "select distinct cubecity.name FROM ",
+        " join " + getDbName() + "c2_citytable cubecity ON testcube.cityid = cubecity.id",
+        null, null, null, getWhereForDailyAndHourly2days(cubeName, "C2_testfact"));
+    TestCubeRewriter.compareQueries(rewrittenQuery.toHQL(), expected);
+  }
+
+  @Test
+  public void testSingleChainRefColExpressionWithAlias() throws Exception {
+    Configuration tconf = new Configuration(conf);
+    tconf.set(CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "C2");
+    CubeQueryContext rewrittenQuery =
+      rewriteCtx("select singlecolchainfield as cityname from testCube where " + TWO_DAYS_RANGE, tconf);
+    String expected =
+      getExpectedQuery(cubeName, "select distinct cubecity.name as cityname FROM ",
+        " join " + getDbName() + "c2_citytable cubecity ON testcube.cityid = cubecity.id",
+        null, null, null, getWhereForDailyAndHourly2days(cubeName, "C2_testfact"));
+    TestCubeRewriter.compareQueries(rewrittenQuery.toHQL(), expected);
+  }
+
+  @Test
+  public void testSingleColExpressionWithAlias() throws Exception {
+    Configuration tconf = new Configuration(conf);
+    tconf.set(CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "C2");
+    CubeQueryContext rewrittenQuery =
+      rewriteCtx("select singlecolmsr2expr as msr2 from testCube where " + TWO_DAYS_RANGE, tconf);
+    String expected =
+      getExpectedQuery(cubeName, "select sum(testcube.msr2) msr2 FROM ", null, null,
+        getWhereForDailyAndHourly2days(cubeName, "C2_testfact"));
+    TestCubeRewriter.compareQueries(rewrittenQuery.toHQL(), expected);
+  }
+
+  @Test
+  public void testSingleColQualifiedExpression() throws Exception {
+    Configuration tconf = new Configuration(conf);
+    tconf.set(CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "C2");
+    CubeQueryContext rewrittenQuery =
+      rewriteCtx("select singlecolmsr2qualifiedexpr from testCube where " + TWO_DAYS_RANGE, tconf);
+    String expected =
+      getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null, null,
+        getWhereForDailyAndHourly2days(cubeName, "C2_testfact"));
+    TestCubeRewriter.compareQueries(rewrittenQuery.toHQL(), expected);
+  }
+
+  @Test
+  public void testSingleColQualifiedExpressionWithAlias() throws Exception {
+    Configuration tconf = new Configuration(conf);
+    tconf.set(CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "C2");
+    CubeQueryContext rewrittenQuery =
+      rewriteCtx("select singlecolmsr2qualifiedexpr from testCube tc where " + TWO_DAYS_RANGE, tconf);
+    String expected =
+      getExpectedQuery("tc", "select sum(tc.msr2) FROM ", null, null,
+        getWhereForDailyAndHourly2days("tc", "C2_testfact"));
+    TestCubeRewriter.compareQueries(rewrittenQuery.toHQL(), expected);
   }
 
 }

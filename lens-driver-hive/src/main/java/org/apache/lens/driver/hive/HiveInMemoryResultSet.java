@@ -81,7 +81,7 @@ public class HiveInMemoryResultSet extends InMemoryResultSet {
     this.closeAfterFecth = closeAfterFecth;
     this.metadata = client.getResultSetMetadata(opHandle);
     this.numColumns = metadata.getColumnDescriptors().size();
-    this.seekToStart();
+    this.orientation = FetchOrientation.FETCH_FIRST;
   }
 
   /*
@@ -103,12 +103,6 @@ public class HiveInMemoryResultSet extends InMemoryResultSet {
     return hrsMeta;
   }
 
-  @Override
-  public boolean seekToStart() {
-    orientation = FetchOrientation.FETCH_FIRST;
-    return true;
-  }
-
   /*
      * (non-Javadoc)
      *
@@ -118,7 +112,7 @@ public class HiveInMemoryResultSet extends InMemoryResultSet {
   public boolean hasNext() throws LensException {
     if (fetchedRowsItr == null || !fetchedRowsItr.hasNext()) {
       try {
-        rowSet = client.fetchResults(opHandle, orientation, fetchSize);
+        rowSet = client.fetchResults(opHandle, orientation, fetchSize, FetchType.QUERY_OUTPUT);
         orientation = FetchOrientation.FETCH_NEXT;
         noMoreResults = rowSet.numRows() == 0;
         if (noMoreResults) {

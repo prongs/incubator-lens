@@ -19,18 +19,11 @@
 
 package org.apache.lens.cube.parse;
 
-import static org.apache.hadoop.hive.ql.parse.HiveParser.DOT;
-import static org.apache.hadoop.hive.ql.parse.HiveParser.Identifier;
-import static org.apache.hadoop.hive.ql.parse.HiveParser.TOK_TABLE_OR_COL;
+import static org.apache.hadoop.hive.ql.parse.HiveParser.*;
 
 import java.util.*;
 
-import org.apache.lens.cube.metadata.AbstractBaseTable;
-import org.apache.lens.cube.metadata.AbstractCubeTable;
-import org.apache.lens.cube.metadata.CubeColumn;
-import org.apache.lens.cube.metadata.CubeInterface;
-import org.apache.lens.cube.metadata.Dimension;
-import org.apache.lens.cube.metadata.ExprColumn;
+import org.apache.lens.cube.metadata.*;
 import org.apache.lens.cube.metadata.ExprColumn.ExprSpec;
 import org.apache.lens.cube.parse.CandidateTablePruneCause.CandidateTablePruneCode;
 import org.apache.lens.cube.parse.HQLParser.ASTNodeVisitor;
@@ -43,10 +36,7 @@ import org.apache.hadoop.hive.ql.parse.HiveParser;
 
 import org.antlr.runtime.CommonToken;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.ToString;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -143,8 +133,8 @@ class ExpressionResolver implements ContextRewriter {
       for (String col : exprCols) {
         Set<ExprSpecContext> replacedExpressions = new LinkedHashSet<ExprSpecContext>();
         for (ExprSpec es : baseTable.getExpressionByName(col).getExpressionSpecs()) {
-          ASTNode finalAST = HQLParser.copyAST(baseEsc.getFinalAST());
-          replaceColumnInAST(finalAST, col, es.getASTNode());
+          ASTNode finalAST = MetastoreUtil.copyAST(baseEsc.getFinalAST());
+          replaceColumnInAST(finalAST, col, es.copyASTNode());
           ExprSpecContext replacedESC = new ExprSpecContext(baseEsc, es, finalAST, cubeql);
           nestedExpressions.add(replacedESC);
           replacedExpressions.add(replacedESC);
@@ -158,6 +148,7 @@ class ExpressionResolver implements ContextRewriter {
     }
 
     void addDirectlyAvailable(CandidateTable cTable) {
+      log.debug("Directly available in {}", cTable);
       directlyAvailableIn.add(cTable);
     }
 
@@ -207,19 +198,19 @@ class ExpressionResolver implements ContextRewriter {
   }
 
   static class ExprSpecContext implements TrackQueriedColumns {
+    private Set<ExprSpec> exprSpecs = new LinkedHashSet<>();
     @Getter
-    private Set<ExprSpec> exprSpecs = new LinkedHashSet<ExprSpec>();
-    @Getter
+    @Setter
     private ASTNode finalAST;
     @Getter
-    private Set<Dimension> exprDims = new HashSet<Dimension>();
+    private Set<Dimension> exprDims = new HashSet<>();
     // for each expression store alias to columns queried
     @Getter
-    private Map<String, Set<String>> tblAliasToColumns = new HashMap<String, Set<String>>();
+    private Map<String, Set<String>> tblAliasToColumns = new HashMap<>();
 
     ExprSpecContext(ExprSpec exprSpec, CubeQueryContext cubeql) throws LensException {
       // replaces table names in expression with aliases in the query
-      finalAST = replaceAlias(exprSpec.getASTNode(), cubeql);
+      finalAST = replaceAlias(exprSpec.copyASTNode(), cubeql);
       exprSpecs.add(exprSpec);
     }
     public ExprSpecContext(ExprSpecContext nested, ExprSpec current, ASTNode node,
@@ -231,7 +222,7 @@ class ExpressionResolver implements ContextRewriter {
     public void replaceAliasInAST(CubeQueryContext cubeql)
       throws LensException {
       AliasReplacer.extractTabAliasForCol(cubeql, this);
-      AliasReplacer.replaceAliases(finalAST, 0, cubeql.getColToTableAlias());
+      finalAST = AliasReplacer.replaceAliases(finalAST, 0, cubeql.getColToTableAlias());
     }
     public void addColumnsQueried(String alias, String column) {
       Set<String> cols = tblAliasToColumns.get(alias.toLowerCase());
@@ -244,11 +235,11 @@ class ExpressionResolver implements ContextRewriter {
 
     void resolveColumns(CubeQueryContext cubeql) throws LensException {
       // finds all columns and table aliases in the expression
-      ColumnResolver.getColsForTree(cubeql, finalAST, this);
+      ColumnResolver.getColsForTree(cubeql, finalAST, this, false);
     }
 
     Date getStartTime() {
-      Set<Date> startTimes = new HashSet<Date>();
+      Set<Date> startTimes = new HashSet<>();
       for (ExprSpec es : exprSpecs) {
         if (es.getStartTime() != null) {
           startTimes.add(es.getStartTime());
@@ -261,7 +252,7 @@ class ExpressionResolver implements ContextRewriter {
     }
 
     Date getEndTime() {
-      Set<Date> endTimes = new HashSet<Date>();
+      Set<Date> endTimes = new HashSet<>();
       for (ExprSpec es : exprSpecs) {
         if (es.getEndTime() != null) {
           endTimes.add(es.getEndTime());
@@ -405,11 +396,11 @@ class ExpressionResolver implements ContextRewriter {
      */
     public boolean allNotEvaluable(Set<String> exprs, CandidateTable cTable) {
       for (String expr : exprs) {
-        if (!isEvaluable(expr, cTable)) {
-          return true;
+        if (isEvaluable(expr, cTable)) {
+          return false;
         }
       }
-      return false;
+      return true;
     }
 
     public Collection<String> coveringExpressions(Set<String> exprs, CandidateTable cTable) {
@@ -439,7 +430,7 @@ class ExpressionResolver implements ContextRewriter {
     }
 
     public Set<Dimension> rewriteExprCtx(CandidateFact cfact, Map<Dimension, CandidateDim> dimsToQuery,
-      boolean replaceFact) throws LensException {
+      QueryAST queryAST) throws LensException {
       Set<Dimension> exprDims = new HashSet<Dimension>();
       if (!allExprsQueried.isEmpty()) {
         // pick expressions for fact
@@ -453,7 +444,8 @@ class ExpressionResolver implements ContextRewriter {
           }
         }
         // Replace picked expressions in all the base trees
-        replacePickedExpressions(cfact, replaceFact);
+        replacePickedExpressions(cfact, queryAST);
+        log.debug("Picked expressions: {}", pickedExpressions);
         for (Set<PickedExpression> peSet : pickedExpressions.values()) {
           for (PickedExpression pe : peSet) {
             exprDims.addAll(pe.pickedCtx.exprDims);
@@ -464,21 +456,21 @@ class ExpressionResolver implements ContextRewriter {
       return exprDims;
     }
 
-    private void replacePickedExpressions(CandidateFact cfact, boolean replaceFact)
+    private void replacePickedExpressions(CandidateFact cfact, QueryAST queryAST)
       throws LensException {
-      if (replaceFact) {
-        replaceAST(cubeql, cfact.getSelectAST());
-        replaceAST(cubeql, cfact.getWhereAST());
-        replaceAST(cubeql, cfact.getJoinTree());
-        replaceAST(cubeql, cfact.getGroupByAST());
-        replaceAST(cubeql, cfact.getHavingAST());
+      replaceAST(cubeql, queryAST.getSelectAST());
+      if (cfact != null) {
+        for (ASTNode storageWhereClauseAST : cfact.getStorgeWhereClauseMap().values()) {
+          replaceAST(cubeql, storageWhereClauseAST);
+        }
       } else {
-        replaceAST(cubeql, cubeql.getSelectAST());
-        replaceAST(cubeql, cubeql.getWhereAST());
-        replaceAST(cubeql, cubeql.getJoinTree());
-        replaceAST(cubeql, cubeql.getGroupByAST());
-        replaceAST(cubeql, cubeql.getHavingAST());
+        replaceAST(cubeql, queryAST.getWhereAST());
       }
+      replaceAST(cubeql, queryAST.getJoinAST());
+      replaceAST(cubeql, queryAST.getGroupByAST());
+      // Having AST is resolved by each fact, so that all facts can expand their expressions.
+      // Having ast is not copied now, it's maintained in cubeql, each fact processes that serially.
+      replaceAST(cubeql, cubeql.getHavingAST());
       replaceAST(cubeql, cubeql.getOrderByAST());
     }
 
@@ -533,6 +525,7 @@ class ExpressionResolver implements ContextRewriter {
         for (ExpressionContext ec : ecSet) {
           if (ec.getSrcTable().getName().equals(cTable.getBaseTable().getName())) {
             if (!ec.directlyAvailableIn.contains(cTable)) {
+              log.debug("{} is not directly evaluable in {}", ec, cTable);
               if (ec.evaluableExpressions.get(cTable) != null && !ec.evaluableExpressions.get(cTable).isEmpty()) {
                 // pick first evaluable expression
                 Set<PickedExpression> peSet = pickedExpressions.get(ecEntry.getKey());
@@ -725,7 +718,7 @@ class ExpressionResolver implements ContextRewriter {
   }
 
   private static ASTNode replaceAlias(final ASTNode expr, final CubeQueryContext cubeql) throws LensException {
-    ASTNode finalAST = HQLParser.copyAST(expr);
+    ASTNode finalAST = MetastoreUtil.copyAST(expr);
     HQLParser.bft(finalAST, new ASTNodeVisitor() {
       @Override
       public void visit(TreeNode visited) {
@@ -768,7 +761,7 @@ class ExpressionResolver implements ContextRewriter {
             ASTNode ident = (ASTNode) current.getChild(0);
             String column = ident.getText().toLowerCase();
             if (toReplace.equals(column)) {
-              node.setChild(i, HQLParser.copyAST(columnAST));
+              node.setChild(i, MetastoreUtil.copyAST(columnAST));
             }
           } else if (current.getToken().getType() == DOT) {
             // This is for the case where column name is prefixed by table name
@@ -781,7 +774,7 @@ class ExpressionResolver implements ContextRewriter {
             String column = colIdent.getText().toLowerCase();
 
             if (toReplace.equals(column)) {
-              node.setChild(i, HQLParser.copyAST(columnAST));
+              node.setChild(i, MetastoreUtil.copyAST(columnAST));
             }
           }
         }

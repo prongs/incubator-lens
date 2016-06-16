@@ -30,7 +30,6 @@ import org.apache.lens.api.APIResult.Status;
 import org.apache.lens.api.LensConf;
 import org.apache.lens.api.LensSessionHandle;
 import org.apache.lens.api.StringList;
-import org.apache.lens.server.BaseLensService;
 import org.apache.lens.server.LensServices;
 import org.apache.lens.server.api.error.LensException;
 import org.apache.lens.server.api.session.SessionService;
@@ -45,7 +44,7 @@ import lombok.extern.slf4j.Slf4j;
  * <p></p>
  * This provides api for all things in session.
  */
-@Path("/session")
+@Path("session")
 @Slf4j
 public class SessionResource {
 
@@ -83,22 +82,18 @@ public class SessionResource {
    */
   @POST
   @Consumes({MediaType.MULTIPART_FORM_DATA})
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, MediaType.TEXT_PLAIN})
+  @Produces({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN})
   public LensSessionHandle openSession(@FormDataParam("username") String username,
     @FormDataParam("password") String password,
     @FormDataParam("database")  @DefaultValue("") String database,
-    @FormDataParam("sessionconf") LensConf sessionconf) {
-    try {
-      Map<String, String> conf;
-      if (sessionconf != null) {
-        conf = sessionconf.getProperties();
-      } else {
-        conf = new HashMap<String, String>();
-      }
-      return sessionService.openSession(username, password, database,   conf);
-    } catch (LensException e) {
-      throw new WebApplicationException(e);
+    @FormDataParam("sessionconf") LensConf sessionconf) throws LensException {
+    Map<String, String> conf;
+    if (sessionconf != null) {
+      conf = sessionconf.getProperties();
+    } else {
+      conf = new HashMap();
     }
+    return sessionService.openSession(username, password, database,   conf);
   }
 
   /**
@@ -108,11 +103,12 @@ public class SessionResource {
    * @return APIResult object indicating if the operation was successful (check result.getStatus())
    */
   @DELETE
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, MediaType.TEXT_PLAIN})
+  @Produces({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN})
   public APIResult closeSession(@QueryParam("sessionid") LensSessionHandle sessionid) {
     try {
       sessionService.closeSession(sessionid);
     } catch (LensException e) {
+      log.error("Got an exception while closing {} session: ", sessionid, e);
       return new APIResult(Status.FAILED, e.getMessage());
     }
     return new APIResult(Status.SUCCEEDED, "Close session with id" + sessionid + "succeeded");
@@ -136,25 +132,27 @@ public class SessionResource {
   @PUT
   @Path("resources/add")
   @Consumes({MediaType.MULTIPART_FORM_DATA})
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, MediaType.TEXT_PLAIN})
+  @Produces({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN})
   public APIResult addResource(@FormDataParam("sessionid") LensSessionHandle sessionid,
     @FormDataParam("type") String type, @FormDataParam("path") String path) {
     ScannedPaths scannedPaths = new ScannedPaths(path, type);
-    int matchedPathsCount = 0;
 
     int numAdded = 0;
     for (String matchedPath : scannedPaths) {
-      if (matchedPath.startsWith("file:") && !matchedPath.startsWith("file://")) {
-        matchedPath = "file://" + matchedPath.substring("file:".length());
+      try {
+        if (matchedPath.startsWith("file:") && !matchedPath.startsWith("file://")) {
+          matchedPath = "file://" + matchedPath.substring("file:".length());
+        }
+        sessionService.addResource(sessionid, type, matchedPath);
+        numAdded++;
+      } catch (Exception e) {
+        log.error("Failed to add resource {} ", matchedPath, e);
+        if (numAdded != 0) {
+          return new APIResult(Status.PARTIAL, "Add resource is partial");
+        } else {
+          return new APIResult(Status.FAILED, "Add resource has failed");
+        }
       }
-      numAdded += sessionService.addResourceToAllServices(sessionid, type, matchedPath);
-      matchedPathsCount++;
-    }
-
-    if (numAdded == 0) {
-      return new APIResult(Status.FAILED, "Add resource has failed");
-    } else if ((numAdded / matchedPathsCount) != LensServices.get().getLensServices().size()) {
-      return new APIResult(Status.PARTIAL, "Add resource is partial");
     }
     return new APIResult(Status.SUCCEEDED, "Add resource succeeded");
   }
@@ -169,7 +167,7 @@ public class SessionResource {
    */
   @GET
   @Path("resources/list")
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, MediaType.TEXT_PLAIN})
+  @Produces({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN})
   public StringList listResources(@QueryParam("sessionid") LensSessionHandle sessionid,
     @QueryParam("type") String type) {
     List<String> resources = sessionService.listAllResources(sessionid, type);
@@ -193,7 +191,7 @@ public class SessionResource {
   @Path("resources/delete")
 
   @Consumes({MediaType.MULTIPART_FORM_DATA})
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, MediaType.TEXT_PLAIN})
+  @Produces({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN})
   public APIResult deleteResource(@FormDataParam("sessionid") LensSessionHandle sessionid,
     @FormDataParam("type") String type, @FormDataParam("path") String path) {
     ScannedPaths scannedPaths = new ScannedPaths(path, type);
@@ -201,20 +199,18 @@ public class SessionResource {
     int numDeleted = 0;
 
     for(String matchedPath : scannedPaths) {
-      for (BaseLensService service : LensServices.get().getLensServices()) {
-        try {
-          if (matchedPath.startsWith("file:") && !matchedPath.startsWith("file://")) {
-            matchedPath = "file://" + matchedPath.substring("file:".length());
-          }
-          service.deleteResource(sessionid, type, matchedPath);
-          numDeleted++;
-        } catch (LensException e) {
-          log.error("Failed to delete resource in service:{}", service, e);
-          if (numDeleted != 0) {
-            return new APIResult(Status.PARTIAL, "Delete resource is partial, failed for service:" + service.getName());
-          } else {
-            return new APIResult(Status.FAILED, "Delete resource has failed");
-          }
+      try {
+        if (matchedPath.startsWith("file:") && !matchedPath.startsWith("file://")) {
+          matchedPath = "file://" + matchedPath.substring("file:".length());
+        }
+        sessionService.deleteResource(sessionid, type, matchedPath);
+        numDeleted++;
+      } catch (Exception e) {
+        log.error("Failed to delete resource {} ", matchedPath, e);
+        if (numDeleted != 0) {
+          return new APIResult(Status.PARTIAL, "Delete resource is partial");
+        } else {
+          return new APIResult(Status.FAILED, "Delete resource has failed");
         }
       }
     }
@@ -232,7 +228,7 @@ public class SessionResource {
    */
   @GET
   @Path("params")
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, MediaType.TEXT_PLAIN})
+  @Produces({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN})
   public StringList getParams(@QueryParam("sessionid") LensSessionHandle sessionid,
     @DefaultValue("false") @QueryParam("verbose") boolean verbose, @DefaultValue("") @QueryParam("key") String key) {
     try {
@@ -257,7 +253,7 @@ public class SessionResource {
    */
   @PUT
   @Path("params")
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, MediaType.TEXT_PLAIN})
+  @Produces({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN})
   public APIResult setParam(@FormDataParam("sessionid") LensSessionHandle sessionid, @FormDataParam("key") String key,
     @FormDataParam("value") String value) {
     sessionService.setSessionParameter(sessionid, key, value);

@@ -24,8 +24,8 @@
 <configuration>
   <property>
     <name>lens.server.drivers</name>
-    <value>org.apache.lens.driver.hive.HiveDriver,org.apache.lens.driver.jdbc.JDBCDriver,
-      org.apache.lens.server.common.FailingQueryDriver</value>
+    <value>hive:org.apache.lens.driver.hive.HiveDriver,jdbc:org.apache.lens.driver.jdbc.JDBCDriver,
+      mock:org.apache.lens.server.common.FailingQueryDriver</value> <!--$LENS_CONF/drivers-->
   </property>
 
   <property>
@@ -54,12 +54,7 @@
     <name>lens.query.result.parent.dir</name>
     <value>target/lens-results</value>
   </property>
-
-  <property>
-    <name>hive.server2.query.log.dir</name>
-    <value>target/query-logs</value>
-  </property>
-
+  
   <property>
     <name>hive.server2.authentication</name>
     <value>CUSTOM</value>
@@ -128,8 +123,8 @@
 
   <property>
     <!-- run every second -->
-    <name>lens.server.purge.interval</name>
-    <value>1000</value>
+    <name>lens.server.querypurger.sleep.interval</name>
+    <value>100</value>
   </property>
 
   <property>
@@ -187,4 +182,20 @@
     <name>lens.server.estimate.timeout.millis</name>
     <value>120000</value>
   </property>
+  <property>
+    <name>lens.server.max.sessions.per.user</name>
+    <value>20</value>
+    <description>Number of sessions can be allowed for each user.</description>
+  </property>
+  <property>
+    <name>lens.server.status.update.exponential.wait.millis</name>
+    <value>1000</value>
+    <description>Number of millis that would grow exponentially for next update, incase of transient failures.
+    </description>
+  </property>
+  <property>
+    <name>lens.server.duplicate.query.allowed</name>
+    <value>true</value>
+  </property>
+
 </configuration>

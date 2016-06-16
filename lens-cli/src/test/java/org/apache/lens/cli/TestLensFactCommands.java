@@ -31,6 +31,7 @@ import org.apache.lens.cli.commands.LensCubeCommands;
 import org.apache.lens.cli.commands.LensFactCommands;
 import org.apache.lens.client.LensClient;
 
+import org.testng.annotations.AfterTest;
 import org.testng.annotations.Test;
 
 import lombok.extern.slf4j.Slf4j;
@@ -93,6 +94,16 @@ public class TestLensFactCommands extends LensCliApplicationTest {
       cubeCommands.setClient(client);
     }
     return cubeCommands;
+  }
+
+  @AfterTest
+  public void cleanUp() {
+    if (command != null) {
+      command.getClient().closeConnection();
+    }
+    if (cubeCommands != null) {
+      cubeCommands.getClient().closeConnection();
+    }
   }
 
   /**
@@ -158,8 +169,8 @@ public class TestLensFactCommands extends LensCliApplicationTest {
 
       String desc = command.describeFactTable("fact1");
       log.debug(desc);
-      String propString = "name : fact1.prop  value : f1";
-      String propString1 = "name : fact1.prop1  value : f2";
+      String propString = "fact1.prop: f1";
+      String propString1 = "fact1.prop1: f2";
 
       assertTrue(desc.contains(propString));
 

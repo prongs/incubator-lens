@@ -51,6 +51,8 @@ public final class CubeQueryConfUtil {
   public static final String ENABLE_SELECT_TO_GROUPBY = "lens.cube.query.promote.select.togroupby";
   public static final String ENABLE_ATTRFIELDS_ADD_DISTINCT = "lens.cube.query.enable.attrfields.add.distinct";
   public static final boolean DEFAULT_ATTR_FIELDS_ADD_DISTINCT = true;
+  public static final String ENABLE_STORAGES_UNION = "lens.cube.query.enable.storages.union";
+  public static final boolean DEFAULT_ENABLE_STORAGES_UNION = false;
 
   public static final String REPLACE_TIMEDIM_WITH_PART_COL = "lens.cube.query.replace.timedim";
   public static final boolean DEFAULT_MULTI_TABLE_SELECT = true;
@@ -108,4 +110,11 @@ public final class CubeQueryConfUtil {
   public static final boolean DEFAULT_ENABLE_FLATTENING_FOR_BRIDGETABLES = false;
   public static final String BRIDGE_TABLE_FIELD_AGGREGATOR = "lens.cube.query.bridge.table.field.aggregator";
   public static final String DEFAULT_BRIDGE_TABLE_FIELD_AGGREGATOR = "collect_set";
+  public static final String DO_FLATTENING_OF_BRIDGE_TABLE_EARLY =
+    "lens.cube.query.flatten.bridge.tables.early";
+  public static final boolean DEFAULT_DO_FLATTENING_OF_BRIDGE_TABLE_EARLY = false;
+  public static final String BRIDGE_TABLE_FIELD_ARRAY_FILTER = "lens.cube.query.bridge.table.field.array.filter";
+  public static final String DEFAULT_BRIDGE_TABLE_FIELD_ARRAY_FILTER = "array_contains";
+  public static final String REWRITE_DIM_FILTER_TO_FACT_FILTER = "lens.cube.query.rewrite.dim.filter.to.fact.filter";
+  public static final boolean DEFAULT_REWRITE_DIM_FILTER_TO_FACT_FILTER = false;
 }

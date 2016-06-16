@@ -27,6 +27,7 @@ import org.apache.lens.client.LensClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
+import org.testng.annotations.AfterTest;
 import org.testng.annotations.Test;
 
 /**
@@ -59,6 +60,13 @@ public class TestLensStorageCommands extends LensCliApplicationTest {
       command.setClient(client);
     }
     return command;
+  }
+
+  @AfterTest
+  public void cleanup() {
+    if (command != null) {
+      command.getClient().closeConnection();
+    }
   }
 
   /**
@@ -149,14 +157,14 @@ public class TestLensStorageCommands extends LensCliApplicationTest {
       String desc = command.describeStorage(storageName);
       LOG.debug(desc);
       System.out.println(desc);
-      String propString = "name : storage.url  value : file:///";
+      String propString = "storage.url: file:///";
       Assert.assertTrue(desc.contains(propString));
 
       String updateResult = command.updateStorage(storageName, new File(updateFilePath));
       Assert.assertTrue(updateResult.contains("succeeded"));
       desc = command.describeStorage(storageName);
       LOG.debug(desc);
-      String propString2 = "name : storage.prop1  value : v1";
+      String propString2 = "storage.prop1: v1";
       Assert.assertTrue(desc.contains(propString));
       Assert.assertTrue(desc.contains(propString2));
     } finally {

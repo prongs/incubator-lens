@@ -20,6 +20,9 @@ package org.apache.lens.server.query;
 
 import static org.testng.Assert.*;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -30,6 +33,7 @@ import org.apache.lens.api.query.QueryStatus;
 import org.apache.lens.server.EventServiceImpl;
 import org.apache.lens.server.LensServerConf;
 import org.apache.lens.server.LensServices;
+import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.error.LensException;
 import org.apache.lens.server.api.events.AsyncEventListener;
 import org.apache.lens.server.api.events.LensEvent;
@@ -275,6 +279,7 @@ public class TestEventService {
    */
   @BeforeTest
   public void setup() throws Exception {
+    System.setProperty(LensConfConstants.CONFIG_LOCATION, "target/test-classes/");
     LensServices.get().init(LensServerConf.getHiveConf());
     LensServices.get().start();
     service = LensServices.get().getService(LensEventService.NAME);
@@ -480,13 +485,8 @@ public class TestEventService {
     // Catch all listener just to make sure that the query accepted and
     // query exec stat events get through
     final CountDownLatch latch = new CountDownLatch(2);
-    service.addListenerForType(new LensEventListener<LensEvent>() {
-      @Override
-      public void onEvent(LensEvent event) throws LensException {
-        System.out.println("@@@@ Got Event: Type= " + event.getClass().getName() + " obj = " + event);
-        latch.countDown();
-      }
-    }, LensEvent.class);
+    LensEventListener<LensEvent> eventListener = queryEventListener(latch);
+    service.addListenerForType(eventListener, LensEvent.class);
 
     QueryHandle queryHandle = new QueryHandle(UUID.randomUUID());
     QueryAccepted queryAccepted = new QueryAccepted(System.currentTimeMillis(), "beforeAccept", "afterAccept",
@@ -498,7 +498,59 @@ public class TestEventService {
     service.notifyEvent(queryExecStats);
 
     latch.await();
+    service.removeListener(eventListener);
+  }
 
+  private LensEventListener<LensEvent> queryEventListener(final CountDownLatch latch) {
+    return new LensEventListener<LensEvent>() {
+      @Override
+      public void onEvent(LensEvent event) throws LensException {
+        System.out.println("@@@@ Got Event: Type= " + event.getClass().getName() + " obj = " + event);
+        latch.countDown();
+      }
+    };
+  }
+
+  @Test
+  public void testAysncEventListenerPoolThreads(){
+    AsyncEventListener<QuerySuccess> ayncListener = new DummyAsncEventListener();
+    for(int i=0; i<10; i++){
+      try {
+        //A pool thread is created each time an event is submitted until core pool size is reached which is 5
+        //for this test case.  @see org.apache.lens.server.api.events.AsyncEventListener.processor
+        ayncListener.onEvent(null);
+      } catch (LensException e) {
+        assert(false); //Not Expected
+      }
+    }
+
+    //Verify the core pool Threads after the events have been fired
+    ThreadGroup currentTG = Thread.currentThread().getThreadGroup();
+    int count = currentTG.activeCount();
+    Thread[] threads = new Thread[count];
+    currentTG.enumerate(threads);
+    Set<String> aysncThreadNames = new HashSet<String>();
+    for(Thread t : threads){
+      if (t.getName().contains("DummyAsncEventListener_AsyncThread")){
+        aysncThreadNames.add(t.getName());
+      }
+    }
+    assertTrue(aysncThreadNames.containsAll(Arrays.asList(
+      "DummyAsncEventListener_AsyncThread-1",
+      "DummyAsncEventListener_AsyncThread-2",
+      "DummyAsncEventListener_AsyncThread-3",
+      "DummyAsncEventListener_AsyncThread-4",
+      "DummyAsncEventListener_AsyncThread-5")));
+  }
+
+  private static class DummyAsncEventListener extends AsyncEventListener<QuerySuccess> {
+    public DummyAsncEventListener(){
+      super(5); //core pool = 5
+    }
+    @Override
+    public void process(QuerySuccess event) {
+      throw new RuntimeException("Simulated Exception");
+    }
   }
 
 }

@@ -84,6 +84,16 @@ public class PruneCauses<T extends AbstractCubeTable> extends HashMap<T, List<Ca
     return new BriefAndDetailedError(getBriefCause(), getCompact());
   }
 
+  private CandidateTablePruneCode computeMaxCause() {
+    CandidateTablePruneCode maxCause = CandidateTablePruneCode.values()[0];
+    for (CandidateTablePruneCause cause : getReversed().keySet()) {
+      if (cause.getCause().compareTo(maxCause) > 0) {
+        maxCause = cause.getCause();
+      }
+    }
+    return maxCause;
+  }
+
   public String getBriefCause() {
     Map<CandidateTablePruneCause, String> maxCauseMap = getMaxCauseMap();
     return maxCauseMap.keySet().iterator().next().getCause().getBriefError(maxCauseMap.keySet());

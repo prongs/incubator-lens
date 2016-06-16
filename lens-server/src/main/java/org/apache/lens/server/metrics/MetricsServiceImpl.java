@@ -48,7 +48,8 @@ import org.apache.lens.server.api.session.SessionService;
 import org.apache.lens.server.healthcheck.LensServiceHealthCheck;
 import org.apache.lens.server.query.QueryExecutionServiceImpl;
 import org.apache.lens.server.quota.QuotaServiceImpl;
-import org.apache.lens.server.scheduler.QuerySchedulerServiceImpl;
+import org.apache.lens.server.scheduler.SchedulerServiceImpl;
+import org.apache.lens.server.scheduler.notification.services.AlarmService;
 import org.apache.lens.server.session.DatabaseResourceService;
 import org.apache.lens.server.session.HiveSessionService;
 
@@ -263,10 +264,11 @@ public class MetricsServiceImpl extends AbstractService implements MetricsServic
     healthCheck.register(CubeMetastoreService.NAME, new LensServiceHealthCheck(CubeMetastoreService.NAME));
     healthCheck.register(HiveSessionService.NAME, new LensServiceHealthCheck(HiveSessionService.NAME));
     healthCheck.register(QueryExecutionServiceImpl.NAME, new LensServiceHealthCheck(QueryExecutionServiceImpl.NAME));
-    healthCheck.register(QuerySchedulerServiceImpl.NAME, new LensServiceHealthCheck(QuerySchedulerServiceImpl.NAME));
+    healthCheck.register(SchedulerServiceImpl.NAME, new LensServiceHealthCheck(SchedulerServiceImpl.NAME));
     healthCheck.register(QuotaServiceImpl.NAME, new LensServiceHealthCheck(QuotaServiceImpl.NAME));
     healthCheck.register(MetricsServiceImpl.NAME, new LensServiceHealthCheck(MetricsServiceImpl.NAME));
     healthCheck.register(EventServiceImpl.NAME, new LensServiceHealthCheck(EventServiceImpl.NAME));
+    healthCheck.register(AlarmService.NAME, new LensServiceHealthCheck(AlarmService.NAME));
     initCounters();
     timeBetweenPolls = hiveConf.getInt(LensConfConstants.REPORTING_PERIOD, 10);
 

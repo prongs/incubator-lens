@@ -19,7 +19,8 @@
   under the License.
 
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -37,15 +38,14 @@
     <java.target.version>1.7</java.target.version>
     <servlet3.version>3.0.1</servlet3.version>
     <servlet.api.version>2.5</servlet.api.version>
-    <jsp.api.version>2.0</jsp.api.version>
-    <ws.rs.version>2.0</ws.rs.version>
-    <jaxb.api.version>2.2.11</jaxb.api.version>
+    <ws.rs.version>2.0.1</ws.rs.version>
+    <jaxb.api.version>2.2.12</jaxb.api.version>
     <javax.mail.version>1.4</javax.mail.version>
 
     <!-- hadoop stack -->
-    <hadoop.version>2.4.0</hadoop.version>
+    <hadoop.version>2.6.0</hadoop.version>
     <spark.version>1.3.0</spark.version>
-    <hive.version>0.13.3-inm</hive.version>
+    <hive.version>2.1.1-inm</hive.version>
 
     <!-- jest client for elasticsearch -->
     <jest.version>0.1.5</jest.version>
@@ -57,22 +57,21 @@
     <commons.lang.version>2.4</commons.lang.version>
     <commons.collections.version>3.2.1</commons.collections.version>
     <joda.time.version>2.0</joda.time.version>
+    <quartz.version>2.2.2</quartz.version>
     <guava.version>13.0.1</guava.version>
-    <lombok.version>1.12.4</lombok.version>
+    <lombok.version>1.16.6</lombok.version>
     <lombok.maven.plugin.version>1.16.4.1</lombok.maven.plugin.version>
     <typesafe.config.version>1.2.1</typesafe.config.version>
     <logback.version>1.1.3</logback.version>
+    <protobuf.version>2.5.0</protobuf.version>
+
 
     <jackson.asl.version>1.9.13</jackson.asl.version>
     <jackson.guava.version>2.3.3</jackson.guava.version>
     <opencsv.version>2.3</opencsv.version>
     <jsch.version>0.1.42</jsch.version>
-
-    <libthrift.version>0.9.0</libthrift.version>
-
-    <jetty.version>6.1.26</jetty.version>
-    <jersey.version>2.3.1</jersey.version>
-    <grizzly.version>2.3.6</grizzly.version>
+    <jersey.version>2.22.1</jersey.version>
+    <grizzly.version>2.3.23</grizzly.version>
     <metrics.version>3.0.2</metrics.version>
     <subethasmtp.version>3.1.7</subethasmtp.version>
     <liquibase.version>3.0.7</liquibase.version>
@@ -92,7 +91,7 @@
     <!-- maven plugins -->
     <jaxb2.plugin.version>0.13.0</jaxb2.plugin.version>
     <jaxb2.basics.plugin.version>0.9.5</jaxb2.basics.plugin.version>
-    <jetty.plugin.version>${jetty.version}</jetty.plugin.version>
+    <jaxb2.fluent.plugin.version>3.0</jaxb2.fluent.plugin.version>
     <exec.plugin.version>1.2.1</exec.plugin.version>
     <enunciate.plugin.version>1.28</enunciate.plugin.version>
     <reports.plugin.version>2.7</reports.plugin.version>
@@ -106,6 +105,12 @@
     <findbugs.plugin.version>3.0.1</findbugs.plugin.version>
     <antrun.plugin.version>1.8</antrun.plugin.version>
     <cobertura.plugin.version>2.7</cobertura.plugin.version>
+
+    <!-- Tests -->
+    <derby.version>10.11.1.1</derby.version>
+    <datanucleus.api.jdo.version>4.2.1</datanucleus.api.jdo.version>
+    <datanucleus.javax.jdo.version>3.2.0-m3</datanucleus.javax.jdo.version>
+    <datanucleus.rdbms.version>4.1.7</datanucleus.rdbms.version>
 
     <!-- UI -->
     <nodejs.plugin.version>1.0.0</nodejs.plugin.version>
@@ -125,7 +130,7 @@
 
   <groupId>org.apache.lens</groupId>
   <artifactId>apache-lens</artifactId>
-  <version>2.5.0-beta-SNAPSHOT</version>
+  <version>2.6.0-beta-SNAPSHOT</version>
   <name>Lens</name>
   <packaging>pom</packaging>
   <description>Unified Analytics Platform</description>
@@ -208,6 +213,15 @@
       <id>deepakbarr</id>
       <email>deepakbarr@apache.org</email>
       <name>Deepak Kumar Barr</name>
+      <timezone>+5.5</timezone>
+      <roles>
+        <role>Committer</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>puneetgupta</id>
+      <email>puneetgupta@apache.org</email>
+      <name>Puneet Gupta</name>
       <timezone>+5.5</timezone>
       <roles>
         <role>Committer</role>
@@ -337,6 +351,24 @@
       <id>amrk7</id>
       <email>amrk7@apache.org</email>
       <name>Amruth S</name>
+      <timezone>+5.5</timezone>
+      <roles>
+        <role>Committer</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>sushilmohanty</id>
+      <email>sushilmohanty@apache.org</email>
+      <name>SushilMohanty</name>
+      <timezone>+5.5</timezone>
+      <roles>
+        <role>Committer</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>archanah</id>
+      <email>archanah@apache.org</email>
+      <name>Archana H</name>
       <timezone>+5.5</timezone>
       <roles>
         <role>Committer</role>
@@ -519,11 +551,6 @@
           <version>${jaxb2.basics.plugin.version}</version>
         </plugin>
         <plugin>
-          <groupId>org.mortbay.jetty</groupId>
-          <artifactId>maven-jetty-plugin</artifactId>
-          <version>${jetty.plugin.version}</version>
-        </plugin>
-        <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>exec-maven-plugin</artifactId>
           <version>${exec.plugin.version}</version>
@@ -557,6 +584,28 @@
               </npmInstallTask>
             </tasks>
           </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <executions>
+            <execution>
+              <phase>package</phase>
+              <goals>
+                <goal>shade</goal>
+              </goals>
+              <configuration>
+                <transformers>
+                  <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+                  <transformer implementation="org.apache.maven.plugins.shade.resource.DontIncludeResourceTransformer">
+                    <resource>log4j.properties</resource>
+                  </transformer>
+                  <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer" />
+                  <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer" />
+                </transformers>
+              </configuration>
+            </execution>
+          </executions>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -654,7 +703,7 @@
           <dependency>
             <groupId>org.apache.lens</groupId>
             <artifactId>checkstyle</artifactId>
-            <version>2.5.0-beta-SNAPSHOT</version>
+            <version>2.6.0-beta-SNAPSHOT</version>
           </dependency>
         </dependencies>
         <executions>
@@ -775,6 +824,11 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
+        <groupId>org.quartz-scheduler</groupId>
+        <artifactId>quartz</artifactId>
+        <version>${quartz.version}</version>
+      </dependency>
+      <dependency>
         <groupId>org.projectlombok</groupId>
         <artifactId>lombok</artifactId>
         <version>${lombok.version}</version>
@@ -828,6 +882,11 @@
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
         <version>${guava.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.protobuf</groupId>
+        <artifactId>protobuf-java</artifactId>
+        <version>${protobuf.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.hadoop</groupId>
@@ -932,6 +991,10 @@
             <artifactId>jersey-server</artifactId>
           </exclusion>
           <exclusion>
+            <groupId>com.sun.jersey</groupId>
+            <artifactId>jersey-client</artifactId>
+          </exclusion>
+          <exclusion>
             <groupId>tomcat</groupId>
             <artifactId>jasper-compiler</artifactId>
           </exclusion>
@@ -1019,6 +1082,18 @@
             <groupId>commons-logging</groupId>
             <artifactId>commons-logging</artifactId>
           </exclusion>
+          <exclusion>
+            <groupId>org.apache.hive</groupId>
+            <artifactId>hive-exec</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.hive</groupId>
+            <artifactId>hive-metastore</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.hive</groupId>
+            <artifactId>hive-llap-server</artifactId>
+          </exclusion>
         </exclusions>
       </dependency>
       <dependency>
@@ -1085,6 +1160,42 @@
             <groupId>org.mortbay.jetty</groupId>
             <artifactId>jetty</artifactId>
           </exclusion>
+          <exclusion>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-yarn-server-resourcemanager</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hive</groupId>
+        <artifactId>hive-service-rpc</artifactId>
+        <version>${hive.version}</version>
+        <scope>provided</scope>
+        <exclusions>
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.hive</groupId>
+            <artifactId>hive-exec</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.hive</groupId>
+            <artifactId>hive-metastore</artifactId>
+          </exclusion>
         </exclusions>
       </dependency>
       <dependency>
@@ -1108,6 +1219,10 @@
           <exclusion>
             <groupId>commons-logging</groupId>
             <artifactId>commons-logging</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.hive</groupId>
+            <artifactId>hive-shims</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
@@ -1156,6 +1271,14 @@
           <exclusion>
             <groupId>commons-logging</groupId>
             <artifactId>commons-logging</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.hive</groupId>
+            <artifactId>hive-shims</artifactId>
+            </exclusion>
+          <exclusion>
+            <groupId>org.apache.avro</groupId>
+            <artifactId>avro-mapred</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
@@ -1262,12 +1385,12 @@
       </dependency>
       <dependency>
         <groupId>org.glassfish.jersey.media</groupId>
-        <artifactId>jersey-media-multipart</artifactId>
+        <artifactId>jersey-media-jaxb</artifactId>
         <version>${jersey.version}</version>
       </dependency>
       <dependency>
         <groupId>org.glassfish.jersey.media</groupId>
-        <artifactId>jersey-media-json-jackson</artifactId>
+        <artifactId>jersey-media-multipart</artifactId>
         <version>${jersey.version}</version>
       </dependency>
       <dependency>
@@ -1297,11 +1420,6 @@
         <version>${servlet.api.version}</version>
       </dependency>
       <dependency>
-        <groupId>javax.servlet.jsp</groupId>
-        <artifactId>jsp-api</artifactId>
-        <version>${jsp.api.version}</version>
-      </dependency>
-      <dependency>
         <groupId>javax.xml.bind</groupId>
         <artifactId>jaxb-api</artifactId>
         <version>${jaxb.api.version}</version>
@@ -1311,19 +1429,6 @@
         <groupId>javax.ws.rs</groupId>
         <artifactId>javax.ws.rs-api</artifactId>
         <version>${ws.rs.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.mortbay.jetty</groupId>
-        <artifactId>jetty</artifactId>
-        <version>${jetty.version}</version>
-        <scope>compile</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.mortbay.jetty</groupId>
-        <artifactId>jetty-plus</artifactId>
-        <version>${jetty.version}</version>
-        <scope>compile</scope>
       </dependency>
 
       <dependency>
@@ -1423,6 +1528,10 @@
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
           </exclusion>
+          <exclusion>
+            <groupId>org.eclipse.jetty.orbit</groupId>
+            <artifactId>javax.servlet</artifactId>
+          </exclusion>
         </exclusions>
       </dependency>
       <dependency>
@@ -1469,6 +1578,22 @@
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
           </exclusion>
+          <exclusion>
+            <groupId>com.sun.jersey</groupId>
+            <artifactId>jersey-server</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.sun.jersey</groupId>
+            <artifactId>jersey-json</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.sun.jersey.contribs</groupId>
+            <artifactId>jersey-guice</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.sun.jersey.jersey-test-framework</groupId>
+            <artifactId>jersey-test-framework-grizzly2</artifactId>
+          </exclusion>
         </exclusions>
       </dependency>
       <dependency>
@@ -1493,11 +1618,6 @@
             <artifactId>commons-logging</artifactId>
           </exclusion>
         </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.thrift</groupId>
-        <artifactId>libthrift</artifactId>
-        <version>${libthrift.version}</version>
       </dependency>
       <dependency>
         <groupId>net.sf.opencsv</groupId>
@@ -1541,6 +1661,30 @@
         <groupId>org.apache.httpcomponents</groupId>
         <artifactId>httpcore</artifactId>
         <version>${httpcore.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.datanucleus</groupId>
+        <artifactId>datanucleus-api-jdo</artifactId>
+        <version>${datanucleus.api.jdo.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.datanucleus</groupId>
+        <artifactId>datanucleus-rdbms</artifactId>
+        <version>${datanucleus.rdbms.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.derby</groupId>
+        <artifactId>derby</artifactId>
+        <version>${derby.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.datanucleus</groupId>
+        <artifactId>javax.jdo</artifactId>
+        <version>${datanucleus.javax.jdo.version}</version>
+        <scope>test</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -1663,7 +1807,7 @@
               <dependency>
                 <groupId>org.apache.lens</groupId>
                 <artifactId>checkstyle</artifactId>
-                <version>2.5.0-beta-SNAPSHOT</version>
+                <version>2.6.0-beta-SNAPSHOT</version>
               </dependency>
             </dependencies>
             <executions>

@@ -300,7 +300,7 @@ public abstract class Storage extends AbstractCubeTable implements PartitionMeta
             .get(addPartitionDesc.getNonTimePartSpec()).latestParts.entrySet()) {
             if (addPartitionDesc.getTimePartSpec().containsKey(entry.getKey())
               && entry.getValue().get(MetastoreUtil.getLatestPartTimestampKey(entry.getKey())).equals(
-                updatePeriod.format().format(addPartitionDesc.getTimePartSpec().get(entry.getKey())))) {
+                updatePeriod.format(addPartitionDesc.getTimePartSpec().get(entry.getKey())))) {
               if (latestPartIndexForPartCols.get(addPartitionDesc.getNonTimePartSpec()) == null) {
                 latestPartIndexForPartCols.put(addPartitionDesc.getNonTimePartSpec(),
                   Maps.<String, Integer>newHashMap());
@@ -370,7 +370,7 @@ public abstract class Storage extends AbstractCubeTable implements PartitionMeta
    */
   public void updatePartition(Hive client, String fact, Partition partition)
     throws InvalidOperationException, HiveException {
-    client.alterPartition(MetastoreUtil.getFactOrDimtableStorageTableName(fact, getName()), partition);
+    client.alterPartition(MetastoreUtil.getFactOrDimtableStorageTableName(fact, getName()), partition, null);
   }
 
   /**
@@ -385,7 +385,7 @@ public abstract class Storage extends AbstractCubeTable implements PartitionMeta
     throws InvalidOperationException, HiveException {
     boolean success = false;
     try {
-      client.alterPartitions(MetastoreUtil.getFactOrDimtableStorageTableName(fact, getName()), partitions);
+      client.alterPartitions(MetastoreUtil.getFactOrDimtableStorageTableName(fact, getName()), partitions, null);
       success = true;
     } finally {
       if (success) {

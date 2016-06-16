@@ -21,7 +21,10 @@ package org.apache.lens.examples;
 import java.io.IOException;
 import java.io.InputStream;
 
-import javax.xml.bind.*;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBElement;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Unmarshaller;
 
 import org.apache.lens.api.APIResult;
 import org.apache.lens.api.jaxb.LensJAXBContext;
@@ -93,6 +96,8 @@ public class SampleMetastore {
     createDimension("city.xml");
     createDimension("customer.xml");
     createDimension("product.xml");
+    createDimension("customer-interests.xml");
+    createDimension("interests.xml");
   }
 
   private void createStorage(String fileName) throws JAXBException, IOException {
@@ -114,6 +119,7 @@ public class SampleMetastore {
     createCubes();
     createDimensions();
     createFacts();
+    createSegmentations();
     createDimensionTables();
     try {
       DatabaseUtil.initializeDatabaseStorage();
@@ -143,6 +149,8 @@ public class SampleMetastore {
     createDimTable("product_table.xml");
     createDimTable("product_db_table.xml");
     createDimTable("customer_table.xml");
+    createDimTable("customer_interests_table.xml");
+    createDimTable("interests_table.xml");
   }
 
   private void createFact(String factSpec) {
@@ -161,6 +169,15 @@ public class SampleMetastore {
     createFact("sales-aggr-fact1.xml");
     createFact("sales-aggr-fact2.xml");
     createFact("sales-aggr-continuous-fact.xml");
+  }
+
+  private void createSegmentations() throws JAXBException, IOException {
+    result = metaClient.createSegmentation("seg1.xml");
+    if (result.getStatus().equals(APIResult.Status.FAILED)) {
+      System.err.println("Creating segmentation from : " + "seg1.xml"
+          + " failed, reason:" + result.getMessage());
+      retCode = 1;
+    }
   }
 
   public static void main(String[] args) throws Exception {
@@ -182,9 +199,13 @@ public class SampleMetastore {
       System.out.println("Dimensions:" + metastore.metaClient.getAllDimensions());
       System.out.println("Fact tables:" + metastore.metaClient.getAllFactTables());
       System.out.println("Dimension tables:" + metastore.metaClient.getAllDimensionTables());
+      System.out.println("Segmentations:" + metastore.metaClient.getAllSegmentations());
       if (metastore.retCode != 0) {
         System.exit(metastore.retCode);
       }
+    } catch (Throwable th) {
+      log.error("Error during creating sample metastore", th);
+      throw th;
     } finally {
       if (metastore != null) {
         metastore.close();

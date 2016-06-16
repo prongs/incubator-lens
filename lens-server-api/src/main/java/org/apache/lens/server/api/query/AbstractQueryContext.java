@@ -19,11 +19,15 @@
 package org.apache.lens.server.api.query;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lens.api.LensConf;
+import org.apache.lens.api.Priority;
 import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.driver.DriverQueryPlan;
 import org.apache.lens.server.api.driver.LensDriver;
@@ -126,6 +130,13 @@ public abstract class AbstractQueryContext implements Serializable {
   /** Lock used to synchronize HiveConf access */
   private transient Lock hiveConfLock = new ReentrantLock();
 
+  /**
+   * The priority.
+   */
+  @Getter
+  @Setter
+  private Priority priority;
+
   protected AbstractQueryContext(final String query, final String user, final LensConf qconf, final Configuration conf,
     final Collection<LensDriver> drivers, boolean mergeDriverConf) {
     if (conf.getBoolean(LensConfConstants.ENABLE_QUERY_METRICS, LensConfConstants.DEFAULT_ENABLE_QUERY_METRICS)) {
@@ -206,6 +217,10 @@ public abstract class AbstractQueryContext implements Serializable {
     return getDriverContext().getDriverRewriterPlan(driver);
   }
 
+  public String getQueue() {
+    return getConf().get(LensConfConstants.MAPRED_JOB_QUEUE_NAME);
+  }
+
   /**
    * Runnable to wrap estimate computation for a driver. Failure cause and success status
    * are stored as field members
@@ -256,7 +271,7 @@ public abstract class AbstractQueryContext implements Serializable {
       String expMsg = LensUtil.getCauseMessage(e);
       driverQueryContext.setDriverQueryCostEstimateError(e);
       failureCause = new StringBuilder("Driver :")
-        .append(driver.getClass().getName())
+        .append(driver.getFullyQualifiedName())
         .append(" Cause :")
         .append(expMsg)
         .toString();
@@ -461,5 +476,17 @@ public abstract class AbstractQueryContext implements Serializable {
   public void clearTransientStateAfterCompleted() {
     driverContext.clearTransientStateAfterCompleted();
     hiveConf = null;
+  }
+
+  /**
+   * Update conf.
+   *
+   * @param confoverlay the conf to set
+   */
+  public void updateConf(Map<String, String> confoverlay) {
+    lensConf.getProperties().putAll(confoverlay);
+    for (Map.Entry<String, String> prop : confoverlay.entrySet()) {
+      this.conf.set(prop.getKey(), prop.getValue());
+    }
   }
 }

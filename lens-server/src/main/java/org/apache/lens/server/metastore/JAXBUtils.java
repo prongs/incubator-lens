@@ -30,13 +30,12 @@ import javax.xml.datatype.XMLGregorianCalendar;
 import org.apache.lens.api.metastore.*;
 import org.apache.lens.cube.metadata.*;
 import org.apache.lens.cube.metadata.ExprColumn.ExprSpec;
-import org.apache.lens.cube.metadata.ReferencedDimAtrribute.ChainRefCol;
+import org.apache.lens.cube.metadata.ReferencedDimAttribute.ChainRefCol;
 import org.apache.lens.server.api.error.LensException;
 
 import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.metastore.api.Order;
-import org.apache.hadoop.hive.ql.io.HiveFileFormatUtils;
 import org.apache.hadoop.hive.ql.io.HiveOutputFormat;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.metadata.Partition;
@@ -46,6 +45,7 @@ import org.apache.hadoop.mapred.InputFormat;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
+
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -159,7 +159,7 @@ public final class JAXBUtils {
    * @param xd
    * @return {@link org.apache.lens.cube.metadata.CubeDimAttribute}
    */
-  public static CubeDimAttribute hiveDimAttrFromXDimAttr(XDimAttribute xd) {
+  public static CubeDimAttribute hiveDimAttrFromXDimAttr(XDimAttribute xd) throws LensException {
     Date startDate = getDateFromXML(xd.getStartTime());
     Date endDate = getDateFromXML(xd.getEndTime());
 
@@ -171,38 +171,18 @@ public final class JAXBUtils {
         hierarchy.add(hiveDimAttrFromXDimAttr(hd));
       }
       hiveDim = new HierarchicalDimAttribute(xd.getName(), xd.getDescription(), hierarchy);
-    } else if (xd.getRefSpec() != null && xd.getRefSpec().getTableReferences() != null
-      && !xd.getRefSpec().getTableReferences().getTableReference().isEmpty()) {
-
-      List<TableReference> dimRefs = new ArrayList<TableReference>(
-        xd.getRefSpec().getTableReferences().getTableReference().size());
-
-      for (XTableReference xRef : xd.getRefSpec().getTableReferences().getTableReference()) {
-        dimRefs.add(new TableReference(xRef.getTable(), xRef.getColumn(), xRef.isMapsToMany()));
-      }
-
-      hiveDim = new ReferencedDimAtrribute(new FieldSchema(xd.getName(), xd.getType().toLowerCase(),
+    } else if (xd.getChainRefColumn() != null
+      && !xd.getChainRefColumn().isEmpty()) {
+      hiveDim = new ReferencedDimAttribute(new FieldSchema(xd.getName(), xd.getType().toLowerCase(),
         xd.getDescription()),
         xd.getDisplayString(),
-        dimRefs,
-        startDate,
-        endDate,
-        null,
-        xd.isJoinKey(),
-        xd.getNumDistinctValues(),
-        xd.getValues()
-      );
-    } else if (xd.getRefSpec() != null && xd.getRefSpec().getChainRefColumn() != null
-      && !xd.getRefSpec().getChainRefColumn().isEmpty()) {
-      hiveDim = new ReferencedDimAtrribute(new FieldSchema(xd.getName(), xd.getType().toLowerCase(),
-        xd.getDescription()),
-        xd.getDisplayString(),
-        getChainRefColumns(xd.getRefSpec().getChainRefColumn()),
+        getChainRefColumns(xd.getChainRefColumn()),
         startDate,
         endDate,
         null,
         xd.getNumDistinctValues(),
-        xd.getValues()
+        xd.getValues(),
+        mapFromXProperties(xd.getTags())
       );
     } else {
       hiveDim = new BaseDimAttribute(new FieldSchema(xd.getName(), xd.getType().toLowerCase(),
@@ -212,7 +192,8 @@ public final class JAXBUtils {
         endDate,
         null,
         xd.getNumDistinctValues(),
-        xd.getValues()
+        xd.getValues(),
+        mapFromXProperties(xd.getTags())
       );
     }
     return hiveDim;
@@ -284,7 +265,14 @@ public final class JAXBUtils {
     xm.setEndTime(getXMLGregorianCalendar(cm.getEndTime()));
     xm.setMin(cm.getMin());
     xm.setMax(cm.getMax());
+    xm.setTags(getXProperties(xPropertiesFromMap(cm.getTags())));
     return xm;
+  }
+
+  public static XProperties getXProperties(List<XProperty> prop) {
+    XProperties properties = XCF.createXProperties();
+    properties.getProperty().addAll(prop);
+    return properties;
   }
 
   /**
@@ -301,6 +289,7 @@ public final class JAXBUtils {
     xe.setDescription(ec.getDescription());
     xe.setDisplayString(ec.getDisplayString());
     xe.getExprSpec().addAll(xExprSpecFromExprColumn(ec.getExpressionSpecs()));
+    xe.setTags(getXProperties(xPropertiesFromMap(ec.getTags())));
     return xe;
   }
 
@@ -316,7 +305,7 @@ public final class JAXBUtils {
     return xes;
   }
 
-  private static ExprSpec[] exprSpecFromXExprColumn(Collection<XExprSpec> xesList) {
+  private static ExprSpec[] exprSpecFromXExprColumn(Collection<XExprSpec> xesList) throws LensException {
     List<ExprSpec> esArray = new ArrayList<ExprSpec>(xesList.size());
     for (XExprSpec xes : xesList) {
       esArray.add(new ExprSpec(xes.getExpr(), getDateFromXML(xes.getStartTime()), getDateFromXML(xes.getEndTime())));
@@ -334,9 +323,9 @@ public final class JAXBUtils {
     xd.setDisplayString(cd.getDisplayString());
     xd.setStartTime(getXMLGregorianCalendar(cd.getStartTime()));
     xd.setEndTime(getXMLGregorianCalendar(cd.getEndTime()));
-    if (cd instanceof ReferencedDimAtrribute) {
-      ReferencedDimAtrribute rd = (ReferencedDimAtrribute) cd;
-      XDimAttribute.RefSpec refspec = XCF.createXDimAttributeRefSpec();
+    xd.setTags(getXProperties(xPropertiesFromMap(cd.getTags())));
+    if (cd instanceof ReferencedDimAttribute) {
+      ReferencedDimAttribute rd = (ReferencedDimAttribute) cd;
       if (!rd.getChainRefColumns().isEmpty()) {
         for (ChainRefCol crCol : rd.getChainRefColumns()) {
           XChainColumn xcc = new XChainColumn();
@@ -347,16 +336,9 @@ public final class JAXBUtils {
           } else {
             xcc.setDestTable(baseTable.getChainByName(crCol.getChainName()).getDestTable());
           }
-          refspec.getChainRefColumn().add(xcc);
+          xd.getChainRefColumn().add(xcc);
         }
-        xd.setJoinKey(false);
-      } else {
-        List<TableReference> dimRefs = rd.getReferences();
-        refspec.setTableReferences(new XTableReferences());
-        refspec.getTableReferences().getTableReference().addAll(xTabReferencesFromHiveTabReferences(dimRefs));
-        xd.setJoinKey(rd.useAsJoinKey());
       }
-      xd.setRefSpec(refspec);
       xd.setType(rd.getType());
       Optional<Long> numOfDistinctValues = rd.getNumOfDistinctValues();
       if (numOfDistinctValues.isPresent()) {
@@ -451,7 +433,8 @@ public final class JAXBUtils {
       endDate,
       null,
       xm.getMin(),
-      xm.getMax()
+      xm.getMax(),
+      mapFromXProperties(xm.getTags())
     );
     return cm;
   }
@@ -478,10 +461,11 @@ public final class JAXBUtils {
     return jc;
   }
 
-  public static ExprColumn hiveExprColumnFromXExprColumn(XExprColumn xe) {
+  public static ExprColumn hiveExprColumnFromXExprColumn(XExprColumn xe) throws LensException {
     ExprColumn ec = new ExprColumn(new FieldSchema(xe.getName(), xe.getType().toLowerCase(),
       xe.getDescription()),
       xe.getDisplayString(),
+      mapFromXProperties(xe.getTags()),
       exprSpecFromXExprColumn(xe.getExprSpec()));
     return ec;
   }
@@ -517,6 +501,34 @@ public final class JAXBUtils {
     }
     return xpList;
   }
+
+  public static Set<XSegment> xSegmentsFromSegments(Set<Segment> segs) {
+    Set<XSegment> xsegs = new HashSet<XSegment>();
+    if (segs != null && !segs.isEmpty()) {
+      for (Segment seg : segs) {
+        XSegment xcubeSeg = XCF.createXSegment();
+        xcubeSeg.setCubeName(seg.getName());
+        xcubeSeg.setSegmentParameters(getXpropertiesFromSegment(seg));
+        xsegs.add(xcubeSeg);
+      }
+    }
+    return xsegs;
+  }
+
+  public static XProperties getXpropertiesFromSegment(Segment cseg) {
+    XProperties xproperties = XCF.createXProperties();
+    for (String prop : cseg.getProperties().keySet()) {
+      String segPrefix = MetastoreUtil.getSegmentPropertyKey(cseg.getName());
+      if (prop.startsWith(segPrefix)){
+        XProperty xprop = XCF.createXProperty();
+        xprop.setName(prop.replace(segPrefix, ""));
+        xprop.setValue(cseg.getProperties().get(prop));
+        xproperties.getProperty().add(xprop);
+      }
+    }
+    return xproperties;
+  }
+
 
   public static FieldSchema fieldSchemaFromColumn(XColumn c) {
     if (c == null) {
@@ -598,7 +610,7 @@ public final class JAXBUtils {
       return null;
     }
 
-    Storage storage = null;
+    Storage storage;
     try {
       Class<?> clazz = Class.forName(xs.getClassname());
       Constructor<?> constructor = clazz.getConstructor(String.class);
@@ -663,7 +675,7 @@ public final class JAXBUtils {
     return null;
   }
 
-  public static CubeDimensionTable cubeDimTableFromDimTable(XDimensionTable dimensionTable) {
+  public static CubeDimensionTable cubeDimTableFromDimTable(XDimensionTable dimensionTable) throws LensException {
 
     return new CubeDimensionTable(dimensionTable.getDimensionName(),
       dimensionTable.getTableName(),
@@ -673,7 +685,7 @@ public final class JAXBUtils {
       mapFromXProperties(dimensionTable.getProperties()));
   }
 
-  public static CubeFactTable cubeFactFromFactTable(XFactTable fact) {
+  public static CubeFactTable cubeFactFromFactTable(XFactTable fact) throws LensException {
     List<FieldSchema> columns = fieldSchemaListFromColumns(fact.getColumns());
 
     Map<String, Set<UpdatePeriod>> storageUpdatePeriods = getFactUpdatePeriodsFromStorageTables(
@@ -687,6 +699,24 @@ public final class JAXBUtils {
       mapFromXProperties(fact.getProperties()));
   }
 
+  public static Segmentation segmentationFromXSegmentation(XSegmentation seg) throws LensException {
+
+    Map<String, String> props = new HashMap<>();
+    // Skip properties with keyword internal. These properties are internal to lens
+    // and users are not supposed to see them.
+    for(String prop : mapFromXProperties(seg.getProperties()).keySet()) {
+      if (!(prop.toLowerCase().startsWith(MetastoreConstants.SEGMENTATION_KEY_PFX))) {
+        props.put(prop, mapFromXProperties(seg.getProperties()).get(prop));
+      }
+    }
+    return new Segmentation(seg.getCubeName(),
+            seg.getName(),
+            segmentsFromXSegments(seg.getSegements()),
+            seg.getWeight(),
+            props);
+  }
+
+
   public static XFactTable factTableFromCubeFactTable(CubeFactTable cFact) {
     XFactTable fact = XCF.createXFactTable();
     fact.setName(cFact.getName());
@@ -699,6 +729,21 @@ public final class JAXBUtils {
     fact.setWeight(cFact.weight());
     fact.setCubeName(cFact.getCubeName());
     return fact;
+  }
+
+  public static XSegmentation xsegmentationFromSegmentation(Segmentation cSeg) {
+    XSegmentation seg = XCF.createXSegmentation();
+    seg.setName(cSeg.getName());
+    seg.setProperties(new XProperties());
+    seg.setSegements(new XSegments());
+    seg.setWeight(cSeg.weight());
+    seg.setCubeName(cSeg.getBaseCube());
+    if (xPropertiesFromMap(cSeg.getProperties()) != null) {
+      seg.getProperties().getProperty().addAll(xPropertiesFromMap(cSeg.getProperties()));
+    }
+    seg.getSegements().getSegment().
+            addAll(xSegmentsFromSegments(cSeg.getSegments()));
+    return seg;
   }
 
   public static StorageTableDesc storageTableDescFromXStorageTableDesc(
@@ -798,6 +843,20 @@ public final class JAXBUtils {
     return storageTableMap;
   }
 
+  public static Set<Segment> segmentsFromXSegments(XSegments segs) {
+    Set<Segment> cubeSegs = new HashSet<>();
+    for (XSegment xcube : segs.getSegment()){
+      Map<String, String> segProp = new HashMap<>();
+      if (xcube.getSegmentParameters() != null) {
+        for (XProperty prop : xcube.getSegmentParameters().getProperty()) {
+          segProp.put(prop.getName(), prop.getValue());
+        }
+      }
+      cubeSegs.add(new Segment(xcube.getCubeName(), segProp));
+    }
+    return cubeSegs;
+  }
+
   public static Map<String, Date> timePartSpecfromXTimePartSpec(
     XTimePartSpec xtimePartSpec) {
     Map<String, Date> timePartSpec = new HashMap<String, Date>();
@@ -820,20 +879,22 @@ public final class JAXBUtils {
     return nonTimePartSpec;
   }
 
-  public static XPartitionList xpartitionListFromPartitionList(List<Partition> partitions, List<String> timePartCols)
-    throws HiveException {
+  public static XPartitionList xpartitionListFromPartitionList(String cubeTableName, List<Partition> partitions,
+    List<String> timePartCols) throws HiveException {
     XPartitionList xPartitionList = new XPartitionList();
     xPartitionList.getPartition();
     if (partitions != null) {
       for (Partition partition : partitions) {
-        xPartitionList.getPartition().add(xpartitionFromPartition(partition, timePartCols));
+        xPartitionList.getPartition().add(xpartitionFromPartition(cubeTableName, partition, timePartCols));
       }
     }
     return xPartitionList;
   }
 
-  public static XPartition xpartitionFromPartition(Partition p, List<String> timePartCols) throws HiveException {
+  public static XPartition xpartitionFromPartition(String cubeTableName, Partition p, List<String> timePartCols)
+    throws HiveException {
     XPartition xp = new XPartition();
+    xp.setFactOrDimensionTableName(cubeTableName);
     xp.setPartitionParameters(new XProperties());
     xp.setSerdeParameters(new XProperties());
     xp.setName(p.getCompleteName());
@@ -859,7 +920,7 @@ public final class JAXBUtils {
           XTimePartSpecElement timePartSpecElement = new XTimePartSpecElement();
           timePartSpecElement.setKey(entry.getKey());
           timePartSpecElement
-            .setValue(getXMLGregorianCalendar(UpdatePeriod.valueOf(xp.getUpdatePeriod().name()).format().parse(
+            .setValue(getXMLGregorianCalendar(UpdatePeriod.valueOf(xp.getUpdatePeriod().name()).parse(
               entry.getValue())));
           xp.getTimePartitionSpec().getPartSpecElement().add(timePartSpecElement);
         } else {
@@ -891,9 +952,6 @@ public final class JAXBUtils {
       Class<? extends HiveOutputFormat> outputFormatClass =
         Class.forName(xp.getOutputFormat()).asSubclass(HiveOutputFormat.class);
       partition.setOutputFormatClass(outputFormatClass);
-      // Again a hack, for the issue described in HIVE-11278
-      partition.getTPartition().getSd().setOutputFormat(
-        HiveFileFormatUtils.getOutputFormatSubstitute(outputFormatClass, false).getName());
     }
     partition.getParameters().put(MetastoreConstants.PARTITION_UPDATE_PERIOD, xp.getUpdatePeriod().name());
     partition.getTPartition().getSd().getSerdeInfo().setSerializationLib(xp.getSerdeClassname());
@@ -924,7 +982,7 @@ public final class JAXBUtils {
     return ret;
   }
 
-  public static Dimension dimensionFromXDimension(XDimension dimension) {
+  public static Dimension dimensionFromXDimension(XDimension dimension) throws LensException {
     Set<CubeDimAttribute> dims = new LinkedHashSet<CubeDimAttribute>();
     for (XDimAttribute xd : dimension.getAttributes().getDimAttribute()) {
       dims.add(hiveDimAttrFromXDimAttr(xd));

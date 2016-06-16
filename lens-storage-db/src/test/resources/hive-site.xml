@@ -24,15 +24,13 @@
 <configuration>
 
   <property>
-     
-    <name>hive.metastore.local</name>
-     
-    <value>true</value>
+    <name>hive.metastore.warehouse.dir</name>
+    <value>${project.build.directory}/hive/warehouse</value>
   </property>
 
   <property>
-    <name>hive.metastore.warehouse.dir</name>
-    <value>${project.build.directory}/hive/warehouse</value>
+    <name>hive.exec.scratchdir</name>
+    <value>${project.build.directory}/hive/scratch</value>
   </property>
 
   <property>
@@ -41,4 +39,8 @@
     <description>JDBC connect string for a JDBC metastore</description>
   </property>
 
+  <property>
+    <name>datanucleus.schema.autoCreateTables</name>
+    <value>true</value>
+  </property>
 </configuration>

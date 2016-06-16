@@ -52,9 +52,14 @@ public final class LensConfConstants {
   public static final String METASTORE_PFX = "lens.metastore.";
 
   /**
-   * The Constant DRIVER_CLASSES.
+   * The Constant DRIVER_PFX.
    */
-  public static final String DRIVER_CLASSES = SERVER_PFX + "drivers";
+  public static final String DRIVER_PFX = "lens.driver.";
+
+  /**
+   * The Constant DRIVER_TYPES_AND_CLASSES
+   */
+  public static final String DRIVER_TYPES_AND_CLASSES = SERVER_PFX + "drivers";
   /**
    * The Constant DRIVER_SELECTOR_CLASS.
    */
@@ -88,6 +93,12 @@ public final class LensConfConstants {
    * The Constant WS_FEATURE_NAMES.
    */
   public static final String WS_FEATURE_NAMES = SERVER_PFX + "ws.featurenames";
+
+  public static final String MAX_SESSIONS_PER_USER = SERVER_PFX + "max.sessions.per.user";
+
+  public static final String QUERY_COMPARATOR_CLASS = SERVER_PFX + "query.comparator.class";
+
+  public static final Integer DEFAULT_MAX_SESSIONS_PER_USER = 10;
 
   /**
    * The Constant SERVICE_IMPL_SFX.
@@ -135,14 +146,26 @@ public final class LensConfConstants {
   public static final String DEFAULT_SERVER_BASE_URL = "http://0.0.0.0:9999/lensapi";
 
   /**
-   * The Constant SERVER_RESTART_ENABLED.
+   * The Constant SERVER_STATE_PERSISTENCE_ENABLED.
    */
-  public static final String SERVER_RESTART_ENABLED = SERVER_PFX + "restart.enabled";
+  public static final String SERVER_STATE_PERSISTENCE_ENABLED = SERVER_PFX + "state.persistence.enabled";
 
   /**
-   * The Constant DEFAULT_SERVER_RESTART_ENABLED.
+   * The Constant DEFAULT_SERVER_STATE_PERSISTENCE_ENABLED.
    */
-  public static final boolean DEFAULT_SERVER_RESTART_ENABLED = true;
+  public static final boolean DEFAULT_SERVER_STATE_PERSISTENCE_ENABLED = true;
+
+  /**
+   * If this is false and same query is submitted by a user in the same session
+   * and with the same configuration while earlier query is not completed then
+   * lens server will return the handle of the previous query.
+   */
+  public static final String SERVER_DUPLICATE_QUERY_ALLOWED = SERVER_PFX + "duplicate.query.allowed";
+
+  /**
+   * By default same query by same user is not allowed.
+   */
+  public static final boolean DEFAULT_SERVER_DUPLICATE_QUERY_ALLOWED = false;
 
   /**
    * The Constant SERVER_STATE_PERSIST_LOCATION.
@@ -153,16 +176,6 @@ public final class LensConfConstants {
    * The Constant DEFAULT_SERVER_STATE_PERSIST_LOCATION.
    */
   public static final String DEFAULT_SERVER_STATE_PERSIST_LOCATION = "file:///tmp/lensserver";
-
-  /**
-   * The Constant SERVER_RECOVER_ON_RESTART.
-   */
-  public static final String SERVER_RECOVER_ON_RESTART = SERVER_PFX + "recover.onrestart";
-
-  /**
-   * The Constant DEFAULT_SERVER_RECOVER_ON_RESTART.
-   */
-  public static final boolean DEFAULT_SERVER_RECOVER_ON_RESTART = true;
 
   /**
    * The Constant SESSION_TIMEOUT_SECONDS.
@@ -215,14 +228,15 @@ public final class LensConfConstants {
   public static final boolean DEFAULT_SERVER_UI_ENABLE_CACHING = true;
 
   /**
-   * The Constant SERVER_SNAPSHOT_INTERVAL.
+   * The Constant SERVER_STATE_PERSISTENCE_INTERVAL_MILLIS.
    */
-  public static final String SERVER_SNAPSHOT_INTERVAL = SERVER_PFX + "snapshot.interval";
+  public static final String SERVER_STATE_PERSISTENCE_INTERVAL_MILLIS =
+    SERVER_PFX + "state.persistence.interval.millis";
 
   /**
-   * The Constant DEFAULT_SERVER_SNAPSHOT_INTERVAL.
+   * The Constant DEFAULT_SERVER_STATE_PERSISTENCE_INTERVAL_MILLIS.
    */
-  public static final long DEFAULT_SERVER_SNAPSHOT_INTERVAL = 5 * 60 * 1000;
+  public static final long DEFAULT_SERVER_STATE_PERSISTENCE_INTERVAL_MILLIS = 5 * 60 * 1000;
 
   // Email related configurations
   /**
@@ -406,6 +420,11 @@ public final class LensConfConstants {
    * The property name for setting the column mapping, if column names in native table are different
    */
   public static final String NATIVE_TABLE_COLUMN_MAPPING = METASTORE_PFX + "native.table.column.mapping";
+
+  /**
+   * The property name for setting the column mapping, if column names in cubes are different
+   */
+  public static final String CUBE_COLUMN_MAPPING = METASTORE_PFX + "cube.column.mapping";
 
   /**
    * The Constant ES_INDEX_NAME.
@@ -943,6 +962,31 @@ public final class LensConfConstants {
   public static final int DEFAULT_FETCH_COUNT_SAVED_QUERY_LIST = 20;
 
   /**
+   * This is the base directory where all drivers are available under lens-server's Conf directory.
+   */
+  public static final String DRIVERS_BASE_DIR = "drivers";
+
+  /**
+   * The driver weight property
+   */
+  public static final String DRIVER_WEIGHT = DRIVER_PFX + "weight";
+
+  /**
+   * Default driver weight
+   */
+  public static final int DEFAULT_DRIVER_WEIGHT = 1;
+
+  /**
+   * Name of the property that holds the path of "conf" directory of server
+   */
+  public static final String CONFIG_LOCATION = "config.location";
+
+  /**
+   * Default location of "conf" directory (wrt to lens-server/bin)
+   */
+  public static final String DEFAULT_CONFIG_LOCATION = "../conf";
+
+  /**
    * The Constant RESULTSET_PURGE_ENABLED.
    */
   public static final String RESULTSET_PURGE_ENABLED = SERVER_PFX + "resultset.purge.enabled";
@@ -982,4 +1026,86 @@ public final class LensConfConstants {
    */
   public static final String DEFAULT_HDFS_OUTPUT_RETENTION = "1 day";
 
+  /**
+   * Pre Fetch results in case of in memory result sets.
+   */
+  public static final String PREFETCH_INMEMORY_RESULTSET = QUERY_PFX + "prefetch.inmemory.resultset";
+
+  /**
+   * Pre Fetch results in case of in memory result sets is enabled by default
+   */
+  public static final boolean DEFAULT_PREFETCH_INMEMORY_RESULTSET = true;
+
+  /**
+   * Pre-Fetch size for in memory results. Makes sense only if {@link #PREFETCH_INMEMORY_RESULTSET} set to true
+   */
+  public static final String PREFETCH_INMEMORY_RESULTSET_ROWS = QUERY_PFX + "prefetch.inmemory.resultset.rows";
+
+  /**
+   * Default Pre-Fetch size for in memory results.
+   */
+  public static final int DEFAULT_PREFETCH_INMEMORY_RESULTSET_ROWS = 100;
+
+  /**
+   * The Constant EXCLUDE_CUBE_TABLES.
+   */
+  public static final String EXCLUDE_CUBE_TABLES = SESSION_PFX + "metastore.exclude.cubetables.from.nativetables";
+
+  /**
+   * The Constant DEFAULT_EXCLUDE_CUBE_TABLES.
+   */
+  public static final boolean DEFAULT_EXCLUDE_CUBE_TABLES = true;
+
+  /**
+   * This property defines the TTL secs for all result sets of
+   * type {@link org.apache.lens.server.api.driver.InMemoryResultSet} beyond which they are eligible for purging
+   */
+  public static final String INMEMORY_RESULT_SET_TTL_SECS = SERVER_PFX + "inmemory.resultset.ttl.secs";
+
+  /**
+   * Default value of  INMEMORY_RESULT_SET_TTL_SECS is 300 secs (5 minutes)
+   */
+  public static final int DEFAULT_INMEMORY_RESULT_SET_TTL_SECS = 300;
+
+  /**
+   * Number of retries status update will be retried, in case of transient failures
+   */
+  public static final String STATUS_UPDATE_EXPONENTIAL_RETRIES = SERVER_PFX + "status.update.num.retries";
+
+  /**
+   * Default value of STATUS_UPDATE_EXPONENTIAL_RETRIES is 10
+   */
+  public static final int DEFAULT_STATUS_UPDATE_EXPONENTIAL_RETRIES = 10;
+
+  /**
+   * Maximum delay a status update can wait for next update, in case of transient failures
+   */
+  public static final String MAXIMUM_STATUS_UPDATE_DELAY = SERVER_PFX + "status.update.maximum.delay.secs";
+
+  /**
+   * Default value of MAXIMUM_STATUS_UPDATE_DELAY is 1800 secs (30 minutes)
+   */
+  public static final long DEFAULT_MAXIMUM_STATUS_UPDATE_DELAY = 1800;
+
+  /**
+   * Number of seconds that would grow exponentially for next update, incase of transient failures.
+   */
+  public static final String STATUS_UPDATE_EXPONENTIAL_WAIT_FACTOR = SERVER_PFX
+    + "status.update.exponential.wait.millis";
+
+  /**
+   * Default value of DEFAULT_STATUS_UPDATE_EXPONENTIAL_WAIT_FACTOR is 30000 millis (30 seconds)
+   */
+  public static final long DEFAULT_STATUS_UPDATE_EXPONENTIAL_WAIT_FACTOR = 30000;
+
+  /**
+   * Specifies whether to attempt cancellation of a query whose execution takes longer than the timeout value
+   * specified while submitting the query for execution.
+   */
+  public static final String CANCEL_QUERY_ON_TIMEOUT = QUERY_PFX + "cancel.on.timeout";
+
+  /**
+   * Default value of "lens.query.cancel.on.timeout"
+   */
+  public static final boolean DEFAULT_CANCEL_QUERY_ON_TIMEOUT = true;
 }

@@ -25,7 +25,7 @@
 <configuration>
   <property>
     <name>lens.server.drivers</name>
-    <value>org.apache.lens.driver.hive.HiveDriver</value>
+    <value>hive:org.apache.lens.driver.hive.HiveDriver</value>
   </property>
 
   <property>
@@ -47,11 +47,6 @@
   <property>
     <name>lens.query.result.parent.dir</name>
     <value>target/lens-results</value>
-  </property>
-
-  <property>
-    <name>hive.server2.query.log.dir</name>
-    <value>target/query-logs</value>
   </property>
 
   <property>
@@ -152,11 +147,14 @@
     <value>local</value>
   </property>
 
-
   <property>
     <name>lens.server.mocknonlens.service.impl</name>
     <value>org.apache.lens.server.MockNonLensService</value>
     <description>Implementation class for session service</description>
   </property>
 
+  <property>
+    <name>lens.server.duplicate.query.allowed</name>
+    <value>true</value>
+  </property>
 </configuration>

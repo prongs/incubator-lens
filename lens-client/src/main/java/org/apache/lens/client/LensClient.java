@@ -18,9 +18,12 @@
  */
 package org.apache.lens.client;
 
+import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.ws.rs.core.Response;
 
@@ -31,9 +34,13 @@ import org.apache.lens.api.result.LensAPIResult;
 import org.apache.lens.api.util.PathValidator;
 import org.apache.lens.client.exceptions.LensAPIException;
 import org.apache.lens.client.exceptions.LensBriefErrorException;
+import org.apache.lens.client.exceptions.LensClientIOException;
 import org.apache.lens.client.model.BriefError;
 import org.apache.lens.client.model.IdBriefErrorTemplate;
 import org.apache.lens.client.model.IdBriefErrorTemplateKey;
+import org.apache.lens.client.resultset.CsvResultSet;
+import org.apache.lens.client.resultset.ResultSet;
+import org.apache.lens.client.resultset.ZippedCsvResultSet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,9 +53,10 @@ import lombok.extern.slf4j.Slf4j;
 
 
 @Slf4j
-public class LensClient {
+public class LensClient implements AutoCloseable {
   public static final String CLILOGGER =  "cliLogger";
   private static final String DEFAULT_PASSWORD = "";
+  @Getter
   private final LensClientConfig conf;
   @Getter
   private final LensMetadataClient mc;
@@ -57,12 +65,21 @@ public class LensClient {
   private LensConnection connection;
   private final HashMap<QueryHandle, LensStatement> statementMap =
     Maps.newHashMap();
+  @Getter
   private final LensStatement statement;
 
   @Getter
   private PathValidator pathValidator;
 
-  public static Logger getCliLooger() {
+  public static final String QUERY_RESULT_SPLIT_INTO_MULTIPLE = "lens.query.result.split.multiple";
+
+  public static final String QUERY_OUTPUT_WRITE_HEADER_ENABLED = "lens.query.output.write.header";
+
+  public static final String QUERY_OUTPUT_ENCODING = "lens.query.output.charset.encoding";
+
+  public static final char DEFAULT_RESULTSET_DELIMITER = ',';
+
+  public static Logger getCliLogger() {
     return LoggerFactory.getLogger(CLILOGGER);
   }
 
@@ -98,13 +115,36 @@ public class LensClient {
     return mc;
   }
 
-  public LensAPIResult<QueryHandle> executeQueryAsynch(String sql, String queryName) throws LensAPIException {
+  public QueryHandle executeQueryAsynch(String sql, String queryName) throws LensAPIException {
     log.debug("Executing query {}", sql);
-    LensAPIResult<QueryHandle> lensAPIResult = statement.execute(sql, false, queryName);
-    LensQuery query = statement.getQuery();
-    log.debug("Adding query to statementMap {}", query.getQueryHandle());
-    statementMap.put(query.getQueryHandle(), statement);
-    return lensAPIResult;
+    QueryHandle handle = statement.executeQuery(sql, false, queryName);
+    statementMap.put(handle, statement);
+    return handle;
+  }
+
+  /**
+   * Execute query with timeout option.
+   * If the query does not finish within the timeout time, server returns the query handle which can be used to
+   * track further progress.
+   *
+   * @param sql : query/command to be executed
+   * @param queryName : optional query name
+   * @param timeOutMillis : timeout milliseconds for the query execution.
+   * @return
+   * @throws LensAPIException
+   */
+  public QueryHandleWithResultSet executeQueryWithTimeout(String sql, String queryName, long timeOutMillis)
+    throws LensAPIException {
+    log.info("Executing query {} with timeout of {} milliseconds", sql, timeOutMillis);
+    QueryHandleWithResultSet result = statement.executeQuery(sql, queryName, timeOutMillis);
+    statementMap.put(result.getQueryHandle(), statement);
+    if (result.getStatus().failed()) {
+      IdBriefErrorTemplate errorResult = new IdBriefErrorTemplate(IdBriefErrorTemplateKey.QUERY_ID,
+          result.getQueryHandle().getHandleIdString(), new BriefError(result.getStatus()
+              .getErrorCode(), result.getStatus().getErrorMessage()));
+      throw new LensBriefErrorException(errorResult);
+    }
+    return result;
   }
 
   public Date getLatestDateOfCube(String cubeName, String timePartition) {
@@ -137,7 +177,7 @@ public class LensClient {
 
   public LensClientResultSetWithStats getResults(String sql, String queryName) throws LensAPIException {
     log.debug("Executing query {}", sql);
-    statement.execute(sql, true, queryName);
+    statement.executeQuery(sql, true, queryName);
     return getResultsFromStatement(statement);
   }
 
@@ -187,16 +227,60 @@ public class LensClient {
     return statement.getHttpResultSet(statement.getQuery(q));
   }
 
+  /**
+   * Gets the ResultSet for the query represented by queryHandle.
+   *
+   * @param queryHandle : query hanlde
+   * @return
+   * @throws LensClientIOException
+   */
+  public ResultSet getHttpResultSet(QueryHandle queryHandle) throws LensClientIOException {
+    Map<String, String> paramsMap = this.connection.getConnectionParamsAsMap();
+    String isSplitFileEnabled = paramsMap.get(QUERY_RESULT_SPLIT_INTO_MULTIPLE);
+    String isHeaderEnabled = paramsMap.get(QUERY_OUTPUT_WRITE_HEADER_ENABLED);
+    String encoding = paramsMap.get(QUERY_OUTPUT_ENCODING);
+    return getHttpResultSet(queryHandle, Charset.forName(encoding), Boolean.parseBoolean(isHeaderEnabled),
+      DEFAULT_RESULTSET_DELIMITER, Boolean.parseBoolean(isSplitFileEnabled));
+  }
+
+  /**
+   * Gets the ResultSet for the query represented by queryHandle.
+   *
+   * @param queryHandle : query handle.
+   * @param encoding  : resultset encoding.
+   * @param isHeaderPresent : whether the resultset has header row included.
+   * @param delimiter : delimiter used to seperate columns of resultset.
+   * @param isResultZipped : whether the resultset is zipped.
+   * @return
+   * @throws LensClientIOException
+   */
+  public ResultSet getHttpResultSet(QueryHandle queryHandle, Charset encoding, boolean isHeaderPresent, char delimiter,
+    boolean isResultZipped) throws LensClientIOException {
+    InputStream resultStream = null;
+    try {
+      Response response = statement.getHttpResultSet(statement.getQuery(queryHandle));
+      resultStream = response.readEntity(InputStream.class);
+    } catch (Exception e) {
+      throw new LensClientIOException("Error while getting resultset", e);
+    }
+
+    if (isResultZipped) {
+      return new ZippedCsvResultSet(resultStream, encoding, isHeaderPresent, delimiter);
+    } else {
+      return new CsvResultSet(resultStream, encoding, isHeaderPresent, delimiter);
+    }
+  }
+
   public LensStatement getLensStatement(QueryHandle query) {
     return this.statementMap.get(query);
   }
 
   public QueryStatus getQueryStatus(QueryHandle query) {
-    return new LensStatement(connection).getQuery(query).getStatus();
+    return statement.getQuery(query).getStatus();
   }
 
   public LensQuery getQueryDetails(QueryHandle handle) {
-    return new LensStatement(connection).getQuery(handle);
+    return statement.getQuery(handle);
   }
 
   public QueryStatus getQueryStatus(String q) {
@@ -208,7 +292,7 @@ public class LensClient {
   }
 
   public LensAPIResult<QueryPlan> getQueryPlan(String q) throws LensAPIException {
-    return new LensStatement(connection).explainQuery(q);
+    return statement.explainQuery(q);
   }
 
   public boolean killQuery(QueryHandle q) {
@@ -226,8 +310,9 @@ public class LensClient {
     return getLensStatement(query).getResultSet();
   }
 
-  public List<QueryHandle> getQueries(String state, String queryName, String user, long fromDate, long toDate) {
-    return new LensStatement(connection).getAllQueries(state, queryName, user, fromDate, toDate);
+  public List<QueryHandle> getQueries(String state, String queryName, String user, String driver, long fromDate,
+    long toDate) {
+    return statement.getAllQueries(state, queryName, user, driver, fromDate, toDate);
   }
 
   private void connectToLensServer() {
@@ -318,9 +403,9 @@ public class LensClient {
     return this.connection.getConnectionParams(key);
   }
 
-  public APIResult closeConnection() {
+  public void closeConnection() {
     log.debug("Closing lens connection: {}", new LensConnectionParams(conf));
-    return this.connection.close();
+    this.connection.close();
   }
 
   public APIResult addJarResource(String path) {
@@ -608,5 +693,34 @@ public class LensClient {
 
   public Response getLogs(String logFile) {
     return this.connection.getLogs(logFile);
+  }
+
+  public XSegmentation getSegmentation(String segName) {
+    return mc.getSegmentation(segName);
+  }
+
+  public List<String> getAllSegmentations() {
+    return mc.getAllSegmentations();
+  }
+
+  public List<String> getAllSegmentations(String filter) {
+    return mc.getAllSegmentations(filter);
+  }
+
+  public APIResult createSegmentation(String segSpec) {
+    return mc.createSegmentation(segSpec);
+  }
+
+  public APIResult updateSegmentation(String segName, String segSpec) {
+    return mc.updateSegmentation(segName, segSpec);
+  }
+
+  public APIResult dropSegmentation(String segName) {
+    return mc.dropSegmentation(segName);
+  }
+
+  @Override
+  public void close() {
+    closeConnection();
   }
 }

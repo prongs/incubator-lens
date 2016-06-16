@@ -33,27 +33,18 @@ import javax.ws.rs.WebApplicationException;
 
 import org.apache.lens.api.LensSessionHandle;
 import org.apache.lens.server.BaseLensService;
-import org.apache.lens.server.LensServices;
 import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.error.LensException;
 import org.apache.lens.server.api.health.HealthStatus;
-import org.apache.lens.server.api.query.QueryExecutionService;
-import org.apache.lens.server.api.session.SessionClosed;
-import org.apache.lens.server.api.session.SessionExpired;
-import org.apache.lens.server.api.session.SessionOpened;
-import org.apache.lens.server.api.session.SessionRestored;
-import org.apache.lens.server.api.session.SessionService;
-import org.apache.lens.server.query.QueryExecutionServiceImpl;
+import org.apache.lens.server.api.session.*;
 import org.apache.lens.server.session.LensSessionImpl.ResourceEntry;
 
 import org.apache.commons.lang3.StringUtils;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.hadoop.hive.conf.SystemVariables;
 import org.apache.hadoop.hive.ql.metadata.Hive;
-import org.apache.hadoop.hive.ql.processors.SetProcessor;
 import org.apache.hadoop.hive.ql.session.SessionState;
-
 import org.apache.hive.service.cli.CLIService;
 import org.apache.hive.service.cli.HiveSQLException;
 import org.apache.hive.service.cli.OperationHandle;
@@ -61,7 +52,6 @@ import org.apache.hive.service.cli.OperationHandle;
 import com.google.common.collect.Maps;
 import lombok.AccessLevel;
 import lombok.Getter;
-
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -98,29 +88,6 @@ public class HiveSessionService extends BaseLensService implements SessionServic
     super(NAME, cliService);
   }
 
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public int addResourceToAllServices(LensSessionHandle sessionid, String type, String path) {
-    int numAdded = 0;
-    boolean error = false;
-    for (BaseLensService service : LensServices.get().getLensServices()) {
-      try {
-        service.addResource(sessionid, type, path);
-        numAdded++;
-      } catch (LensException e) {
-        log.error("Failed to add resource type:" + type + " path:" + path + " in service:" + service, e);
-        error = true;
-        break;
-      }
-    }
-    if (!error) {
-      getSession(sessionid).addResource(type, path);
-    }
-    return numAdded;
-  }
-
   @Override
   public List<String> listAllResources(LensSessionHandle sessionHandle, String type) {
     if (!isValidResouceType(type)) {
@@ -145,17 +112,32 @@ public class HiveSessionService extends BaseLensService implements SessionServic
    */
   @Override
   public void addResource(LensSessionHandle sessionid, String type, String path) {
-    String command = "add " + type.toLowerCase() + " " + path;
     try {
       acquire(sessionid);
-      closeCliServiceOp(getCliService().executeStatement(getHiveSessionHandle(sessionid), command, null));
-    } catch (HiveSQLException e) {
+      SessionState ss = getSession(sessionid).getSessionState();
+      String finalLocation = ss.add_resource(SessionState.ResourceType.valueOf(type.toUpperCase()), path);
+      getSession(sessionid).addResource(type, path, finalLocation);
+    } catch (RuntimeException e) {
+      log.error("Failed to add resource type:" + type + " path:" + path + " in session", e);
       throw new WebApplicationException(e);
     } finally {
       release(sessionid);
     }
   }
 
+  private void addResourceUponRestart(LensSessionHandle sessionid, ResourceEntry resourceEntry) {
+    try {
+      acquire(sessionid);
+      SessionState ss = getSession(sessionid).getSessionState();
+      resourceEntry.location = ss.add_resource(SessionState.ResourceType.valueOf(resourceEntry.getType()),
+        resourceEntry.getUri());
+      if (resourceEntry.location == null) {
+        throw new NullPointerException("Resource's final location cannot be null");
+      }
+    } finally {
+      release(sessionid);
+    }
+  }
   /**
    * {@inheritDoc}
    */
@@ -182,17 +164,17 @@ public class HiveSessionService extends BaseLensService implements SessionServic
    * @return the session param
    */
   private String getSessionParam(Configuration sessionConf, SessionState ss, String varname) {
-    if (varname.indexOf(SetProcessor.HIVEVAR_PREFIX) == 0) {
-      String var = varname.substring(SetProcessor.HIVEVAR_PREFIX.length());
+    if (varname.indexOf(SystemVariables.HIVEVAR_PREFIX) == 0) {
+      String var = varname.substring(SystemVariables.HIVEVAR_PREFIX.length());
       if (ss.getHiveVariables().get(var) != null) {
-        return SetProcessor.HIVEVAR_PREFIX + var + "=" + ss.getHiveVariables().get(var);
+        return SystemVariables.HIVEVAR_PREFIX + var + "=" + ss.getHiveVariables().get(var);
       } else {
         throw new NotFoundException(varname + " is undefined as a hive variable");
       }
     } else {
       String var;
-      if (varname.indexOf(SetProcessor.HIVECONF_PREFIX) == 0) {
-        var = varname.substring(SetProcessor.HIVECONF_PREFIX.length());
+      if (varname.indexOf(SystemVariables.HIVECONF_PREFIX) == 0) {
+        var = varname.substring(SystemVariables.HIVECONF_PREFIX.length());
       } else {
         var = varname;
       }
@@ -248,7 +230,7 @@ public class HiveSessionService extends BaseLensService implements SessionServic
     if (auxJars != null) {
       for (String jar : auxJars) {
         log.info("Adding aux jar:" + jar);
-        addResourceToAllServices(sessionid, "jar", jar);
+        addResource(sessionid, "jar", jar);
       }
     }
     return sessionid;
@@ -275,7 +257,7 @@ public class HiveSessionService extends BaseLensService implements SessionServic
         SortedMap<String, String> sortedMap = new TreeMap<String, String>();
         sortedMap.put("silent", (ss.getIsSilent() ? "on" : "off"));
         for (String s : ss.getHiveVariables().keySet()) {
-          sortedMap.put(SetProcessor.HIVEVAR_PREFIX + s, ss.getHiveVariables().get(s));
+          sortedMap.put(SystemVariables.HIVEVAR_PREFIX + s, ss.getHiveVariables().get(s));
         }
         for (Map.Entry<String, String> entry : getSession(sessionid).getSessionConf()) {
           sortedMap.put(entry.getKey(), entry.getValue());
@@ -313,8 +295,8 @@ public class HiveSessionService extends BaseLensService implements SessionServic
       // set in session conf
       for(Map.Entry<String, String> entry: config.entrySet()) {
         String var = entry.getKey();
-        if (var.indexOf(SetProcessor.HIVECONF_PREFIX) == 0) {
-          var = var.substring(SetProcessor.HIVECONF_PREFIX.length());
+        if (var.indexOf(SystemVariables.HIVECONF_PREFIX) == 0) {
+          var = var.substring(SystemVariables.HIVECONF_PREFIX.length());
         }
         getSession(sessionid).getSessionConf().set(var, entry.getValue());
         if (addToSession) {
@@ -391,11 +373,12 @@ public class HiveSessionService extends BaseLensService implements SessionServic
         session.getLensSessionPersistInfo().setConfig(persistInfo.getConfig());
         session.getLensSessionPersistInfo().setResources(persistInfo.getResources());
         session.setCurrentDatabase(persistInfo.getDatabase());
+        session.getLensSessionPersistInfo().setMarkedForClose(persistInfo.isMarkedForClose());
 
         // Add resources for restored sessions
         for (LensSessionImpl.ResourceEntry resourceEntry : session.getResources()) {
           try {
-            addResource(sessionHandle, resourceEntry.getType(), resourceEntry.getLocation());
+            addResourceUponRestart(sessionHandle, resourceEntry);
           } catch (Exception e) {
             log.error("Failed to restore resource for session: " + session + " resource: " + resourceEntry, e);
           }
@@ -414,7 +397,7 @@ public class HiveSessionService extends BaseLensService implements SessionServic
         throw new RuntimeException(e);
       }
     }
-    log.info("Session service restoed " + restorableSessions.size() + " sessions");
+    log.info("Session service restored " + restorableSessions.size() + " sessions");
   }
 
   private int getSessionExpiryInterval() {
@@ -496,11 +479,6 @@ public class HiveSessionService extends BaseLensService implements SessionServic
    */
   private void closeInternal(LensSessionHandle sessionHandle) throws LensException {
     super.closeSession(sessionHandle);
-    // Inform query service
-    BaseLensService svc = LensServices.get().getService(QueryExecutionService.NAME);
-    if (svc instanceof QueryExecutionServiceImpl) {
-      ((QueryExecutionServiceImpl) svc).closeDriverSessions(sessionHandle);
-    }
   }
 
   /**

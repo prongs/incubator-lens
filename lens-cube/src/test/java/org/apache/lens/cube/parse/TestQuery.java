@@ -19,24 +19,31 @@
 
 package org.apache.lens.cube.parse;
 
+import static org.apache.lens.cube.parse.HQLParser.equalsAST;
+
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.lens.server.api.error.LensException;
+
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.hadoop.hive.ql.parse.ASTNode;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
-import lombok.Getter;
-import lombok.Setter;
-
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class TestQuery {
+  private static HiveConf conf = new HiveConf();
+  private ASTNode ast;
 
-  private String actualQuery;
+  private String query;
   private String joinQueryPart = null;
 
   private String trimmedQuery = null;
@@ -46,6 +53,7 @@ public class TestQuery {
   private String preJoinQueryPart = null;
 
   private String postJoinQueryPart = null;
+  private boolean processed = false;
 
   public enum JoinType {
     INNERJOIN,
@@ -54,32 +62,45 @@ public class TestQuery {
     FULLOUTERJOIN,
     UNIQUE,
     LEFTSEMIJOIN,
-    JOIN;
+    JOIN
   }
 
   public enum Clause {
     WHERE,
     GROUPBY,
     HAVING,
-    ORDEREDBY;
+    ORDEREDBY
   }
 
   public TestQuery(String query) {
-    this.actualQuery = query;
-    this.trimmedQuery = getTrimmedQuery(query);
-    this.joinQueryPart = extractJoinStringFromQuery(trimmedQuery);
-    /**
-     * Get the join query part, pre-join query and post-join query part from the trimmed query.
-     *
-     */
-    if (StringUtils.isNotBlank(joinQueryPart)) {
-      this.preJoinQueryPart = trimmedQuery.substring(0, trimmedQuery.indexOf(joinQueryPart));
-      this.postJoinQueryPart = trimmedQuery.substring(getMinIndexOfClause());
-      prepareJoinStrings(trimmedQuery);
-    } else {
-      int minIndex = getMinIndexOfClause();
-      this.preJoinQueryPart = trimmedQuery.substring(0, minIndex);
-      this.postJoinQueryPart = trimmedQuery.substring(minIndex);
+    this.query = query;
+  }
+
+  public ASTNode getAST() throws LensException {
+    if (this.ast == null) {
+      ast = HQLParser.parseHQL(this.query, conf);
+    }
+    return ast;
+  }
+
+  public void processQueryAsString() {
+    if (!processed) {
+      processed = true;
+      this.trimmedQuery = getTrimmedQuery(query);
+      this.joinQueryPart = extractJoinStringFromQuery(trimmedQuery);
+      /**
+       * Get the join query part, pre-join query and post-join query part from the trimmed query.
+       *
+       */
+      if (StringUtils.isNotBlank(joinQueryPart)) {
+        this.preJoinQueryPart = trimmedQuery.substring(0, trimmedQuery.indexOf(joinQueryPart));
+        this.postJoinQueryPart = trimmedQuery.substring(getMinIndexOfClause());
+        prepareJoinStrings(trimmedQuery);
+      } else {
+        int minIndex = getMinIndexOfClause();
+        this.preJoinQueryPart = trimmedQuery.substring(0, minIndex);
+        this.postJoinQueryPart = trimmedQuery.substring(minIndex);
+      }
     }
   }
 
@@ -105,11 +126,11 @@ public class TestQuery {
       query = query.substring(nextJoinIndex + joinDetails.getJoinType().name().length());
     }
   }
-
+  @Data
   private class JoinDetails {
-    @Setter @Getter private JoinType joinType;
-    @Setter @Getter private int index;
-    @Setter @Getter private String joinString;
+    private JoinType joinType;
+    private int index;
+    private String joinString;
   }
 
   /**
@@ -129,7 +150,7 @@ public class TestQuery {
     joinDetails.setIndex(nextJoinIndex);
     if (nextJoinIndex != Integer.MAX_VALUE) {
       joinDetails.setJoinString(
-          getJoinString(query.substring(nextJoinIndex + nextJoinTypePart.name().length())));
+        getJoinString(query.substring(nextJoinIndex + nextJoinTypePart.name().length())));
     }
     joinDetails.setJoinType(nextJoinTypePart);
     return joinDetails;
@@ -164,7 +185,7 @@ public class TestQuery {
       }
       minClauseIndex = clauseIndex < minClauseIndex ? clauseIndex : minClauseIndex;
     }
-    return (minClauseIndex == Integer.MAX_VALUE || minClauseIndex == -1) ? query.length() : minClauseIndex;
+    return (minClauseIndex == Integer.MAX_VALUE) ? query.length() : minClauseIndex;
   }
 
   private int getMinIndexOfJoinType() {
@@ -190,31 +211,48 @@ public class TestQuery {
 
   @Override
   public boolean equals(Object query) {
+    if (!(query instanceof TestQuery)) {
+      return false;
+    }
     TestQuery expected = (TestQuery) query;
     if (this == expected) {
       return true;
     }
-    if (this.actualQuery == null && expected.actualQuery == null) {
+    if (this.query == null && expected.query == null) {
       return true;
-    } else if (this.actualQuery == null) {
+    } else if (this.query == null) {
       return false;
-    } else if (expected.actualQuery == null) {
+    } else if (expected.query == null) {
       return false;
     }
-    return Objects.equal(this.joinTypeStrings, expected.joinTypeStrings)
-        && Objects.equal(this.preJoinQueryPart, expected.preJoinQueryPart)
-        && Objects.equal(this.postJoinQueryPart, expected.postJoinQueryPart);
+    return stringEquals(expected) || astEquals(expected);
+  }
+
+  private boolean astEquals(TestQuery expected) {
+    try {
+      return equalsAST(this.getAST(), expected.getAST());
+    } catch (LensException e) {
+      log.error("AST not valid", e);
+      return false;
+    }
+  }
+
+  private boolean stringEquals(TestQuery expected) {
+    processQueryAsString();
+    expected.processQueryAsString();
+    return new EqualsBuilder()
+      .append(this.joinTypeStrings, expected.joinTypeStrings)
+      .append(this.preJoinQueryPart, expected.preJoinQueryPart)
+      .append(this.postJoinQueryPart, expected.postJoinQueryPart)
+      .build();
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(actualQuery, joinQueryPart, trimmedQuery, joinTypeStrings);
+    return Objects.hashCode(query, joinQueryPart, trimmedQuery, joinTypeStrings);
   }
 
   public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("Actual Query: " + actualQuery).append("\n");
-    sb.append("JoinQueryString: " + joinTypeStrings);
-    return sb.toString();
+    return "Query: " + query + "\n" + "JoinQueryString: " + joinTypeStrings;
   }
 }

@@ -28,7 +28,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.lens.cube.parse.DateUtil;
+import org.apache.lens.cube.metadata.DateUtil;
 import org.apache.lens.server.LensServices;
 import org.apache.lens.server.api.error.LensException;
 import org.apache.lens.server.api.metrics.MetricsService;
@@ -145,9 +145,9 @@ public class QueryResultPurger implements Runnable {
   /**
    * Stops query result purger
    */
-  public void stop() {
+  public void shutdown() {
     if (null != queryResultPurgerExecutor) {
-      queryResultPurgerExecutor.shutdownNow();
+      queryResultPurgerExecutor.shutdown();
       log.info("Stopped query result purger.");
     }
   }
@@ -173,5 +173,11 @@ public class QueryResultPurger implements Runnable {
       }
     }
     return metricsService;
+  }
+
+  public void awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
+    if (null != queryResultPurgerExecutor) {
+      queryResultPurgerExecutor.awaitTermination(timeout, unit);
+    }
   }
 }

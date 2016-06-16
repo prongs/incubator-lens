@@ -40,12 +40,12 @@ import org.apache.lens.server.api.query.ExplainQueryContext;
 import org.apache.lens.server.api.query.PreparedQueryContext;
 import org.apache.lens.server.api.query.QueryContext;
 import org.apache.lens.server.api.query.cost.QueryCost;
-import org.apache.lens.server.api.user.MockDriverQueryHook;
 import org.apache.lens.server.api.util.LensUtil;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.session.SessionState;
+
 import org.apache.hive.service.cli.ColumnDescriptor;
 
 import org.testng.Assert;
@@ -54,6 +54,7 @@ import org.testng.annotations.*;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.Lists;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
+
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -84,11 +85,10 @@ public class TestJdbcDriver {
     baseConf.set(JDBC_USER, "SA");
     baseConf.set(JDBC_PASSWORD, "");
     baseConf.set(JDBC_EXPLAIN_KEYWORD_PARAM, "explain plan for ");
-    baseConf.setClass(JDBC_QUERY_HOOK_CLASS, MockDriverQueryHook.class, DriverQueryHook.class);
     hConf = new HiveConf(baseConf, this.getClass());
 
     driver = new JDBCDriver();
-    driver.configure(baseConf);
+    driver.configure(baseConf, "jdbc", "jdbc1");
 
     assertNotNull(driver);
     assertTrue(driver.configured);
@@ -309,12 +309,12 @@ public class TestJdbcDriver {
     metricConf.set(LensConfConstants.QUERY_METRIC_UNIQUE_ID_CONF_KEY, TestJdbcDriver.class.getSimpleName());
     driver.estimate(createExplainContext(query1, metricConf));
     MetricRegistry reg = LensMetricsRegistry.getStaticRegistry();
-
+    String driverQualifiledName = driver.getFullyQualifiedName();
     Assert.assertTrue(reg.getGauges().keySet().containsAll(Arrays.asList(
-      "lens.MethodMetricGauge.TestJdbcDriver-JDBCDriver-validate-columnar-sql-rewrite",
-      "lens.MethodMetricGauge.TestJdbcDriver-JDBCDriver-validate-jdbc-prepare-statement",
-      "lens.MethodMetricGauge.TestJdbcDriver-JDBCDriver-validate-thru-prepare",
-      "lens.MethodMetricGauge.TestJdbcDriver-JDBCDriver-jdbc-check-allowed-query")));
+      "lens.MethodMetricGauge.TestJdbcDriver-"+driverQualifiledName+"-validate-columnar-sql-rewrite",
+      "lens.MethodMetricGauge.TestJdbcDriver-"+driverQualifiledName+"-validate-jdbc-prepare-statement",
+      "lens.MethodMetricGauge.TestJdbcDriver-"+driverQualifiledName+"-validate-thru-prepare",
+      "lens.MethodMetricGauge.TestJdbcDriver-"+driverQualifiledName+"-jdbc-check-allowed-query")));
   }
 
   @Test
@@ -408,6 +408,139 @@ public class TestJdbcDriver {
       if (rs instanceof JDBCResultSet) {
         ((JDBCResultSet) rs).close();
       }
+    }
+  }
+
+  @Test
+  public void testJDBCMaxConnectionConstraintCheck() throws Exception {
+    close();
+    // Create table execute_test
+    createTable("max_connection_test");
+    // Insert some data into table
+    insertData("max_connection_test");
+
+    MaxJDBCConnectionCheckConstraintFactory factory = new MaxJDBCConnectionCheckConstraintFactory();
+    MaxJDBCConnectionCheckConstraint constraint = factory.create(driver.getConf());
+
+    // check constraint in driver
+    assertTrue(driver.getQueryConstraints().toString().contains("MaxJDBCConnectionCheckConstraint"));
+
+    String query;
+    QueryContext context = createQueryContext("SELECT * FROM max_connection_test");
+
+    for (int i = 1; i <= JDBC_POOL_MAX_SIZE.getDefaultValue(); i++) {
+      query = "SELECT " + i + " FROM max_connection_test";
+      context = createQueryContext(query);
+      driver.executeAsync(context);
+    }
+
+    //pool max size is same as number of query context hold on driver
+    assertEquals(driver.getQueryContextMap().size(), JDBC_POOL_MAX_SIZE.getDefaultValue());
+
+    //new query shouldn't be allowed
+    QueryContext newcontext = createQueryContext("SELECT 123 FROM max_connection_test");
+    assertFalse(constraint.allowsLaunchOf(newcontext, null));
+
+    //close one query and launch the previous query again
+    driver.closeQuery(context.getQueryHandle());
+    assertTrue(constraint.allowsLaunchOf(newcontext, null));
+    close();
+  }
+
+
+  /**
+   * Data provider for test case {@link #testExecuteWithPreFetch()}
+   * @return
+   */
+  @DataProvider
+  public Object[][] executeWithPreFetchDP() {
+    return new Object[][] {
+      //int rowsToPreFecth, boolean isComplteleyFetched, int rowsPreFetched, boolean createTable, long executeTimeout
+      {10, true, 10, true, 20000}, //result has 10 rows and all 10 rows are pre fetched
+      {5, false, 6, false, 8000}, //result has 10 rows and 5 rows are pre fetched. (Extra row is  fetched = 5+1 = 6)
+      {15, true, 10, false, 8000}, //result has 10 rows and 15 rows are requested to be pre fetched
+      {10, false, 0, false, 10}, //similar to case 1 but executeTimeout is very less.
+    };
+  }
+
+  /**
+   * @param rowsToPreFecth  : requested number of rows to be pre-fetched
+   * @param isComplteleyFetched : whether the wrapped in memory result has been completely accessed due to pre fetch
+   * @param rowsPreFetched : actual rows pre-fetched
+   * @param createTable : whether to create a table before the test case is run
+   * @param executeTimeoutMillis :If the query does not finish with in this time pre fetch is ignored.
+   * @throws Exception
+   */
+  @Test(dataProvider = "executeWithPreFetchDP")
+  public void testExecuteWithPreFetch(int rowsToPreFecth, boolean isComplteleyFetched, int rowsPreFetched,
+      boolean createTable, long executeTimeoutMillis) throws Exception {
+    if (createTable) {
+      createTable("execute_prefetch_test");
+      insertData("execute_prefetch_test");
+    }
+
+    // Query
+    final String query = "SELECT * FROM execute_prefetch_test";
+    Configuration conf = new Configuration(baseConf);
+    conf.setBoolean(LensConfConstants.QUERY_PERSISTENT_RESULT_SET, true);
+    conf.setBoolean(LensConfConstants.QUERY_PERSISTENT_RESULT_INDRIVER, false);
+    conf.setBoolean(LensConfConstants.PREFETCH_INMEMORY_RESULTSET, true);
+    conf.setInt(LensConfConstants.PREFETCH_INMEMORY_RESULTSET_ROWS, rowsToPreFecth);
+    QueryContext context = createQueryContext(query, conf);
+    context.setExecuteTimeoutMillis(executeTimeoutMillis);
+    driver.executeAsync(context);
+    LensResultSet resultSet = driver.fetchResultSet(context);
+    assertNotNull(resultSet);
+
+    //Check Type
+    if (executeTimeoutMillis > 1000) { //enough time to execute the query
+      assertTrue(resultSet instanceof PartiallyFetchedInMemoryResultSet);
+    } else {
+      assertFalse(resultSet instanceof PartiallyFetchedInMemoryResultSet);
+      return; // NO need to check further in this  case
+    }
+
+    PartiallyFetchedInMemoryResultSet prs = (PartiallyFetchedInMemoryResultSet) resultSet;
+    assertEquals(prs.isComplteleyFetched(), isComplteleyFetched);
+
+    //Check Streaming flow
+    if (isComplteleyFetched) {
+      assertTrue(prs.isComplteleyFetched());
+      prs.getPreFetchedRows(); //This will be called while streaming
+      assertEquals(prs.size().intValue(), rowsPreFetched);
+    } else {
+      assertFalse(prs.isComplteleyFetched());
+      assertEquals(prs.getPreFetchedRows().size(), rowsPreFetched);
+    }
+
+    assertEquals(prs.getMetadata().getColumns().size(), 1);
+    assertEquals(prs.getMetadata().getColumns().get(0).getName(), "ID");
+
+    // Check Persistence flow
+    int rowCount = 0;
+    while (prs.hasNext()) {
+      ResultRow row = prs.next();
+      assertEquals(row.getValues().get(0), rowCount);
+      rowCount++;
+    }
+    assertEquals(rowCount, 10);
+    prs.setFullyAccessed(true);
+
+    //Check Purge
+    assertEquals(prs.canBePurged() , true);
+  }
+
+  @Test
+  public void testJdbcSqlException() throws Exception {
+    final String query = "SELECT invalid_column FROM execute_test";
+    try {
+      PreparedQueryContext pContext = new PreparedQueryContext(query, "SA", baseConf, drivers);
+      driver.validate(pContext);
+      driver.prepare(pContext);
+    } catch (LensException e) {
+      assertEquals(e.getErrorInfo().getErrorCode(), 4001);
+      assertEquals(e.getErrorInfo().getErrorName(), "SEMANTIC_ERROR");
+      assertTrue(e.getMessage().contains("user lacks privilege or object not found: EXECUTE_TEST"));
     }
   }
 
@@ -648,7 +781,6 @@ public class TestJdbcDriver {
 
   private void executeAsync(QueryContext ctx) throws LensException {
     driver.executeAsync(ctx);
-    assertEquals(ctx.getSelectedDriverConf().get(MockDriverQueryHook.KEY), MockDriverQueryHook.VALUE);
   }
 
   /**

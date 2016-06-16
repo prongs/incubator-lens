@@ -39,11 +39,12 @@ import org.apache.lens.server.LensServices;
 import org.apache.lens.server.api.metrics.MetricsService;
 import org.apache.lens.server.api.query.QueryExecutionService;
 import org.apache.lens.server.api.query.save.SavedQueryService;
-import org.apache.lens.server.error.LensExceptionMapper;
+import org.apache.lens.server.error.GenericExceptionMapper;
 import org.apache.lens.server.query.QueryExecutionServiceImpl;
 
-import org.glassfish.jersey.client.ClientConfig;
-import org.glassfish.jersey.media.multipart.MultiPartFeature;
+import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.hadoop.hive.ql.session.SessionState;
+
 import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
@@ -83,7 +84,7 @@ public class TestSavedQueryService extends LensJerseyTest {
     @Override
     public Set<Class<?>> getClasses() {
       final Set<Class<?>> classes = super.getClasses();
-      classes.add(LensExceptionMapper.class);
+      classes.add(GenericExceptionMapper.class);
       classes.add(LensJAXBContextResolver.class);
       return classes;
     }
@@ -98,6 +99,7 @@ public class TestSavedQueryService extends LensJerseyTest {
     Map<String, String> sessionconf = Maps.newHashMap();
     sessionconf.put("test.session.key", "svalue");
     lensSessionId = queryService.openSession("foo", "bar", sessionconf); // @localhost should be removed
+    SessionState.start(new HiveConf());
   }
 
   @AfterTest
@@ -110,12 +112,6 @@ public class TestSavedQueryService extends LensJerseyTest {
   @Override
   protected Application configure() {
     return new SavedQueryTestApp();
-  }
-
-  @Override
-  protected void configureClient(ClientConfig config) {
-    config.register(MultiPartFeature.class);
-    config.register(LensJAXBContextResolver.class);
   }
 
   @Test
@@ -135,7 +131,7 @@ public class TestSavedQueryService extends LensJerseyTest {
 
   private ResourceModifiedResponse updateQuery(long id) {
     Response savedquery = savedQueriesRoot()
-      .path(String.valueOf(id))
+      .path(String.valueOf(id)).queryParam("sessionid", lensSessionId)
       .request(MediaType.APPLICATION_JSON_TYPE)
       .accept(MediaType.APPLICATION_JSON_TYPE)
       .put(Entity.json(QUERY));
@@ -145,7 +141,7 @@ public class TestSavedQueryService extends LensJerseyTest {
 
   private ResourceModifiedResponse deleteQuery(long id) {
     Response savedquery = savedQueriesRoot()
-      .path(String.valueOf(id))
+      .path(String.valueOf(id)).queryParam("sessionid", lensSessionId)
       .request(MediaType.APPLICATION_JSON_TYPE)
       .accept(MediaType.APPLICATION_JSON_TYPE)
       .delete();
@@ -155,7 +151,7 @@ public class TestSavedQueryService extends LensJerseyTest {
 
   private SavedQuery get(long id) {
     Response savedquery = savedQueriesRoot()
-      .path(String.valueOf(id))
+      .path(String.valueOf(id)).queryParam("sessionid", lensSessionId)
       .request(MediaType.APPLICATION_JSON_TYPE)
       .accept(MediaType.APPLICATION_JSON_TYPE)
       .get();
@@ -165,7 +161,7 @@ public class TestSavedQueryService extends LensJerseyTest {
 
   private ParameterParserResponse extractParameters() {
     Response parameters = savedQueriesRoot()
-      .path("parameters")
+      .path("parameters").queryParam("sessionid", lensSessionId)
       .queryParam("query", QUERY_STRING)
       .request(MediaType.APPLICATION_JSON_TYPE)
       .accept(MediaType.APPLICATION_JSON_TYPE)
@@ -175,7 +171,7 @@ public class TestSavedQueryService extends LensJerseyTest {
   }
 
   private ResourceModifiedResponse saveQuery() {
-    Response savedquery = savedQueriesRoot()
+    Response savedquery = savedQueriesRoot().queryParam("sessionid", lensSessionId)
       .request(MediaType.APPLICATION_JSON_TYPE)
       .accept(MediaType.APPLICATION_JSON_TYPE)
       .post(Entity.json(QUERY));
@@ -186,7 +182,7 @@ public class TestSavedQueryService extends LensJerseyTest {
   private ListResponse list(long offset, long count) {
     Response savedquery = savedQueriesRoot()
       .queryParam("start", offset)
-      .queryParam("count", count)
+      .queryParam("count", count).queryParam("sessionid", lensSessionId)
       .request(MediaType.APPLICATION_JSON_TYPE)
       .accept(MediaType.APPLICATION_JSON_TYPE)
       .get();

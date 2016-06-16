@@ -55,6 +55,7 @@ public class LensException extends Exception implements Comparable<LensException
 
   @Getter
   private final LensErrorInfo errorInfo;
+  private String formattedErrorMsg;
 
   public int getErrorCode() {
     return errorInfo.getErrorCode();
@@ -184,6 +185,7 @@ public class LensException extends Exception implements Comparable<LensException
     final String apiVersion, final String id) {
 
     final LensError lensError = errorCollection.getLensError(getErrorCode());
+
     final LensErrorTO lensErrorTO = buildLensErrorTO(errorCollection, lensError);
     lensAPIResult = LensAPIResult.composedOf(apiVersion, id, lensErrorTO, lensError.getHttpStatusCode());
   }
@@ -202,9 +204,14 @@ public class LensException extends Exception implements Comparable<LensException
 
   private LensErrorTO buildLensErrorTO(final ErrorCollection errorCollection, final LensError lensError) {
 
-    final String formattedErrorMsg = getFormattedErrorMsg(lensError);
+    formattedErrorMsg = getFormattedErrorMsg(lensError);
     final String stackTrace = getStackTraceString();
     return buildLensErrorTO(errorCollection, formattedErrorMsg, stackTrace);
+  }
+
+  @Override
+  public String getMessage() {
+    return formattedErrorMsg != null ? formattedErrorMsg : super.getMessage();
   }
 
   @Override
