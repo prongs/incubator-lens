@@ -38,10 +38,6 @@ public class NoCandidateDimAvailableException extends LensException {
   @Override
   public int compareTo(LensException e) {
     //Compare the max CandidateTablePruneCode coming from different instances.
-    if (e instanceof NoCandidateDimAvailableException) {
-      return briefAndDetailedError.getMaxCause().compareTo(
-              ((NoCandidateDimAvailableException) e).briefAndDetailedError.getMaxCause());
-    }
     return super.compareTo(e);
   }
 }
