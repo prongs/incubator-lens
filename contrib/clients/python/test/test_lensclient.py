@@ -159,3 +159,7 @@ class TestLensClient(object):
             queries = client.queries(state='SUCCESSFUL', fromDate=finished_query.submission_time - 1, toDate=finished_query.submission_time + 1)
             assert handle in queries
 
+    def test_query_result(self):
+        with self.get_client() as client:
+            handle = client.queries.submit(self.candidate_query)
+            result = client.queries[handle].result
