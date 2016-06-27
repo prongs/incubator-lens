@@ -15,12 +15,7 @@
 # limitations under the License.
 #
 
-import csv
-import time
-import zipfile
-
 import requests
-from six import string_types, BytesIO, PY2, PY3
 
 from .models import WrappedJson
 from .utils import conf_to_xml
@@ -53,21 +48,3 @@ class LensSessionClient(object):
     def close(self):
         requests.delete(self.base_url, params={'sessionid': self._sessionid})
 
-    def sanitize_response(self, resp):
-        resp.raise_for_status()
-        try:
-            resp_json = resp.json(object_hook=WrappedJson)
-            if 'lensAPIResult' in resp_json:
-                resp_json = resp_json.lens_a_p_i_result
-                if 'error' in resp_json:
-                    raise Exception(resp_json['error'])
-                if 'data' in resp_json:
-                    data = resp_json.data
-                    if len(data) == 2 and 'type' in data:
-                        keys = list(data.keys())
-                        keys.remove('type')
-                        return WrappedJson({data['type']: data[keys[0]]})
-                    return data
-        except:
-            resp_json = resp.json()
-        return resp_json
