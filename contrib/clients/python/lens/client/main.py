@@ -16,12 +16,11 @@
 #
 import os
 
-import requests
 from six import string_types
 from .log import LensLogClient
 from .session import LensSessionClient
 from .query import LensQueryClient
-from .utils import conf_to_xml, xml_file_to_conf
+from .utils import xml_file_to_conf
 
 
 class LensClient(object):
