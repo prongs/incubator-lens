@@ -15,16 +15,14 @@
 # limitations under the License.
 #
 
-import csv
 import time
 import zipfile
 
 import requests
 from six import string_types, BytesIO, PY2, PY3
-
 from .models import WrappedJson
 from .utils import conf_to_xml
-
+import csv
 if PY3:
     from collections.abc import Iterable as Iterable
 elif PY2:
@@ -44,7 +42,6 @@ class LensQuery(WrappedJson):
         return self.client.get_result(self, *args, **kwargs)
 
     result = property(get_result)
-
 
 
 type_mappings = {'BOOLEAN': bool,
@@ -69,15 +66,16 @@ type_mappings = {'BOOLEAN': bool,
                  }
 default_mapping = lambda x: x
 
+
 class LensQueryResult(Iterable):
-    def __init__(self, header, response, encoding=None, is_header_present=True, delimiter=",", is_zipped=True,
+    def __init__(self, header, response, encoding=None, is_header_present=True, delimiter=",",
                  custom_mappings=None):
         if custom_mappings is None:
             custom_mappings = {}
         self.custom_mappings = custom_mappings
         self.response = response
-        self.is_zipped = is_zipped
-        self.delimiter = delimiter
+        self.is_zipped = 'zip' in self.response.headers['content-disposition']
+        self.delimiter = str(delimiter)
         self.is_header_present = is_header_present
         self.encoding = encoding
         self.header = header
@@ -119,14 +117,16 @@ class LensQueryResult(Iterable):
 
 
 class LensQueryClient(object):
-    def __init__(self, base_url, sessionid):
-        self._sessionid = sessionid
+    def __init__(self, base_url, session):
+        self._session = session
         self.base_url = base_url + "queryapi/"
         self.launched_queries = []
         self.finished_queries = {}
+        self.query_confs = {}
+        self.is_header_present_in_result = bool(self._session['lens.query.output.write.header'])
 
     def __call__(self, **filters):
-        filters['sessionid'] = self._sessionid
+        filters['sessionid'] = self._session._sessionid
         resp = requests.get(self.base_url + "queries/", params=filters, headers={'accept': 'application/json'})
         return self.sanitize_response(resp)
 
@@ -134,7 +134,7 @@ class LensQueryClient(object):
         if isinstance(item, string_types):
             if item in self.finished_queries:
                 return self.finished_queries[item]
-            resp = requests.get(self.base_url + "queries/" + item, params={'sessionid': self._sessionid},
+            resp = requests.get(self.base_url + "queries/" + item, params={'sessionid': self._session._sessionid},
                                 headers={'accept': 'application/json'})
             resp.raise_for_status()
             query = LensQuery(self, resp.json(object_hook=WrappedJson))
@@ -149,8 +149,9 @@ class LensQueryClient(object):
                 return self[item._wrapped_value]
         raise Exception("Can't get query: " + str(item))
 
-    def submit(self, query, operation="execute", query_name=None, timeout=None, conf=None):
-        payload = [('sessionid', self._sessionid), ('query', query), ('operation', operation)]
+    def submit(self, query, operation=None, query_name=None, timeout=None, conf=None, wait=False, fetch_result=False,
+               *args, **kwargs):
+        payload = [('sessionid', self._session._sessionid), ('query', query)]
         if query_name:
             payload.append(('queryName', query_name))
         if timeout:
@@ -158,24 +159,41 @@ class LensQueryClient(object):
         payload.append(('conf', conf_to_xml(conf)))
         resp = requests.post(self.base_url + "queries/", files=payload, headers={'accept': 'application/json'})
         query = self.sanitize_response(resp)
-        self.launched_queries.append(query)
-        return query
+        if conf:
+            self.query_confs[str(query)] = conf
+        if wait or fetch_result:
+            self.wait_till_finish(query)
+        if fetch_result:
+            return self.get_result(query, *args, **kwargs)  # query is handle here
+        else:
+            return query
 
-    def wait_till_finish(self, handle):
-        while not self[handle].finished:
+    def wait_till_finish(self, handle_or_query):
+        while not self[handle_or_query].finished:
             time.sleep(1)
-        return self[handle]
+        return self[handle_or_query]
 
-    def get_result(self, handle, *args, **kwargs):
-        self.wait_till_finish(handle)
-        if self[handle].status.status == 'SUCCESSFUL' and self[handle].status.is_result_set_available:
-            resp = requests.get(self.base_url + "queries/" + str(self[handle].query_handle) + "/resultsetmetadata",
-                                params={'sessionid': self._sessionid}, headers={'accept': 'application/json'})
+    def get_result(self, handle_or_query, *args, **kwargs):
+        query = self.wait_till_finish(handle_or_query)
+        handle = str(query.query_handle)
+        if query.status.status == 'SUCCESSFUL' and query.status.is_result_set_available:
+            resp = requests.get(self.base_url + "queries/" + handle + "/resultsetmetadata",
+                                params={'sessionid': self._session._sessionid}, headers={'accept': 'application/json'})
             metadata = self.sanitize_response(resp)
-            print metadata
-            resp = requests.get(self.base_url + "queries/" + str(self[handle].query_handle) + "/httpresultset",
-                                params={'sessionid': self._sessionid}, stream=True)
-            return LensQueryResult(metadata, resp, *args, **kwargs)
+            # Try getting the result through http result
+            resp = requests.get(self.base_url + "queries/" + handle + "/httpresultset",
+                                params={'sessionid': self._session._sessionid}, stream=True)
+            if resp.ok:
+                is_header_present = self.is_header_present_in_result
+                if not is_header_present:
+                    if handle in self.query_confs and 'lens.query.output.write.header' in self.query_confs[handle]:
+                        is_header_present = bool(self.query_confs[handle]['lens.query.output.write.header'])
+                return LensQueryResult(metadata, resp, is_header_present=is_header_present, *args, **kwargs)
+            else:
+                resp = requests.get(self.base_url + "queries/" + handle + "/resultset",
+                                    params={'sessionid': self._session._sessionid}, headers={'accept': 'application/json'})
+                return self.sanitize_response(resp)
+
         else:
             raise Exception("Result set not available")
 
