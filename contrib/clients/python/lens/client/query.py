@@ -167,13 +167,17 @@ class LensQueryClient(object):
         if wait or fetch_result:
             self.wait_till_finish(query)
         if fetch_result:
+            # get result and return
             return self.get_result(query, *args, **kwargs)  # query is handle here
-        else:
-            return query
+        elif wait:
+            # fetch details and return
+            return self.wait_till_finish(query, *args, **kwargs)
+        # just return handle. This would be the async case. Or execute with timeout, without wait
+        return query
 
-    def wait_till_finish(self, handle_or_query):
+    def wait_till_finish(self, handle_or_query, poll_interval=5):
         while not self[handle_or_query].finished:
-            time.sleep(1)
+            time.sleep(poll_interval)
         return self[handle_or_query]
 
     def get_result(self, handle_or_query, *args, **kwargs):
