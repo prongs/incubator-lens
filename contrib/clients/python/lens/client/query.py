@@ -156,6 +156,9 @@ class LensQueryClient(object):
             payload.append(('queryName', query_name))
         if timeout:
             payload.append(('timeoutmillis', timeout))
+        if not operation:
+            operation = "execute_with_timeout" if timeout else "execute"
+        payload.append(('operation', operation))
         payload.append(('conf', conf_to_xml(conf)))
         resp = requests.post(self.base_url + "queries/", files=payload, headers={'accept': 'application/json'})
         query = self.sanitize_response(resp)
