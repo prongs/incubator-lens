@@ -147,6 +147,8 @@ class LensQueryClient(object):
         elif isinstance(item, WrappedJson):
             if item._is_wrapper:
                 return self[item._wrapped_value]
+            if item.query_handle:
+                return self[item.query_handle]
         raise Exception("Can't get query: " + str(item))
 
     def submit(self, query, operation=None, query_name=None, timeout=None, conf=None, wait=False, fetch_result=False,
@@ -155,7 +157,7 @@ class LensQueryClient(object):
         if query_name:
             payload.append(('queryName', query_name))
         if timeout:
-            payload.append(('timeoutmillis', timeout))
+            payload.append(('timeoutmillis', str(int(timeout) * 1000)))
         if not operation:
             operation = "execute_with_timeout" if timeout else "execute"
         payload.append(('operation', operation))
@@ -164,8 +166,6 @@ class LensQueryClient(object):
         query = self.sanitize_response(resp)
         if conf:
             self.query_confs[str(query)] = conf
-        if wait or fetch_result:
-            self.wait_till_finish(query)
         if fetch_result:
             # get result and return
             return self.get_result(query, *args, **kwargs)  # query is handle here
@@ -175,13 +175,13 @@ class LensQueryClient(object):
         # just return handle. This would be the async case. Or execute with timeout, without wait
         return query
 
-    def wait_till_finish(self, handle_or_query, poll_interval=5):
+    def wait_till_finish(self, handle_or_query, poll_interval=5, *args, **kwargs):
         while not self[handle_or_query].finished:
             time.sleep(poll_interval)
         return self[handle_or_query]
 
     def get_result(self, handle_or_query, *args, **kwargs):
-        query = self.wait_till_finish(handle_or_query)
+        query = self.wait_till_finish(handle_or_query, *args, **kwargs)
         handle = str(query.query_handle)
         if query.status.status == 'SUCCESSFUL' and query.status.is_result_set_available:
             resp = requests.get(self.base_url + "queries/" + handle + "/resultsetmetadata",
