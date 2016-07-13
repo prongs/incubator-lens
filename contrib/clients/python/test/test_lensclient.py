@@ -71,7 +71,7 @@ def select_query(path):
 
 class TestLensClient(object):
     query = "cube select dim1, measure2 from sample_cube where time_range_in(dt, '2014-06-24-23', '2014-06-25-00')"
-    expected_result = [[21, 100L], [22, 200L], [23, 300L], [24, 400L], [25, 500L], [26, 600L], [27, 700L], [28, 800L]]
+    expected_result = [[21, 100], [22, 200], [23, 300], [24, 400], [25, 500], [26, 600], [27, 700], [28, 800]]
 
     @classmethod
     def setup_class(cls):
@@ -186,16 +186,8 @@ class TestLensClient(object):
             assert list(iter(result)) == self.expected_result
 
     def test_inmemory_result(self):
-        expected = list(WrappedJson(
-            {
-                'values': [
-                    WrappedJson({u'type': u'int', u'value': x[0]}),
-                    WrappedJson({u'type': u'long', u'value': int(x[1])})
-                ]
-            }
-        ) for x in self.expected_result)
         with self.get_client() as client:
             result = client.queries.submit(self.query,
                                            conf={'lens.query.enable.persistent.resultset.indriver': False},
                                            fetch_result=True)
-            assert result.in_memory_query_result.rows == expected
+            assert list(iter(result)) == self.expected_result

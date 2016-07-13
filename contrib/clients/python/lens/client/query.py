@@ -14,19 +14,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
+import codecs
 import time
 import zipfile
 
 import requests
-from six import string_types, BytesIO, PY2, PY3
+from six import string_types, BytesIO, StringIO, PY2, PY3
 from .models import WrappedJson
 from .utils import conf_to_xml
 import csv
+
+long_type = int
+
 if PY3:
     from collections.abc import Iterable as Iterable
 elif PY2:
     from collections import Iterable as Iterable
+    long_type = long
 
 
 class LensQuery(WrappedJson):
@@ -48,10 +52,10 @@ type_mappings = {'BOOLEAN': bool,
                  'TINYINT': int,
                  'SMALLINT': int,
                  'INT': int,
-                 'BIGINT': long,
+                 'BIGINT': long_type,
                  'FLOAT': float,
                  'DOUBLE': float,
-                 'TIMESTAMP': long,
+                 'TIMESTAMP': long_type,
                  'BINARY': bin,
                  'ARRAY': list,
                  'MAP': dict,
@@ -66,13 +70,33 @@ type_mappings = {'BOOLEAN': bool,
                  }
 default_mapping = lambda x: x
 
-
 class LensQueryResult(Iterable):
-    def __init__(self, header, response, encoding=None, is_header_present=True, delimiter=",",
-                 custom_mappings=None):
+    def __init__(self, custom_mappings=None):
         if custom_mappings is None:
             custom_mappings = {}
         self.custom_mappings = custom_mappings
+
+    def _mapping(self, type_name):
+        if type_name in self.custom_mappings:
+            return self.custom_mappings[type_name]
+        if type_name in type_mappings:
+            return type_mappings[type_name]
+        return default_mapping
+
+
+class LensInMemoryResult(LensQueryResult):
+    def __init__(self, resp, custom_mappings=None):
+        super(LensInMemoryResult, self).__init__(custom_mappings)
+        self.rows = resp.in_memory_query_result.rows
+
+    def __iter__(self):
+        for row in self.rows:
+            yield list(self._mapping(value.type)(value.value) if value else None for value in row['values'])
+
+class LensPersistentResult(LensQueryResult):
+    def __init__(self, header, response, encoding=None, is_header_present=True, delimiter=",",
+                 custom_mappings=None):
+        super(LensPersistentResult, self).__init__(custom_mappings)
         self.response = response
         self.is_zipped = 'zip' in self.response.headers['content-disposition']
         self.delimiter = str(delimiter)
@@ -80,20 +104,12 @@ class LensQueryResult(Iterable):
         self.encoding = encoding
         self.header = header
 
-    def _mapping(self, index):
-        type_name = self.header.columns[index].type
-        if type_name in self.custom_mappings:
-            return self.custom_mappings[type_name]
-        if type_name in type_mappings:
-            return type_mappings[type_name]
-        return default_mapping
-
     def _parse_line(self, line):
-        return list(self._mapping(index)(line[index]) for index in range(len(line)))
+        return list(self._mapping(self.header.columns[index].type)(line[index]) for index in range(len(line)))
 
     def __iter__(self):
-        byte_stream = BytesIO(self.response.content)
         if self.is_zipped:
+            byte_stream = BytesIO(self.response.content)
             with zipfile.ZipFile(byte_stream) as self.zipfile:
                 for name in self.zipfile.namelist():
                     with self.zipfile.open(name) as single_file:
@@ -106,14 +122,17 @@ class LensQueryResult(Iterable):
                             next(reader_iterator)
                         for line in reader_iterator:
                             yield self._parse_line(line)
+            byte_stream.close()
         else:
-            reader = csv.reader(byte_stream, delimiter=self.delimiter)
+            stream = codecs.iterdecode(self.response.iter_lines(),
+                                       self.response.encoding or self.response.apparent_encoding)
+            reader = csv.reader(stream, delimiter=self.delimiter)
             reader_iterator = iter(reader)
             if self.is_header_present:
                 next(reader_iterator)
             for line in reader_iterator:
                 yield self._parse_line(line)
-        byte_stream.close()
+            stream.close()
 
 
 class LensQueryClient(object):
@@ -123,7 +142,7 @@ class LensQueryClient(object):
         self.launched_queries = []
         self.finished_queries = {}
         self.query_confs = {}
-        self.is_header_present_in_result = bool(self._session['lens.query.output.write.header'])
+        self.is_header_present_in_result = self._session['lens.query.output.write.header'].lower() in ['true', '1', 't', 'y', 'yes', 'yeah', 'yup']
 
     def __call__(self, **filters):
         filters['sessionid'] = self._session._sessionid
@@ -192,14 +211,18 @@ class LensQueryClient(object):
                                 params={'sessionid': self._session._sessionid}, stream=True)
             if resp.ok:
                 is_header_present = self.is_header_present_in_result
-                if not is_header_present:
-                    if handle in self.query_confs and 'lens.query.output.write.header' in self.query_confs[handle]:
-                        is_header_present = bool(self.query_confs[handle]['lens.query.output.write.header'])
-                return LensQueryResult(metadata, resp, is_header_present=is_header_present, *args, **kwargs)
+                if handle in self.query_confs and 'lens.query.output.write.header' in self.query_confs[handle]:
+                    is_header_present = bool(self.query_confs[handle]['lens.query.output.write.header'])
+                return LensPersistentResult(metadata, resp, is_header_present=is_header_present, *args, **kwargs)
             else:
-                resp = requests.get(self.base_url + "queries/" + handle + "/resultset",
+                response = requests.get(self.base_url + "queries/" + handle + "/resultset",
                                     params={'sessionid': self._session._sessionid}, headers={'accept': 'application/json'})
-                return self.sanitize_response(resp)
+                resp = self.sanitize_response(response)
+                # If it has in memory result, return inmemory result iterator
+                if resp._is_wrapper and resp._wrapped_key == u'inMemoryQueryResult':
+                    return LensInMemoryResult(resp)
+                # Else, return whatever you got
+                return resp
 
         else:
             raise Exception("Result set not available")

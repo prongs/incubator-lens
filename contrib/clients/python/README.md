@@ -10,14 +10,14 @@ You can install like this:
 ## Usage
 
 ### Listing queries
-```
+```python
 with LensClient("http://lens.server.url/", "user.name", database="db") as client:
     for handle in client.queries(state='RUNNING'):
         print client.queries[handle]
 ```
 
 ### Async submission
-``` 
+``` python
 from lens.client import LensClient
 with LensClient("http://lens.server.url/", "user.name", database="db") as client:
     # Submit asynchronously
@@ -40,7 +40,7 @@ with LensClient("http://lens.server.url/", "user.name", database="db") as client
 ```
 
 ### Sync submission
-``` 
+```python
 from lens.client import LensClient
 with LensClient("http://lens.server.url/", "user.name", database="db") as client:
     # Half async: The http call will return in 10 seconds, post that, query would be cancelled (depending on the server's configurations)
@@ -50,7 +50,7 @@ with LensClient("http://lens.server.url/", "user.name", database="db") as client
 ```
 
 ### Async submission with wait
-``` 
+```python
 from lens.client import LensClient
 with LensClient("http://lens.server.url/", "user.name", database="db") as client:
     # Pseudo-sync
@@ -59,7 +59,7 @@ with LensClient("http://lens.server.url/", "user.name", database="db") as client
 ```
 
 ### Fetching just results
-``` 
+```python
 from lens.client import LensClient
 with LensClient("http://lens.server.url/", "user.name", database="db") as client:
     # Direct result. Query handle and other details will be lost. 
