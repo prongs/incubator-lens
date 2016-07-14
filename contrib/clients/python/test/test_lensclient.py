@@ -149,11 +149,9 @@ class TestLensClient(object):
     def test_submit_query(self):
         with self.get_client() as client:
             handle = client.queries.submit(self.candidate_query)
-        # session not closed
-        assert client.queries[handle]
-        client.queries.wait_till_finish(handle)
-        # session auto closed
         with pytest.raises(HTTPError) as e:
+            # Either of these can give 410
+            client.queries.wait_till_finish(handle)
             client.queries.submit(self.candidate_query)
         assert e.value.response.status_code == 410
 
