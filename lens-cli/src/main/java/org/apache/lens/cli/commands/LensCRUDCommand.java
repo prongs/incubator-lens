@@ -39,7 +39,7 @@ public abstract class LensCRUDCommand<T> extends BaseLensCommand {
 
   public String create(File path, boolean ignoreIfExists) {
     return doCreate(getValidPath(path, false, true), ignoreIfExists)
-        .getStatus().toString().toLowerCase();
+        .toString().toLowerCase();
   }
 
   public String describe(String name) {
@@ -48,11 +48,11 @@ public abstract class LensCRUDCommand<T> extends BaseLensCommand {
 
   public String update(String entity, File path) {
     return doUpdate(entity, getValidPath(path, false, true))
-        .getStatus().toString().toLowerCase();
+        .toString().toLowerCase();
   }
 
   public String drop(String name, boolean cascade) {
-    return doDelete(name, cascade).getStatus().toString().toLowerCase();
+    return doDelete(name, cascade).toString().toLowerCase();
   }
 
   public String getSingleObjectName() {

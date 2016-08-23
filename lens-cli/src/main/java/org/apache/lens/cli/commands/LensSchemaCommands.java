@@ -2,12 +2,11 @@ package org.apache.lens.cli.commands;
 
 import java.io.*;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.springframework.shell.core.CommandMarker;
-import org.springframework.shell.core.CommandResult;
 import org.springframework.shell.core.JLineShellComponent;
 import org.springframework.shell.core.annotation.CliCommand;
 import org.springframework.shell.core.annotation.CliOption;
@@ -20,10 +19,10 @@ import com.google.common.collect.Lists;
 @Component
 public class LensSchemaCommands implements CommandMarker {
   protected final Logger logger = HandlerUtils.getLogger(getClass());
-
-  @Autowired
-  private ApplicationContext applicationContext;
-  FilenameFilter filter = new FilenameFilter() {
+  {
+    logger.setLevel(Level.FINE);
+  }
+  private static final FilenameFilter XML_FILTER = new FilenameFilter() {
     @Override
     public boolean accept(File dir, String name) {
       return name.endsWith(".xml");
@@ -41,7 +40,6 @@ public class LensSchemaCommands implements CommandMarker {
     if (!schemaDirectory.isDirectory()) {
       throw new IllegalStateException("Schema directory should be a directory");
     }
-    CommandResult result;
 
     // ignore result. it can fail if database already exists
     shell.executeCommand("create database " + database);
@@ -56,8 +54,10 @@ public class LensSchemaCommands implements CommandMarker {
         "create cube --path %s", "update cube --name %s --path %s");
       createOrUpdate(new File(schemaDirectory, "dimensiontables"), "dimension table",
         "create dimtable --path %s", "update dimtable --dimtable_name %s --path %s");
+      createOrUpdate(new File(schemaDirectory, "dimtables"), "dimension table",
+        "create dimtable --path %s", "update dimtable --dimtable_name %s --path %s");
       createOrUpdate(new File(schemaDirectory, "facts"), "fact",
-        "create fact --path %s", "update dimtable --fact_name %s --path %s");
+        "create fact --path %s", "update fact --fact_name %s --path %s");
     }
   }
 
@@ -66,18 +66,28 @@ public class LensSchemaCommands implements CommandMarker {
     // Create/update entities
     if (parent.exists()) {
       Assert.isTrue(parent.isDirectory(), parent.toString() + " must be a directory");
-      for (File entityFile : parent.listFiles(filter)) {
-        String entityName = entityFile.getName().substring(0, entityFile.getName().length() - 3);
+      for (File entityFile : parent.listFiles(XML_FILTER)) {
+        String entityName = entityFile.getName().substring(0, entityFile.getName().length() - 4);
         String entityPath = entityFile.getAbsolutePath();
-        if (shell.executeScriptLine(String.format(createSyntax, entityPath))) {
+        String createCommand = String.format(createSyntax, entityPath);
+        logger.fine(createCommand);
+        if (shell.executeScriptLine(createCommand)) {
           logger.info("Created " + entityType + " " + entityName);
-        } else if (shell.executeScriptLine(String.format(updateSyntax, entityName, entityPath))) {
-          logger.info("Updated " + entityType + " " + entityName);
         } else {
-          logger.severe("Couldn't create or update " + entityType + " " + entityName);
-          failedFiles.add(entityFile);
+          logger.warning("Create failed, trying update");
+          String updateCommand = String.format(updateSyntax, entityName, entityPath);
+          logger.fine(updateCommand);
+          if (shell.executeScriptLine(updateCommand)) {
+            logger.info("Updated " + entityType + " " + entityName);
+          } else {
+            logger.severe("Couldn't create or update " + entityType + " " + entityName);
+            failedFiles.add(entityFile);
+          }
         }
       }
+    }
+    if (!failedFiles.isEmpty()) {
+      logger.severe("Failed for " + entityType + ": " + failedFiles);
     }
     return failedFiles;
   }
