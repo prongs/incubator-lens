@@ -46,7 +46,7 @@ public class LensSchemaCommands implements CommandMarker {
     // ignore result. it can fail if database already exists
     shell.executeCommand("create database " + database);
     if (shell.executeScriptLine("use " + database)) {
-      createOrUpdate(new File(schemaDirectory, "dimensions"), "dimension",
+      createOrUpdate(new File(schemaDirectory, "storages"), "storage",
         "create storage --path %s", "update storage --name %s --path %s");
       createOrUpdate(new File(schemaDirectory, "dimensions"), "dimension",
         "create dimension --path %s", "update dimension --name %s --path %s");
