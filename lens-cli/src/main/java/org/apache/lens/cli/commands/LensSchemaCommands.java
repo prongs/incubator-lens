@@ -54,6 +54,10 @@ public class LensSchemaCommands implements CommandMarker {
         "create cube --path %s", "update cube --name %s --path %s");
       createOrUpdate(new File(new File(schemaDirectory, "cubes"), "derived"), "derived cube",
         "create cube --path %s", "update cube --name %s --path %s");
+      createOrUpdate(new File(schemaDirectory, "dimensiontables"), "dimension table",
+        "create dimtable --path %s", "update dimtable --dimtable_name %s --path %s");
+      createOrUpdate(new File(schemaDirectory, "facts"), "fact",
+        "create fact --path %s", "update dimtable --fact_name %s --path %s");
     }
   }
 
