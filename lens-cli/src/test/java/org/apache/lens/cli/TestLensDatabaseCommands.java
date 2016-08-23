@@ -29,6 +29,7 @@ import org.apache.lens.api.APIResult;
 import org.apache.lens.cli.commands.LensCubeCommands;
 import org.apache.lens.cli.commands.LensDatabaseCommands;
 import org.apache.lens.client.LensClient;
+import org.apache.lens.client.exceptions.LensBriefErrorException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,7 +73,7 @@ public class TestLensDatabaseCommands extends LensCliApplicationTest {
     if (cascade) {
       String createOutput = cubeCommand.createCube(
         new File(TestLensDatabaseCommands.class.getClassLoader().getResource("sample-cube.xml").toURI()));
-      assertEquals(createOutput, "succeeded");
+      assertTrue(createOutput.contains("succeeded"));
       assertTrue(cubeCommand.showCubes().contains("sample_cube"));
     }
     result = command.switchDatabase("default");
@@ -81,14 +82,12 @@ public class TestLensDatabaseCommands extends LensCliApplicationTest {
     if (cascade) {
       try {
         command.dropDatabase(myDatabase, false);
-        fail("Should have failed");
-      } catch(InternalServerErrorException ignored) {
-        APIResult apiResult = ignored.getResponse().readEntity(APIResult.class);
-        assertTrue(apiResult.getMessage().contains("my_db is not empty"));
+      } catch(LensBriefErrorException ignored) {
+        assertTrue(ignored.toString().contains("my_db is not empty"));
       }
     }
     result = command.dropDatabase(myDatabase, cascade);
-    assertEquals(result, "succeeded");
+    assertTrue(result.contains("succeeded"));
     assertFalse(command.showAllDatabases().contains(myDatabase));
     assertFalse(cubeCommand.showCubes().contains("sample_cube"));
   }

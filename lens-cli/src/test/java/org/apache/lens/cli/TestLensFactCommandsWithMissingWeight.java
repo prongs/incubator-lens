@@ -135,7 +135,7 @@ public class TestLensFactCommandsWithMissingWeight extends LensCliApplicationTes
     String response = null;
     response = command.createFact(new File(factSpec.toURI()));
 
-    Assert.assertEquals(response, "failed", "Fact table creation should not be successful.");
+    Assert.assertTrue(response.contains("failed"), "Fact table creation should not be successful.");
     Assert.assertEquals(command.showFacts(CUBE_NAME), "No fact found for " + CUBE_NAME,
             "Fact tables should not be found.");
   }
