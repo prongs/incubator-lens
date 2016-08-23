@@ -62,4 +62,7 @@
   <bean id="lensLogResourceCommands"
     class="org.apache.lens.cli.commands.LensLogResourceCommands">
   </bean>
+  <bean id="lensSchemaCommands"
+        class="org.apache.lens.cli.commands.LensSchemaCommands">
+  </bean>
 </beans>

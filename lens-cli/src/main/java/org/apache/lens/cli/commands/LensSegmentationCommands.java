@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.lens.cli.commands.annotations;
+package org.apache.lens.cli.commands;
 
 
 import java.io.File;
@@ -25,6 +25,7 @@ import java.util.List;
 import org.apache.lens.api.APIResult;
 import org.apache.lens.api.metastore.XSegmentation;
 import org.apache.lens.cli.commands.BaseTableCrudCommand;
+import org.apache.lens.cli.commands.annotations.UserDocumentation;
 
 import org.springframework.shell.core.annotation.CliCommand;
 import org.springframework.shell.core.annotation.CliOption;

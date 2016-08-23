@@ -27,7 +27,7 @@ import java.net.URL;
 import javax.ws.rs.NotFoundException;
 
 import org.apache.lens.cli.commands.LensCubeCommands;
-import org.apache.lens.cli.commands.annotations.LensSegmentationCommands;
+import org.apache.lens.cli.commands.LensSegmentationCommands;
 import org.apache.lens.client.LensClient;
 
 import org.testng.annotations.Test;
