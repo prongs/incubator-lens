@@ -19,9 +19,11 @@ import com.google.common.collect.Lists;
 @Component
 public class LensSchemaCommands implements CommandMarker {
   protected final Logger logger = HandlerUtils.getLogger(getClass());
+
   {
     logger.setLevel(Level.FINE);
   }
+
   private static final FilenameFilter XML_FILTER = new FilenameFilter() {
     @Override
     public boolean accept(File dir, String name) {
@@ -58,6 +60,8 @@ public class LensSchemaCommands implements CommandMarker {
         "create dimtable --path %s", "update dimtable --dimtable_name %s --path %s");
       createOrUpdate(new File(schemaDirectory, "facts"), "fact",
         "create fact --path %s", "update fact --fact_name %s --path %s");
+    } else {
+      throw new IllegalStateException("Switching to database " + database + " failed");
     }
   }
 

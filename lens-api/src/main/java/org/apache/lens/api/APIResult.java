@@ -20,6 +20,8 @@ package org.apache.lens.api;
 
 import javax.xml.bind.annotation.*;
 
+import org.apache.commons.lang.StringUtils;
+
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -74,7 +76,7 @@ public class APIResult extends ToYAMLString {
     FAILED
   }
 
-  private static final APIResult SUCCESS = new APIResult(Status.SUCCEEDED, "");
+  private static final APIResult SUCCESS = new APIResult(Status.SUCCEEDED, null);
 
   public static APIResult partial(int actual, int expected) {
     return new APIResult(Status.PARTIAL, actual + " out of " + expected);
@@ -110,13 +112,19 @@ public class APIResult extends ToYAMLString {
   }
 
   private static String extractCause(Throwable e) {
-    StringBuilder cause = new StringBuilder();
-    String sep = "";
-    while (e != null) {
-      cause.append(sep).append(e.getMessage());
-      e = e.getCause();
-      sep = ": ";
+    if (e.getCause() != null) {
+      String causeMessage = extractCause(e.getCause());
+      if (StringUtils.isBlank(e.getMessage())) {
+        return causeMessage;
+      } else {
+        if (e.getMessage().contains(causeMessage)) {
+          return causeMessage;
+        } else {
+          return e.getMessage() + ": " + causeMessage;
+        }
+      }
+    } else {
+      return e.getMessage();
     }
-    return cause.toString();
   }
 }

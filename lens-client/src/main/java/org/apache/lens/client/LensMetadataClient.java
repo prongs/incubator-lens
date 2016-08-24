@@ -70,7 +70,7 @@ public class LensMetadataClient {
       return response.readEntity(APIResult.class);
     } else {
       APIResult result = response.readEntity(APIResult.class);
-      throw new LensBriefErrorException(new IdBriefErrorTemplate(IdBriefErrorTemplateKey.REQUEST_ID, "N/A",
+      throw new LensBriefErrorException(new IdBriefErrorTemplate(null, null,
         new BriefError(response.getStatus(), result.getMessage())));
     }
   }
