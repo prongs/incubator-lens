@@ -82,23 +82,21 @@ function constructDimensionTable(cubeName, dimensions, join_chains_by_name) {
         </tr>
       );
     } else {
-      let tooltip = (
-        <Tooltip><strong>Holy guacamole!</strong></Tooltip>
-      );
       let join_chain_column;
       if (dimension.chain_ref_column) {
         let inner =  dimension.chain_ref_column.map((ref) => {
           let join_chain = join_chains_by_name[ref.chain_name];
           let tooltip = <Tooltip id={dimension.name + "|" + ref.chain_name + "|tooltip"}><div> {
             join_chain.paths.path.map((path) => {
-              return path.edges.edge.map((edge) => {
+              let paths = path.edges.edge.map((edge) => {
                 return edge.from.table + "." + edge.from.column + "=" + edge.to.table + "." + edge.to.column
               }).join("->")
-            }).join("\n")
+              return (<span>{paths}<br/></span>)
+            })
           }
           </div></Tooltip>;
           return (<div>
-            <OverlayTrigger placement="right" overlay={tooltip}>
+            <OverlayTrigger placement="top" overlay={tooltip}>
               <strong>{ref.chain_name}</strong>
             </OverlayTrigger>{"."+ref.ref_col}
           </div>);
