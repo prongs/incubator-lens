@@ -177,7 +177,7 @@ public class TestCubeMetastoreClient {
       new FieldSchema("msrcost2", "bigint", "measure with cost"),
       "Measure With cost2", null, "MAX", null, null, null, 100.0, 0.0, 999999999999999999999999999.0));
     Set<CubeMeasure> dummyMeasure = Sets.newHashSet();
-    for (int i = 0; i < 5000; i++) {
+    for (int i = 0; i < 1000; i++) {
       dummyMeasure.add(new ColumnMeasure(new FieldSchema("dummy_msr" + i, "bigint", "dummy measure " + i),
         "", null, "SUM", null, null, null, 100.0, 0.0, 999999999999999999999999999.0));
     }
@@ -194,7 +194,7 @@ public class TestCubeMetastoreClient {
     cubeDimensions.add(new BaseDimAttribute(new FieldSchema("dim1", "string", "basedim")));
     cubeDimensions.add(new BaseDimAttribute(new FieldSchema("dim2", "id", "ref dim"), "Dim2 refer", null, null, null));
     Set<CubeDimAttribute> dummyDimAttributes = Sets.newHashSet();
-    for (int i = 0; i < 5000; i++) {
+    for (int i = 0; i < 1000; i++) {
       dummyDimAttributes.add(new BaseDimAttribute(new FieldSchema("dummy_dim" + i, "string", "dummy dim " + i),
         "dummy_dim" + i, null, null, null, null, regions));
     }
@@ -406,6 +406,7 @@ public class TestCubeMetastoreClient {
         });
       }
     });
+    dimProps.put(MetastoreUtil.getDimTimedDimensionKey("zipdim"), getDatePartitionKey());
     zipDim = new Dimension("zipdim", zipAttrs, null, joinChains, dimProps, 0L);
 
     // Define city table
@@ -468,7 +469,8 @@ public class TestCubeMetastoreClient {
         });
       }
     });
-    stateDim = new Dimension("statedim", stateAttrs);
+    dimProps.put(MetastoreUtil.getDimTimedDimensionKey("statedim"), getDatePartitionKey());
+    stateDim = new Dimension("statedim", stateAttrs, dimProps, 0L);
 
     countryAttrs.add(new BaseDimAttribute(new FieldSchema("id", "int", "country id")));
     countryAttrs.add(new BaseDimAttribute(new FieldSchema("name", "string", "country name")));
@@ -806,10 +808,10 @@ public class TestCubeMetastoreClient {
       .getAllFieldNames().size());
     assertNotNull(cube2.getMeasureByName("msr4"));
     assertNotNull(cube2.getMeasureByName("dummy_msr1"));
-    assertNotNull(cube2.getMeasureByName("dummy_msr4000"));
+    assertNotNull(cube2.getMeasureByName("dummy_msr990"));
     assertNotNull(cube2.getDimAttributeByName("location"));
     assertNotNull(cube2.getDimAttributeByName("dummy_dim1"));
-    assertNotNull(cube2.getDimAttributeByName("dummy_dim4000"));
+    assertNotNull(cube2.getDimAttributeByName("dummy_dim990"));
     assertTrue(cube2.allFieldsQueriable());
 
     String derivedCubeName = "derivedWithMoreMeasures";
@@ -829,10 +831,10 @@ public class TestCubeMetastoreClient {
     assertNotNull(dcube2.getMeasureByName("msr3"));
     assertNull(dcube2.getMeasureByName("msr4"));
     assertNotNull(dcube2.getMeasureByName("dummy_msr1"));
-    assertNotNull(dcube2.getMeasureByName("dummy_msr4000"));
+    assertNotNull(dcube2.getMeasureByName("dummy_msr990"));
     assertNull(dcube2.getDimAttributeByName("location"));
     assertNotNull(dcube2.getDimAttributeByName("dummy_dim1"));
-    assertNotNull(dcube2.getDimAttributeByName("dummy_dim4000"));
+    assertNotNull(dcube2.getDimAttributeByName("dummy_dim990"));
     assertNotNull(dcube2.getDimAttributeByName("dim1"));
     assertTrue(dcube2.allFieldsQueriable());
     client.dropCube(derivedCubeName);

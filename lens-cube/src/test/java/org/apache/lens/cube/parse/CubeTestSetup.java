@@ -2656,9 +2656,11 @@ public class CubeTestSetup {
     s2.setOutputFormat(HiveIgnoreKeyTextOutputFormat.class.getCanonicalName());
     ArrayList<FieldSchema> partCols = Lists.newArrayList();
     partCols.add(dimColumns.remove(dimColumns.size() - 2));
+    partCols.add(TestCubeMetastoreClient.getDatePartition());
     s2.setPartCols(partCols);
+    s2.setTimePartCols(Lists.newArrayList(TestCubeMetastoreClient.getDatePartitionKey()));
     dumpPeriods.clear();
-    dumpPeriods.put(c3, null);
+    dumpPeriods.put(c3, HOURLY);
     storageTables.clear();
     storageTables.put(c3, s2);
     dimProps.put(MetastoreUtil.getDimTablePartsKey(dimTblName), partCols.get(0).getName());
