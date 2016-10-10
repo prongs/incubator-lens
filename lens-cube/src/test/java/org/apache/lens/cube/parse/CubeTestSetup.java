@@ -2658,7 +2658,7 @@ public class CubeTestSetup {
     partCols.add(dimColumns.remove(dimColumns.size() - 2));
     s2.setPartCols(partCols);
     dumpPeriods.clear();
-    dumpPeriods.put(c3, HOURLY);
+    dumpPeriods.put(c3, null);
     storageTables.clear();
     storageTables.put(c3, s2);
     dimProps.put(MetastoreUtil.getDimTablePartsKey(dimTblName), partCols.get(0).getName());
