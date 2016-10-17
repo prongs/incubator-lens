@@ -20,6 +20,7 @@ package org.apache.lens.driver.jdbc;
 
 import static org.apache.lens.driver.jdbc.JDBCDriverConfConstants.*;
 import static org.apache.lens.driver.jdbc.JDBCDriverConfConstants.ConnectionPoolProperties.*;
+import static org.apache.lens.server.api.driver.DriverQueryStatus.DriverQueryState.*;
 
 import static org.testng.Assert.*;
 
@@ -33,7 +34,6 @@ import org.apache.lens.api.query.QueryHandle;
 import org.apache.lens.api.query.ResultRow;
 import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.driver.*;
-import org.apache.lens.server.api.driver.DriverQueryStatus.DriverQueryState;
 import org.apache.lens.server.api.error.LensException;
 import org.apache.lens.server.api.metrics.LensMetricsRegistry;
 import org.apache.lens.server.api.query.ExplainQueryContext;
@@ -698,7 +698,7 @@ public class TestJdbcDriver {
       driver.updateStatus(context);
       System.out.println("Query: " + handle + " Status: " + context.getDriverStatus());
       if (context.getDriverStatus().isFinished()) {
-        assertEquals(context.getDriverStatus().getState(), DriverQueryState.SUCCESSFUL);
+        assertEquals(context.getDriverStatus().getState(), SUCCESSFUL);
         assertEquals(context.getDriverStatus().getProgress(), 1.0);
         break;
       }
@@ -882,8 +882,7 @@ public class TestJdbcDriver {
     }
     boolean isCancelled = driver.cancelQuery(handle);
     driver.updateStatus(context);
-    assertTrue(isCancelled);
-    assertEquals(context.getDriverStatus().getState(), DriverQueryState.CANCELED);
+    assertEquals(context.getDriverStatus().getState(), isCancelled ? CANCELED: SUCCESSFUL);
     assertTrue(context.getDriverStatus().getDriverStartTime() > 0);
     assertTrue(context.getDriverStatus().getDriverFinishTime() > 0);
     driver.closeQuery(handle);
@@ -929,7 +928,7 @@ public class TestJdbcDriver {
       System.out.println("Query: " + handle + " Status: " + ctx.getDriverStatus());
       Thread.sleep(500);
     }
-    assertEquals(ctx.getDriverStatus().getState(), DriverQueryState.FAILED);
+    assertEquals(ctx.getDriverStatus().getState(), FAILED);
     assertEquals(ctx.getDriverStatus().getProgress(), 1.0);
 
     assertTrue(ctx.getDriverStatus().getDriverStartTime() > 0);
