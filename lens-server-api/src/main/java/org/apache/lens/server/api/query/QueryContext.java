@@ -538,6 +538,9 @@ public class QueryContext extends AbstractQueryContext implements FailureContext
       log.info("current driver status: {}, ignoring transition request to {}", getDriverStatus().getState(), state);
       return;
     }
+    if (getDriverStatus().getState().getOrder() == state.getOrder()) {
+      log.info("current driver status: {}, transition request to {}", getDriverStatus().getState(), state);
+    }
     switch (state) {
     case NEW:
     case INITIALIZED:
