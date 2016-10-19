@@ -132,7 +132,7 @@ public class JDBCDriver extends AbstractLensDriver {
       isClosed = true;
     }
 
-    public synchronized boolean cancel() {
+    public boolean cancel() {
       boolean ret;
       log.debug("Canceling resultFuture object");
       ret = resultFuture.cancel(true);
@@ -894,7 +894,6 @@ public class JDBCDriver extends AbstractLensDriver {
       // terminal state. No updates can be done.
       return;
     }
-    synchronized (ctx) {
       if (ctx.getResultFuture().isCancelled()) {
         if (!context.getDriverStatus().isCanceled()) {
           context.getDriverStatus().setProgress(1.0);
@@ -924,7 +923,6 @@ public class JDBCDriver extends AbstractLensDriver {
           context.getDriverStatus().setStatusMessage(context.getQueryHandle() + " is running");
         }
       }
-    }
   }
 
   @Override
