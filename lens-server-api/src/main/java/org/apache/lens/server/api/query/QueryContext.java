@@ -534,7 +534,7 @@ public class QueryContext extends AbstractQueryContext implements FailureContext
     this.driverResult = result;
   }
   public void setDriverStatus(DriverQueryStatus.DriverQueryState state, String message) {
-    if (getDriverStatus().getState().getOrder() > state.getOrder()) {
+    if (getDriverStatus().getState().getOrder() >= state.getOrder()) {
       log.info("current driver status: {}, ignoring transition request to {}", getDriverStatus().getState(), state);
       return;
     }
