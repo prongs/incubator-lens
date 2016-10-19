@@ -132,7 +132,7 @@ public class JDBCDriver extends AbstractLensDriver {
       isClosed = true;
     }
 
-    public boolean cancel() {
+    public synchronized boolean cancel() {
       boolean ret;
       log.debug("Canceling resultFuture object");
       ret = resultFuture.cancel(true);
@@ -889,38 +889,40 @@ public class JDBCDriver extends AbstractLensDriver {
   @Override
   public void updateStatus(QueryContext context) throws LensException {
     checkConfigured();
-    JdbcQueryContext ctx = getQueryContext(context.getQueryHandle());
+    final JdbcQueryContext ctx = getQueryContext(context.getQueryHandle());
     if (ctx.getLensContext().getDriverStatus().isFinished()) {
       // terminal state. No updates can be done.
       return;
     }
-    if (ctx.getResultFuture().isCancelled()) {
-      if (!context.getDriverStatus().isCanceled()) {
+    synchronized (ctx) {
+      if (ctx.getResultFuture().isCancelled()) {
+        if (!context.getDriverStatus().isCanceled()) {
+          context.getDriverStatus().setProgress(1.0);
+          context.getDriverStatus().setState(DriverQueryState.CANCELED);
+          context.getDriverStatus().setStatusMessage("Query Canceled");
+        }
+      } else if (ctx.getResultFuture().isDone()) {
         context.getDriverStatus().setProgress(1.0);
-        context.getDriverStatus().setState(DriverQueryState.CANCELED);
-        context.getDriverStatus().setStatusMessage("Query Canceled");
-      }
-    } else if (ctx.getResultFuture().isDone()) {
-      context.getDriverStatus().setProgress(1.0);
-      // Since future is already done, this call should not block
-      if (ctx.getQueryResult() != null && ctx.getQueryResult().error != null) {
-        if (!context.getDriverStatus().isFailed()) {
-          context.getDriverStatus().setState(DriverQueryState.FAILED);
-          context.getDriverStatus().setStatusMessage("Query execution failed!");
-          context.getDriverStatus().setErrorMessage(ctx.getQueryResult().error.getMessage());
+        // Since future is already done, this call should not block
+        if (ctx.getQueryResult() != null && ctx.getQueryResult().error != null) {
+          if (!context.getDriverStatus().isFailed()) {
+            context.getDriverStatus().setState(DriverQueryState.FAILED);
+            context.getDriverStatus().setStatusMessage("Query execution failed!");
+            context.getDriverStatus().setErrorMessage(ctx.getQueryResult().error.getMessage());
+          }
+        } else {
+          if (!context.getDriverStatus().isFinished()) {
+            // assuming successful
+            context.getDriverStatus().setState(DriverQueryState.SUCCESSFUL);
+            context.getDriverStatus().setStatusMessage(context.getQueryHandle() + " successful");
+            context.getDriverStatus().setResultSetAvailable(true);
+          }
         }
       } else {
-        if (!context.getDriverStatus().isFinished()) {
-          // assuming successful
-          context.getDriverStatus().setState(DriverQueryState.SUCCESSFUL);
-          context.getDriverStatus().setStatusMessage(context.getQueryHandle() + " successful");
-          context.getDriverStatus().setResultSetAvailable(true);
+        if (!context.getDriverStatus().isRunning()) {
+          context.getDriverStatus().setState(DriverQueryState.RUNNING);
+          context.getDriverStatus().setStatusMessage(context.getQueryHandle() + " is running");
         }
-      }
-    } else {
-      if (!context.getDriverStatus().isRunning()) {
-        context.getDriverStatus().setState(DriverQueryState.RUNNING);
-        context.getDriverStatus().setStatusMessage(context.getQueryHandle() + " is running");
       }
     }
   }

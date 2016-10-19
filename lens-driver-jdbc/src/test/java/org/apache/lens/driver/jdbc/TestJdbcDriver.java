@@ -882,7 +882,8 @@ public class TestJdbcDriver {
     }
     boolean isCancelled = driver.cancelQuery(handle);
     driver.updateStatus(context);
-    assertEquals(context.getDriverStatus().getState(), isCancelled ? CANCELED: SUCCESSFUL);
+    assertTrue(isCancelled);
+    assertEquals(context.getDriverStatus().getState(), CANCELED);
     assertTrue(context.getDriverStatus().getDriverStartTime() > 0);
     assertTrue(context.getDriverStatus().getDriverFinishTime() > 0);
     driver.closeQuery(handle);
