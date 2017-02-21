@@ -58,7 +58,7 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
+public class CubeQueryContext extends TracksQueriedColumns implements QueryAST, TrackDenormContext {
   public static final String TIME_RANGE_FUNC = "time_range_in";
   public static final String NOW = "now";
   public static final String DEFAULT_TABLE = "_default_";
@@ -952,7 +952,7 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
       }
     } else {
       // dim only query
-      exprDimensions.addAll(exprCtx.rewriteExprCtx(null, dimsToQuery, this));
+      exprDimensions.addAll(exprCtx.rewriteExprCtx(this, null, dimsToQuery, this));
     }
     dimsToQuery.putAll(pickCandidateDimsToQuery(exprDimensions));
     log.info("StorageCandidates: {}, DimsToQuery: {}", scSet, dimsToQuery);
@@ -966,7 +966,7 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
         factDimMap.get(sc).addAll(factDenormTables);
       }
     } else {
-      denormTables.addAll(deNormCtx.rewriteDenormctx(null, dimsToQuery, false));
+      denormTables.addAll(deNormCtx.rewriteDenormctx(this, null, dimsToQuery, false));
     }
     dimsToQuery.putAll(pickCandidateDimsToQuery(denormTables));
     log.info("StorageCandidates: {}, DimsToQuery: {}", scSet, dimsToQuery);

@@ -177,10 +177,11 @@ public class CandidateTablePruneCause {
       }
     },
     // incomplete data in the fact
-    INCOMPLETE_PARTITION("Data is incomplete. Details : %s") {
+    INCOMPLETE_PARTITION("Data for the requested metrics is only partially complete. Partially complete metrics are:"
+            + " %s. Please try again later or rerun after removing incomplete metrics") {
       Object[] getFormatPlaceholders(Set<CandidateTablePruneCause> causes) {
         return new String[]{
-          causes.stream().map(cause->cause.getIncompletePartitions()).collect(toSet()).toString()
+          causes.stream().map(CandidateTablePruneCause::getIncompletePartitions).collect(toSet()).toString()
         };
       }
     };
