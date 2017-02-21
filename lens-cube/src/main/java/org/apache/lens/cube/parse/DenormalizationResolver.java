@@ -352,7 +352,7 @@ public class DenormalizationResolver implements ContextRewriter {
               if (denormCtx.getReferencedCols().get(refcol.col.getName()).isEmpty()) {
                 log.info("Not considering storage candidate :{} as column {} is not available", sc, refcol.col);
                 cubeql.addStoragePruningMsg(sc, CandidateTablePruneCause.columnNotFound(
-                    CandidateTablePruneCode.DENORM_COLUMN_NOT_FOUND, refcol.col.getName()));
+                  refcol.col.getName()));
                 Collection<Candidate> prunedCandidates = CandidateUtil.filterCandidates(cubeql.getCandidates(), sc);
                 cubeql.addCandidatePruningMsg(prunedCandidates,
                     new CandidateTablePruneCause(CandidateTablePruneCode.ELEMENT_IN_SET_PRUNED));
@@ -375,8 +375,8 @@ public class DenormalizationResolver implements ContextRewriter {
                 if (denormCtx.getReferencedCols().get(refcol.col.getName()).isEmpty()) {
                   log.info("Not considering dim table:{} as column {} is not available", cdim, refcol.col);
                   cubeql.addDimPruningMsgs(dim, cdim.dimtable,
-                    CandidateTablePruneCause.columnNotFound(CandidateTablePruneCode.DENORM_COLUMN_NOT_FOUND,
-                        refcol.col.getName()));
+                    CandidateTablePruneCause.columnNotFound(
+                      refcol.col.getName()));
                   i.remove();
                 }
               }

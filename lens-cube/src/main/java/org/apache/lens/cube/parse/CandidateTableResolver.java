@@ -284,7 +284,7 @@ class CandidateTableResolver implements ContextRewriter {
             if (!qur.isEvaluable(cubeql, sc)) {
               log.info("Not considering storage candidate:{} as columns {} are not available", sc, qur.getColumns());
               cubeql.addStoragePruningMsg(sc, CandidateTablePruneCause.columnNotFound(
-                  CandidateTablePruneCode.COLUMN_NOT_FOUND, qur.getColumns()));
+                qur.getColumns()));
               toRemove = true;
               break;
             }
@@ -297,7 +297,7 @@ class CandidateTableResolver implements ContextRewriter {
             Set<String> columns = getColumns(queriedMsrs);
             log.info("Not considering storage candidate:{} as columns {} is not available", sc, columns);
             cubeql.addStoragePruningMsg(sc, CandidateTablePruneCause.columnNotFound(
-                CandidateTablePruneCode.COLUMN_NOT_FOUND, columns));
+              columns));
             toRemove = true;
           }
 
@@ -311,7 +311,7 @@ class CandidateTableResolver implements ContextRewriter {
                 log.info("Not considering storage candidate:{} as columns {} are not available", sc,
                     chain.getSourceColumns());
                 cubeql.addStoragePruningMsg(sc, CandidateTablePruneCause.columnNotFound(
-                    CandidateTablePruneCode.COLUMN_NOT_FOUND, chain.getSourceColumns()));
+                  chain.getSourceColumns()));
                 toRemove = true;
                 break;
               }
@@ -539,7 +539,7 @@ class CandidateTableResolver implements ContextRewriter {
                   log.info("Not considering Storage:{} as its required optional dims are not reachable", candidate);
                   cubeql.getCandidates().remove(candidate);
                   cubeql.addStoragePruningMsg((StorageCandidate) candidate,
-                      CandidateTablePruneCause.columnNotFound(CandidateTablePruneCode.COLUMN_NOT_FOUND, col));
+                      CandidateTablePruneCause.columnNotFound(col));
                   Collection<Candidate> prunedCandidates = CandidateUtil.
                       filterCandidates(cubeql.getCandidates(), (StorageCandidate) candidate);
                   cubeql.addCandidatePruningMsg(prunedCandidates,
@@ -550,7 +550,7 @@ class CandidateTableResolver implements ContextRewriter {
                 cubeql.getCandidateDimTables().get(((CandidateDim) candidate).getBaseTable()).remove(candidate);
                 cubeql.addDimPruningMsgs((Dimension) candidate.getBaseTable(),
                   (CubeDimensionTable) candidate.getTable(),
-                  CandidateTablePruneCause.columnNotFound(CandidateTablePruneCode.COLUMN_NOT_FOUND, col));
+                  CandidateTablePruneCause.columnNotFound(col));
               }
             }
           }
@@ -650,7 +650,7 @@ class CandidateTableResolver implements ContextRewriter {
                   // candidate
                   log.info("Not considering dimtable: {} as column {} is not available", cdim, col);
                   cubeql.addDimPruningMsgs(dim, cdim.getTable(), CandidateTablePruneCause.columnNotFound(
-                      CandidateTablePruneCode.COLUMN_NOT_FOUND, col));
+                    col));
                   i.remove();
                   break;
                 }

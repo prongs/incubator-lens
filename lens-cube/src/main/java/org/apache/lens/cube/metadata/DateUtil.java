@@ -305,11 +305,11 @@ public final class DateUtil {
     switch (interval) {
     case SECONDLY:
     case CONTINUOUS:
-      return getMilliSecondCoveringInfo(from, to, 1000);
+      return getMilliSecondCoveringInfo(from, to, 1000, interval);
     case MINUTELY:
     case HOURLY:
     case DAILY:
-      return getMilliSecondCoveringInfo(from, to, interval.weight());
+      return getMilliSecondCoveringInfo(from, to, interval.weight(), interval);
     case WEEKLY:
       return getWeeklyCoveringInfo(from, to);
     case MONTHLY:
@@ -323,9 +323,11 @@ public final class DateUtil {
     }
   }
 
-  private static CoveringInfo getMilliSecondCoveringInfo(Date from, Date to, long millisInInterval) {
+  private static CoveringInfo getMilliSecondCoveringInfo(Date from, Date to, long millisInInterval, UpdatePeriod interval) {
     long diff = to.getTime() - from.getTime();
-    return new CoveringInfo((int) (diff / millisInInterval), diff % millisInInterval == 0);
+    return new CoveringInfo((int) (diff / millisInInterval),
+      interval.truncate(from).equals(from) && diff % millisInInterval == 0);
+    // start date and end date should lie on boundaries.
   }
 
   static boolean isCoverableBy(Date from, Date to, Set<UpdatePeriod> intervals) {

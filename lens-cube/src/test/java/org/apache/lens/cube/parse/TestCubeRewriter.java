@@ -78,7 +78,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
 
   @Test
   public void testQueryWithNow() throws Exception {
-    LensException e = getLensExceptionInRewrite(
+    LensException e = getLensExceptionInRewrite( // rewrites with original time_range_in
       "select SUM(msr2) from testCube where " + getTimeRangeString("NOW - 2DAYS", "NOW"), getConf());
     assertEquals(e.getErrorCode(), LensCubeErrorCode.NO_CANDIDATE_FACT_AVAILABLE.getLensErrorInfo().getErrorCode());
   }
@@ -100,7 +100,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
     String expected = "select SUM((testCube.msr15))  as `sum(msr15)` from "
         + "TestQueryRewrite.c0_testFact_CONTINUOUS testcube"
         + " WHERE ((( testcube . dt ) between  '" + from + "'  and  '" + to + "' ))";
-    System.out.println("rewrittenQuery.toHQL() " + rewrittenQuery.toHQL());
+    System.out.println("rewrittenQuery.toHQL() " + rewrittenQuery.toHQL()); // exception in toHQL, fact pruned because time_range_not_answerable
     System.out.println("expected " + expected);
     compareQueries(rewrittenQuery.toHQL(), expected);
 
@@ -946,7 +946,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
     String expected =
       getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) as `sum(msr2)` FROM ", null, null,
         getWhereForMonthlyDailyAndHourly2months("C2_testfact"));
-    compareQueries(hqlQuery, expected);
+    compareQueries(hqlQuery, expected); // daily partitions selected instead of monthly for 2017-01
   }
 
   /* The test is to check no failure on partial data when the flag FAIL_QUERY_ON_PARTIAL_DATA is not set
@@ -1064,7 +1064,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
     PruneCauses<CubeDimensionTable> pr1 = new PruneCauses<CubeDimensionTable>();
     pr1.addPruningMsg(new CubeDimensionTable(new Table("test", "citydim")),
             CandidateTablePruneCause.columnNotFound(
-                CandidateTablePruneCause.CandidateTablePruneCode.COLUMN_NOT_FOUND, "test1", "test2", "test3"));
+              "test1", "test2", "test3"));
     NoCandidateDimAvailableException ne1 = new NoCandidateDimAvailableException(pr1);
 
     //Max cause EXPRESSION_NOT_EVALUABLE, Ordinal 14

@@ -33,6 +33,7 @@ import org.apache.hadoop.hive.ql.parse.ASTNode;
 
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 
+import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
 
@@ -53,8 +54,11 @@ public class TimeRange {
     return DateUtil.isCoverableBy(fromDate, toDate, updatePeriods);
   }
 
-  public boolean isCoverableBy(UpdatePeriod updatePeriod) {
-    return DateUtil.isCoverableBy(fromDate, toDate, updatePeriod);
+  public TimeRange truncate(UpdatePeriod updatePeriod) throws LensException {
+    TimeRange timeRange = new TimeRangeBuilder().partitionColumn(partitionColumn)
+      .fromDate(updatePeriod.getCeilDate(fromDate)).toDate(updatePeriod.getFloorDate(toDate)).build();
+    timeRange.validate();
+    return timeRange;
   }
 
   public static class TimeRangeBuilder {
