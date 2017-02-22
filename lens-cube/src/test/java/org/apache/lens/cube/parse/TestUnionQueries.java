@@ -210,8 +210,8 @@ public class TestUnionQueries extends TestQueryRewrite {
       getStorageToUpdatePeriodMap().clear();
     }
   }
-
-  @Test
+  //TODO: enable this test after lavkesh's changes
+  @Test(enabled = false)
   public void testDimAttrExpressionQuery() throws Exception {
     Configuration conf = getConf();
     conf.set(getValidStorageTablesKey("testfact"), "C1_testFact,C2_testFact");

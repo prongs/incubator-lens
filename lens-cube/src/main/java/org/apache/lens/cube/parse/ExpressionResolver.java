@@ -378,7 +378,7 @@ class ExpressionResolver implements ContextRewriter {
           boolean isEvaluable = true;
           for (String col : columns) {
             if (!cTable.getColumns().contains(col.toLowerCase())) {
-              if (!esc.getDeNormCtx().addRefUsage(cubeql, cTable, col, cTable.getBaseTable().getName())) {
+              if (!cubeql.getDeNormCtx().addRefUsage(cubeql, cTable, col, cTable.getBaseTable().getName())) {
                 // check if it is available as reference, if not expression is not evaluable
                 log.debug("{} = {} is not evaluable in {}", expr, esc, cTable);
                 isEvaluable = false;
@@ -443,7 +443,7 @@ class ExpressionResolver implements ContextRewriter {
     public Set<Dimension> rewriteExprCtx(StorageCandidate sc, Map<Dimension, CandidateDim> dimsToQuery,
       QueryAST queryAST) throws LensException {
       Set<Dimension> exprDims = new HashSet<Dimension>();
-      log.info("Picking expressions for fact {} ", cfact);
+      log.info("Picking expressions for candidate {} ", sc);
       if (!allExprsQueried.isEmpty()) {
         // pick expressions for fact
         if (sc != null) {
@@ -461,13 +461,14 @@ class ExpressionResolver implements ContextRewriter {
         for (Set<PickedExpression> peSet : pickedExpressions.values()) {
           for (PickedExpression pe : peSet) {
             exprDims.addAll(pe.pickedCtx.exprDims);
-            pe.initRewrittenAST(pe.pickedCtx.deNormCtx.hasReferences());
-            exprDims.addAll(pe.pickedCtx.deNormCtx.rewriteDenormctxInExpression(cubeql, cfact, dimsToQuery,
-              pe.getRewrittenAST()));
+            //TODO: remove. Not in lens-1381. these lines came from a backmerge with master
+//            pe.initRewrittenAST(pe.pickedCtx.deNormCtx.hasReferences());
+//            exprDims.addAll(pe.pickedCtx.deNormCtx.rewriteDenormctxInExpression(cubeql, sc, dimsToQuery,
+//              pe.getRewrittenAST()));
           }
         }
         // Replace picked expressions in all the base trees
-        replacePickedExpressions(cfact, queryAST);
+        replacePickedExpressions(sc, queryAST);
       }
 
       pickedExpressions.clear();
@@ -513,9 +514,10 @@ class ExpressionResolver implements ContextRewriter {
               String column = colIdent.getText().toLowerCase();
 
               if (pickedExpressions.containsKey(column)) {
+                assert tabident != null;
                 PickedExpression expr = getPickedExpression(column, tabident.getText().toLowerCase());
                 if (expr != null) {
-                  node.setChild(i, replaceAlias(expr.getRewrittenAST(), cubeql));
+                  node.setChild(i, replaceAlias(expr.pickedCtx.finalAST, cubeql));
                 }
               }
             }
@@ -580,9 +582,8 @@ class ExpressionResolver implements ContextRewriter {
               continue;
             }
             // Remove expressions for which denormalized columns are no more reachable
-            esc.getDeNormCtx().pruneReferences(cubeql);
-            for (String table : esc.getDeNormCtx().getTableToRefCols().keySet()) {
-              Set<String> nonReachableFields = esc.getDeNormCtx().getNonReachableReferenceFields(table);
+            for (String table : cubeql.getDeNormCtx().getTableToRefCols().keySet()) {
+              Set<String> nonReachableFields = cubeql.getDeNormCtx().getNonReachableReferenceFields(table);
               if (!nonReachableFields.isEmpty()) {
                 log.info("Removing expression {} as columns {} are not available", esc, nonReachableFields);
                 iterator.remove();

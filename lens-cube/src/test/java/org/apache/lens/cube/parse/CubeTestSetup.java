@@ -585,6 +585,8 @@ public class CubeTestSetup {
       "dim3 refer", "dim3chain", "id", null, null, 0.0));
     cubeDimensions.add(new ReferencedDimAttribute(new FieldSchema("cityname", "string", "city name"),
       "city name", "cubecity", "name", null, null, 0.0));
+    cubeDimensions.add(new ReferencedDimAttribute(new FieldSchema(prefix + "cityname", "string", prefix + "city name"),
+      prefix + "city name", "cubeCityJoinUnionCtx", "name", null, null, 0.0));
     cubeDimensions.add(new ReferencedDimAttribute(new FieldSchema("statename_cube", "string", "state name"),
       "state name", "cubestate", "name", null, null, 0.0));
     List<ChainRefCol> references = new ArrayList<>();

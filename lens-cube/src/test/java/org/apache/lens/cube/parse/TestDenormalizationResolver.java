@@ -272,7 +272,7 @@ public class TestDenormalizationResolver extends TestQueryRewrite {
     NoCandidateFactAvailableException e = (NoCandidateFactAvailableException)getLensExceptionInRewrite(
       "select dim2, test_time_dim2 from testcube where " + TWO_DAYS_RANGE, tConf);
     Assert.assertEquals(e.getJsonMessage().getBrief(),
-      "Range not answerable");
+      "Range not answerable"); // getting storage update periods are not valid for given time range
   }
 
   @Test

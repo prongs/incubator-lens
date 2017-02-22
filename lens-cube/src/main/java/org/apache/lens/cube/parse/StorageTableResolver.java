@@ -125,7 +125,7 @@ class StorageTableResolver implements ContextRewriter {
       for (TimeRange range : cubeql.getTimeRanges()) {
         isComplete &= candidate.evaluateCompleteness(range, range, failOnPartialData);
       }
-      if (failOnPartialData &&  !isComplete) {
+      if (failOnPartialData && !isComplete) {
         candidateIterator.remove();
         log.info("Not considering candidate:{} as its data is not is not complete", candidate);
         Set<StorageCandidate> scSet = CandidateUtil.getStorageCandidates(candidate);
@@ -136,6 +136,12 @@ class StorageTableResolver implements ContextRewriter {
             cubeql.addStoragePruningMsg(sc, incompletePartitions(sc.getDataCompletenessMap()));
           }
         }
+      } else if (candidate.getParticipatingPartitions().isEmpty()
+        && candidate instanceof StorageCandidate
+        && ((StorageCandidate) candidate).getNonExistingPartitions().isEmpty()) {
+        candidateIterator.remove();
+        cubeql.addCandidatePruningMsg(candidate,
+          new CandidateTablePruneCause(CandidateTablePruneCode.NO_FACT_UPDATE_PERIODS_FOR_GIVEN_RANGE));
       }
     }
   }
@@ -324,8 +330,15 @@ class StorageTableResolver implements ContextRewriter {
           new CandidateTablePruneCause(CandidateTablePruneCode.TIME_RANGE_NOT_ANSWERABLE));
         it.remove();
       } else if (!isStorageAdded) {
-        cubeql.addStoragePruningMsg(sc, CandidateTablePruneCause.updatePeriodsRejected(skipUpdatePeriodCauses));
-        it.remove();
+        if (skipUpdatePeriodCauses.values().stream().allMatch(SkipUpdatePeriodCode.QUERY_INTERVAL_SMALL::equals)) {
+          // all update periods bigger than query range, it means time range not answerable.
+          cubeql.addStoragePruningMsg(sc,
+            new CandidateTablePruneCause(CandidateTablePruneCode.TIME_RANGE_NOT_ANSWERABLE));
+          it.remove();
+        } else {
+          cubeql.addStoragePruningMsg(sc, CandidateTablePruneCause.updatePeriodsRejected(skipUpdatePeriodCauses));
+          it.remove();
+        }
       }
       if (!skipUpdatePeriodCauses.isEmpty()) {
         // this is just for documentation/debugging, so we can see why some update periods are skipped.

@@ -144,7 +144,7 @@ public class CandidateTablePruneCause {
       }
     },
     //Commented as its not used anymore.
-    //NO_FACT_UPDATE_PERIODS_FOR_GIVEN_RANGE("No fact update periods for given range"),
+    NO_FACT_UPDATE_PERIODS_FOR_GIVEN_RANGE("No fact update periods for given range"),
 
     // no candidate update periods, update period cause will have why each
     // update period is not a candidate

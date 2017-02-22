@@ -333,7 +333,7 @@ public final class DateUtil {
   static boolean isCoverableBy(Date from, Date to, Set<UpdatePeriod> intervals) {
     return intervals.stream().anyMatch(period->isCoverableBy(from, to, period));
   }
-  static boolean isCoverableBy(Date from, Date to, UpdatePeriod period) {
+  private static boolean isCoverableBy(Date from, Date to, UpdatePeriod period) {
     return getCoveringInfo(from, to, period).isCoverable();
   }
 

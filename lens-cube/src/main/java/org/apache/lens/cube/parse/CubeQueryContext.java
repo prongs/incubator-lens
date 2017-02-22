@@ -952,7 +952,7 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST, 
       }
     } else {
       // dim only query
-      exprDimensions.addAll(exprCtx.rewriteExprCtx(this, null, dimsToQuery, this));
+      exprDimensions.addAll(exprCtx.rewriteExprCtx(null, dimsToQuery, this));
     }
     dimsToQuery.putAll(pickCandidateDimsToQuery(exprDimensions));
     log.info("StorageCandidates: {}, DimsToQuery: {}", scSet, dimsToQuery);
@@ -966,7 +966,7 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST, 
         factDimMap.get(sc).addAll(factDenormTables);
       }
     } else {
-      denormTables.addAll(deNormCtx.rewriteDenormctx(this, null, dimsToQuery, false));
+      denormTables.addAll(deNormCtx.rewriteDenormctx(null, dimsToQuery, false));
     }
     dimsToQuery.putAll(pickCandidateDimsToQuery(denormTables));
     log.info("StorageCandidates: {}, DimsToQuery: {}", scSet, dimsToQuery);

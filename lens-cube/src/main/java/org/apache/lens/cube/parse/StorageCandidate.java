@@ -776,7 +776,13 @@ public class StorageCandidate implements Candidate, CandidateTable {
   }
 
   public boolean isTimeRangeCoverable(TimeRange timeRange) {
-    return timeRange.isCoverableBy(getValidUpdatePeriods());
+    return isTimeRangeCoverable(timeRange.getFromDate(), timeRange.getToDate(), getValidUpdatePeriods());
+  }
+  public boolean isTimeRangeCoverable(Date fromDate, Date toDate, Set<UpdatePeriod> periods) {
+    UpdatePeriod interval = CubeFactTable.maxIntervalInRange(fromDate, toDate, periods);
+    return interval != null
+      && isTimeRangeCoverable(fromDate, DateUtil.getCeilDate(fromDate, interval), periods)
+      && isTimeRangeCoverable(DateUtil.getFloorDate(toDate, interval), toDate, periods);
   }
 
   public Set<UpdatePeriod> getAllUpdatePeriods() {

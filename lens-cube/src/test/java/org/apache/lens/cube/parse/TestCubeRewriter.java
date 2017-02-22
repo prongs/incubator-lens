@@ -30,6 +30,7 @@ import static org.testng.Assert.*;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Stream;
 
 import org.apache.lens.cube.error.LensCubeErrorCode;
 import org.apache.lens.cube.error.NoCandidateDimAvailableException;
@@ -993,11 +994,9 @@ public class TestCubeRewriter extends TestQueryRewrite {
     PruneCauses.BriefAndDetailedError pruneCauses = ne.getJsonMessage();
     /*Since the Flag FAIL_QUERY_ON_PARTIAL_DATA is set, and the queried fact has incomplete data, hence, we expect the
     prune cause to be INCOMPLETE_PARTITION. The below check is to validate this.*/
-    assertEquals(pruneCauses.getBrief().substring(0, INCOMPLETE_PARTITION.errorFormat.length() - 3),
-        INCOMPLETE_PARTITION.errorFormat.substring(0,
-            INCOMPLETE_PARTITION.errorFormat.length() - 3), pruneCauses.getBrief());
-    //TODO: the following is in master. check if it still holds
-    assertEquals(pruneCauses.getBrief(), String.format(INCOMPLETE_PARTITION.errorFormat, "[msr9]"));
+    for(String part: INCOMPLETE_PARTITION.errorFormat.split("%s")) {
+      assertTrue(pruneCauses.getBrief().contains(part), pruneCauses.getBrief());
+    }
   }
 
   @Test
@@ -1015,21 +1014,12 @@ public class TestCubeRewriter extends TestQueryRewrite {
       pruneCauses.getBrief().substring(0, MISSING_PARTITIONS.errorFormat.length() - 3),
       MISSING_PARTITIONS.errorFormat.substring(0,
         MISSING_PARTITIONS.errorFormat.length() - 3), pruneCauses.getBrief());
-
-    Set<String> expectedSet =
-      Sets.newTreeSet(Arrays.asList("c1_testfact2_raw", "c1_summary3", "c1_summary2",
-          "c1_summary1", "c2_testfact", "c1_testfact"));
-    boolean missingPartitionCause = false;
-    for (String key : pruneCauses.getDetails().keySet()) {
-      Set<String> actualKeySet = Sets.newTreeSet(Splitter.on(',').split(key));
-      if (expectedSet.equals(actualKeySet)) {
-        assertEquals(pruneCauses.getDetails().get(key).iterator()
-          .next().getCause(), MISSING_PARTITIONS);
-        missingPartitionCause = true;
-      }
-    }
-    assertTrue(missingPartitionCause, MISSING_PARTITIONS + " error does not occur for facttables set " + expectedSet
-      + " Details :" + pruneCauses.getDetails());
+    List<CandidateTablePruneCause> missingPartitionCauses = pruneCauses.enhanced().get(
+      Sets.newHashSet("c1_testfact2_raw", "c1_summary3", "c1_summary2",
+      "c1_summary1", "c2_testfact", "c1_testfact"));
+    assertEquals(missingPartitionCauses.size(), 1);
+    CandidateTablePruneCause missingPartitionCause = missingPartitionCauses.iterator().next();
+    assertEquals(missingPartitionCause.getCause(), MISSING_PARTITIONS);
     assertEquals(pruneCauses.getDetails().get("c1_testfact2").iterator().next().getCause(),
       MISSING_PARTITIONS);
     /*
