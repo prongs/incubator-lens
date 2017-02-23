@@ -261,9 +261,9 @@ public class CandidateTablePruneCause {
     return cause;
   }
 
-  static CandidateTablePruneCause columnNotFound(Collection<String>... missingColumns) {
+  static CandidateTablePruneCause columnNotFound(Collection<String> missingColumns) {
     CandidateTablePruneCause cause = new CandidateTablePruneCause(COLUMN_NOT_FOUND);
-    cause.setMissingColumns(Stream.of(missingColumns).flatMap(Collection::stream).collect(toSet()));
+    cause.setMissingColumns(Sets.newHashSet(missingColumns));
     return cause;
   }
 
