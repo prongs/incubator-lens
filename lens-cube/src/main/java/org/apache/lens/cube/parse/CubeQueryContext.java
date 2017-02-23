@@ -946,13 +946,13 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST, 
     Set<Dimension> exprDimensions = new HashSet<>();
     if (!scSet.isEmpty()) {
       for (StorageCandidate sc : scSet) {
-        Set<Dimension> factExprDimTables = exprCtx.rewriteExprCtx(sc, dimsToQuery, sc.getQueryAst());
+        Set<Dimension> factExprDimTables = exprCtx.rewriteExprCtx(this, sc, dimsToQuery, sc.getQueryAst());
         exprDimensions.addAll(factExprDimTables);
         factDimMap.get(sc).addAll(factExprDimTables);
       }
     } else {
       // dim only query
-      exprDimensions.addAll(exprCtx.rewriteExprCtx(null, dimsToQuery, this));
+      exprDimensions.addAll(exprCtx.rewriteExprCtx(this, null, dimsToQuery, this));
     }
     dimsToQuery.putAll(pickCandidateDimsToQuery(exprDimensions));
     log.info("StorageCandidates: {}, DimsToQuery: {}", scSet, dimsToQuery);
@@ -961,12 +961,12 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST, 
     Set<Dimension> denormTables = new HashSet<>();
     if (!scSet.isEmpty()) {
       for (StorageCandidate sc : scSet) {
-        Set<Dimension> factDenormTables = deNormCtx.rewriteDenormctx(sc, dimsToQuery, !scSet.isEmpty());
+        Set<Dimension> factDenormTables = deNormCtx.rewriteDenormctx(this, sc, dimsToQuery, !scSet.isEmpty());
         denormTables.addAll(factDenormTables);
         factDimMap.get(sc).addAll(factDenormTables);
       }
     } else {
-      denormTables.addAll(deNormCtx.rewriteDenormctx(null, dimsToQuery, false));
+      denormTables.addAll(deNormCtx.rewriteDenormctx(this, null, dimsToQuery, false));
     }
     dimsToQuery.putAll(pickCandidateDimsToQuery(denormTables));
     log.info("StorageCandidates: {}, DimsToQuery: {}", scSet, dimsToQuery);

@@ -226,8 +226,9 @@ public class TestExpressionResolver extends TestQueryRewrite {
         conf);
 
     String expected =
-      getExpectedQuery(cubeName, "select substr(testcube.concatedcitystate, 10)"
-        + " avg(testcube.msr1 + testcube.msr2) FROM ", null, null, " and substr(testcube.dim1, 3) != 'XYZ'"
+      getExpectedQuery(cubeName, "select substr(testcube.concatedcitystate, 10) AS `cityandstatenew`, "
+        + " avg(testcube.msr1 + testcube.msr2)  AS `avgmsr` FROM ", null, null,
+        " and substr(testcube.dim1, 3) != 'XYZ'"
         + " group by substr(testcube.concatedcitystate, 10)", null, getWhereForHourly2days("C1_testfact2_raw"));
     TestCubeRewriter.compareQueries(hqlQuery, expected);
   }
