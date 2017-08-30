@@ -835,13 +835,29 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
       }
     }
   }
+  @Test
+  public void testHavingOnTwoExpressions() throws Exception {
+    CubeQueryContext ctx1 = rewriteCtx("select dim1, msr2 from basecube where " + TWO_DAYS_RANGE
+      + "having effectivemsr2 > 0 and complexmsr12 > 10", conf);
+    CubeQueryContext ctx2 = rewriteCtx("select dim1, msr2 from basecube where " + TWO_DAYS_RANGE
+      + "having effectivemsr2 > 0 and complexmsr12 > 10", conf);
+    // shuffle join candidate order in ctx2
+    for (Candidate candidate : ctx2.getCandidates()) {
+      if (candidate instanceof JoinCandidate) {
+        JoinCandidate jc = (JoinCandidate) candidate;
+        List<Candidate> children = jc.getChildren();
+        Collections.reverse(children);
+      }
+    }
+    String having1 = ctx1.toHQL().substring(ctx1.toHQL().indexOf("HAVING"));
+    String having2 = ctx2.toHQL().substring(ctx2.toHQL().indexOf("HAVING"));
+    assertEquals(having1, having2); // toHQL outputs are tested in other functions, not testing here.
+  }
 
   @Test
   public void testMultiFactQueryWithHaving() throws Exception {
 
     String hqlQuery, expected1, expected2;
-    String endSubString = "mq2 on mq1.dim1 <=> mq2.dim1 AND mq1.dim11 <=> mq2.dim11";
-    String joinSubString = "mq1 full outer join ";
 
     // only One having clause, that too answerable from one fact
     hqlQuery = rewrite("select dim1, dim11, msr12 from basecube where " + TWO_DAYS_RANGE
