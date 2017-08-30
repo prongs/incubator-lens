@@ -22,6 +22,7 @@ package org.apache.lens.cube.parse;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
+import static java.util.stream.Collectors.toSet;
 import static org.apache.lens.cube.parse.HQLParser.*;
 
 import static org.apache.hadoop.hive.ql.parse.HiveParser.*;
@@ -460,6 +461,12 @@ public class UnionQueryWriter extends SimpleHQLContext {
     queryAst.setSelectAST(outerSelectAst);
 
     // Iterate over the StorageCandidates and add non projected having columns in inner select ASTs
+    Map<DimHQLContext, Map<String, Set<ExpressionResolver.PickedExpression>>> pickedExpressionsPerCandidate = new HashMap<>();
+    for (CubeQueryContext cubeQueryContext : storageCandidates.stream()
+      .map(StorageCandidateHQLContext::getCubeQueryContext).collect(toSet())) {
+      pickedExpressionsPerCandidate.putAll(cubeQueryContext.getExprCtx().getPickedExpressionsPerCandidate());
+    }
+    cubeql.getExprCtx().replaceHavingExpressions(pickedExpressionsPerCandidate);
     for (StorageCandidateHQLContext sc : storageCandidates) {
       aliasDecider.setCounter(selectAliasCounter);
       processHavingAST(sc.getQueryAst().getSelectAST(), aliasDecider, sc);
