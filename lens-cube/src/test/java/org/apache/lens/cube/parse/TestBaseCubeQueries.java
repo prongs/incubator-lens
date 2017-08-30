@@ -849,9 +849,21 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
         Collections.reverse(children);
       }
     }
+    // toHQL outputs are tested in other functions, not testing here.
+
+    // test having clauses are same in both
     String having1 = ctx1.toHQL().substring(ctx1.toHQL().indexOf("HAVING"));
     String having2 = ctx2.toHQL().substring(ctx2.toHQL().indexOf("HAVING"));
-    assertEquals(having1, having2); // toHQL outputs are tested in other functions, not testing here.
+    assertEquals(having1, having2, "having1: " + having1 + "\nhaving2: " + having2);
+
+    // assert order of facts is differnet in to hqls
+    int ind11 = ctx1.toHQL().indexOf("c1_testfact1_base");
+    int ind21 = ctx2.toHQL().indexOf("c1_testfact1_base");
+
+    int ind12 = ctx1.toHQL().indexOf("c1_testfact2_base");
+    int ind22 = ctx2.toHQL().indexOf("c1_testfact2_base");
+
+    assertTrue((ind11 < ind21 && ind12 > ind22) || (ind11 > ind21 && ind12 < ind22));
   }
 
   @Test
