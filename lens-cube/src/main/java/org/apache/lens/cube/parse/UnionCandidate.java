@@ -20,6 +20,7 @@ package org.apache.lens.cube.parse;
 
 import static java.util.Comparator.comparing;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Date;
@@ -61,8 +62,12 @@ public class UnionCandidate implements Candidate {
   private List<Candidate> children;
 
   private Map<TimeRange, Map<Candidate, TimeRange>> splitTimeRangeMap = Maps.newHashMap();
-  UnionCandidate(Collection<? extends Candidate> childCandidates, CubeQueryContext cubeQueryContext) {
-    this.children = Lists.newArrayList(childCandidates);
+  UnionCandidate(Collection<? extends Candidate> childCandidates, CubeQueryContext cubeQueryContext)
+    throws LensException {
+    this.children = new ArrayList<>(childCandidates.size());
+    for (Candidate childCandidate : childCandidates) {
+      children.add(childCandidate.copy());
+    }
     this.cubeQueryContext = cubeQueryContext;
   }
 

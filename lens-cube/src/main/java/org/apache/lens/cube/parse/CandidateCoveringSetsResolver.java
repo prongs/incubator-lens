@@ -27,6 +27,7 @@ import org.apache.lens.cube.metadata.TimeRange;
 import org.apache.lens.server.api.error.LensException;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -169,7 +170,8 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
     }
   }
   @Deprecated
-  private List<UnionCandidate> getCombinations(final List<Candidate> candidates, CubeQueryContext cubeql) {
+  private List<UnionCandidate> getCombinations(final List<Candidate> candidates, CubeQueryContext cubeql)
+    throws LensException {
     List<UnionCandidate> combinations = new LinkedList<>();
     int size = candidates.size();
     int threshold = Double.valueOf(Math.pow(2, size)).intValue() - 1;
