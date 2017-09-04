@@ -27,7 +27,6 @@ import org.apache.lens.cube.metadata.TimeRange;
 import org.apache.lens.server.api.error.LensException;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -209,7 +208,8 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
    * @param cubeql
    * @return
    */
-  private List<UnionCandidate> getCombinationTailIterative(List<Candidate> candidates, CubeQueryContext cubeql) {
+  private List<UnionCandidate> getCombinationTailIterative(List<Candidate> candidates, CubeQueryContext cubeql)
+  throws LensException {
     LinkedList<Candidate> candidateLinkedList = Lists.newLinkedList(candidates);
     List<List<Candidate>> incompleteCombinations = Lists.newArrayList();
     incompleteCombinations.add(Lists.newArrayList());
