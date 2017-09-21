@@ -1,0 +1,7 @@
+[submodule "contrib/bot/lens-slack-bot"]
+       path = contrib/bot/lens-slack-bot
+       url = https://github.com/prongs/lens-slack-bot
+[submodule "contrib/clients/nodejs"]
+       path = contrib/clients/nodejs
+       url = https://github.com/prongs/lens-node-client
+
